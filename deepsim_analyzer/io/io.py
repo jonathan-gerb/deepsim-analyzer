@@ -27,7 +27,7 @@ def create_dataset(image_folder, datafile_path="dataset.h5"):
     # create dataset file and add hash for each image
     with h5py.File(datafile_path, "w") as f:
         for image_path in image_paths:
-            image_name = Path(image_path).name
+            image_name = str(Path(image_path))
             img_hash = get_image_hash(image_path, is_filepath=True)
             f.create_dataset(f"{img_hash}/filename", data=image_name)
             
