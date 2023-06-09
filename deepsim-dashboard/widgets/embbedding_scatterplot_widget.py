@@ -1,0 +1,199 @@
+from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QPushButton, QWidget
+from PyQt6.QtCore import Qt, pyqtSignal, QPoint
+import numpy as np
+import pyqtgraph as pg
+from PIL import Image
+
+class ScatterplotWidget(QWidget):
+    selected_idx = pyqtSignal(list)
+    label = pyqtSignal(str)
+
+    # Define a custom signal to emit when a point is clicked
+    point_clicked = pyqtSignal(tuple)
+
+    def __init__(self, points, config):
+        super().__init__()
+
+        self.points = points
+        self.mean_x = np.mean(self.points[:,0])
+        self.mean_y = np.mean(self.points[:,1])
+
+        self.points_size = float(config['scatterplot']['point_size'])
+        self.points_color = config['scatterplot']['points_color']
+        self.selection_color = config['scatterplot']['selection_color']
+        self.selection_points_size = float(config['scatterplot']['selection_point_size'])
+        self.rectangle_color = config['scatterplot']['rectangle_color']
+        self.rectangle_opacity = float(config['scatterplot']['rectangle_opacity'])
+
+        self.start_point = None
+        self.end_point = None
+
+        self.plot_widget = pg.PlotWidget()
+        # self.plot_widget.setMouseEnabled(x=False, y=False)
+        self.plot_widget.setMouseEnabled(True, True)
+        self.plot_widget.setLimits(xMin=-np.inf, xMax=np.inf, yMin=-np.inf, yMax=np.inf)
+        self.plot_widget.setAspectLocked(lock=True)
+
+        self.plot_widget.plot(self.points[:, 0], self.points[:, 1], pen=None, symbolBrush=self.points_color, symbolSize=self.points_size)
+
+        # self.clear_button = QPushButton("Clear Selection")
+        # self.clear_button.clicked.connect(self.clear_selection)
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.plot_widget)
+        # layout.addWidget(self.clear_button)
+
+        self.selected_point=None
+        self.selected_points = []
+        self.outside_points_visible = False
+
+        self.plot_widget.scene().sigMouseClicked.connect(self.on_canvas_click)
+        self.plot_widget.scene().sigMouseMoved.connect(self.on_mouse_move)
+
+        self.resize_widget()
+
+    def resize_widget(self):
+        size = min(self.width(), self.height())
+        self.setFixedSize(size, size)
+        self.plot_widget.setFixedSize(size, size)
+
+    # def start_selection(self, ev):
+    #     if ev.button() == Qt.MouseButton.LeftButton:
+    #         pos = ev.scenePos()
+    #         self.start_point = (pos.x(), pos.y())
+
+    # def end_selection(self, ev):
+    #     if ev.button() == Qt.MouseButton.LeftButton and self.start_point is not None:
+    #         pos = ev.scenePos()
+    #         self.end_point = (pos.x(), pos.y())
+    #         self.draw_selection_rectangle()
+
+    # def mousePressEvent(self, event):
+    #     if event.button() == Qt.MouseButton.LeftButton:
+    #         self.start_selection(event)
+    #     super().mousePressEvent(event)
+
+    # def mouseReleaseEvent(self, event):
+    #     if event.button() == Qt.MouseButton.LeftButton:
+    #         self.end_selection(event)
+    #     super().mouseReleaseEvent(event)
+
+    # def on_mouse_move(self, ev):
+    #     pos = ev[0].scenePos()
+    #     pos = ev.scenePos()
+    #     self.label.emit(f"Current Mouse Position: {pos.x():.2f}, {pos.y():.2f}")
+
+    # def on_mouse_move(self, ev):
+    #     mouse_event = ev
+    #     mouse_event = ev[0]
+    #     pos = self.plot_widget.mapToScene(mouse_event.pos())
+    #     self.label.emit(f"Current Mouse Position: {pos.x():.2f}, {pos.y():.2f}")
+
+
+    def on_mouse_move(self, ev):
+        # pos = self.plot_widget.mapToScene(QPoint(ev.x(), ev.y()))
+        pos = self.plot_widget.mapToScene(QPoint(int(ev.x()), int(ev.y())))
+        self.label.emit(f"Current Mouse Position: {pos.x():.2f}, {pos.y():.2f}")
+
+    def on_canvas_click(self, ev):
+        pos = ev.scenePos()
+        print('dot clicked pos:', pos)
+        if ev.button() == Qt.MouseButton.LeftButton:
+            # self.selected_point= pos.x(), pos.y()
+            self.selected_point = int(pos.x()), int(pos.y())
+
+    def get_selected_point(self):
+        return self.selected_point
+
+    def get_indices_from_point(self, x, y):
+        distances = np.sqrt(np.power(self.points[:, 0] - x, 2) + np.power(self.points[:, 1] - y, 2))
+        indices = np.argsort(distances)
+        return indices
+
+    def find_nearest_neighbors(self, point, n=3):
+        indices = self.get_indices_from_point(point)
+        nearest_indices = indices[:n]
+        return nearest_indices
+    
+    def get_embeddings_from_nearest_neighbors(self, nearest_indices):
+        nearest_embeddings = []
+        for index in nearest_indices:
+            # Generate a random embedding for each point
+            embedding = np.random.rand(128)  # Replace 128 with the desired embedding size
+            nearest_embeddings.append(embedding)
+        return nearest_embeddings
+
+    def vector_to_image(vector, width, height):
+        # Reshape the vector into an image shape
+        image_array = np.reshape(vector, (height, width))
+        # Convert the array to 8-bit unsigned integer values (0-255)
+        image_array = np.uint8(image_array)
+        # Create an image object from the array data
+        image = Image.fromarray(image_array)
+        return image
+    
+    def get_image_paths(self, indices):
+        # Here, you need to provide a list of image paths corresponding to the indices
+        # For demonstration purposes, let's assume the images are named as 'image_0.jpg', 'image_1.jpg', etc.
+        image_paths = ['image_{}.jpg'.format(idx) for idx in indices]
+        return image_paths
+
+    def clear_selection(self):
+        self.selected_idx.emit([])
+        self.selected_points = []
+        self.plot_widget.clear()
+        self.plot_widget.plot(self.points[:, 0], self.points[:, 1], pen=None, symbolBrush=self.points_color, symbolSize=self.points_size)
+
+    def draw_selection_rectangle(self):
+        x1, y1 = self.start_point[0], self.start_point[1]
+        x2, y2 = self.end_point[0], self.end_point[1]
+        x = min(x1, x2)
+        y = min(y1, y2)
+        w = abs(x1 - x2)
+        h = abs(y1 - y2)
+
+        self.plot_widget.scene().removeItem(self.rect)
+        self.rect = pg.QtGui.QGraphicsRectItem(x, y, w, h)
+        self.rect.setPen(pg.mkPen(self.rectangle_color))
+        self.rect.setBrush(pg.mkColor(self.rectangle_color + '%f' % self.rectangle_opacity))
+        self.plot_widget.scene().addItem(self.rect)
+
+        self.plot_widget.update()
+
+        xmin, xmax = sorted([x1, x2])
+        ymin, ymax = sorted([y1, y2])
+
+        indices = [i for i, p in enumerate(self.points) if xmin <= p[0] <= xmax and ymin <= p[1] <= ymax]
+
+        self.selected_points = indices
+        self.draw_scatterplot()
+
+    def draw_scatterplot(self):
+        self.plot_widget.clear()
+        self.plot_widget.plot(self.points[:, 0], self.points[:, 1], pen=None, symbolBrush=self.points_color, symbolSize=self.points_size)
+
+        for i in self.selected_points:
+            point = self.points[i]
+            if self.is_point_in_rectangle(point) or self.outside_points_visible:
+                self.plot_widget.plot([point[0]], [point[1]], pen=None, symbolBrush=self.selection_color, symbolSize=self.selection_points_size)
+
+    def is_point_in_rectangle(self, point):
+        if self.start_point[0] < self.end_point[0]:
+            x1, x2 = self.start_point[0], self.end_point[0]
+        else:
+            x1, x2 = self.end_point[0], self.start_point[0]
+        if self.start_point[1] < self.end_point[1]:
+            y1, y2 = self.start_point[1], self.end_point[1]
+        else:
+            y1, y2 = self.end_point[1], self.start_point[1]
+
+        x, y = point[0], point[1]
+
+        if x1 <= x <= x2 and y1 <= y <= y2:
+            return True
+        else:
+            return False
+
+    def set_outside_points_visible(self, visible):
+        self.outside_points_visible = visible
+        self.draw_scatterplot()
