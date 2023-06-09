@@ -6,3 +6,5 @@ Pillow==9.5.0
 torchvision==0.15.2
 scikit-image==0.21.0
 matplotlib==3.7.1
+transformers==4.29.2 
+pillow==9.5.0

@@ -299,8 +299,8 @@ class MainWindow(QMainWindow):
 def main():
     app = QApplication(sys.argv)
 
-    with open("theme1.css","r") as file:
-        app.setStyleSheet(file.read())
+    # with open("theme1.css","r") as file:
+    #     app.setStyleSheet(file.read())
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
