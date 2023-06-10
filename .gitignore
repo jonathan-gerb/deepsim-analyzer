@@ -161,3 +161,5 @@ cython_debug/
 
 # data/raw_immutable/*
 # data/processed/*
+
+deepsim-dashboard/images/*
