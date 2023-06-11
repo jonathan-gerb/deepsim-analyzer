@@ -14,8 +14,8 @@ Step 3: Paste it to the ```API_key``` variable in the notebook and run the noteb
 **A few things still need to be optimized or implemented:**
 
 1. It seems that this api only accepts image urls which means we need to first upload it to a file host, while links from some file hosts do not work with the api such as Google Drive and Github.
-2. Wiki link retrieved might be a a ```Featured Picture Candidates``` link which is an archive containing all opinions and comments collected for candidate nominations and their nomination results, therefore less informative than other links retrieved by the api.
-3. Retrieve text from this Wiki link for similarities in text level such as historical background, artist intention, etc.
+2. Wiki link retrieved might be a a ```Featured Picture Candidates``` link which is an archive containing all opinions and comments collected for candidate nominations and their nomination results, therefore less informative than other links retrieved by the api. However, it can be improved by remove ```\Wikipedia:Featured_picture_candidates``` from the URL to direct to the desired Wiki page.
+3. Implementation of retrieving text from this Wiki link can be implemented for similarities in text level such as historical background, artist intention, etc.
 
 
 
