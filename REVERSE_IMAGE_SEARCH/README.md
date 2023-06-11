@@ -1,13 +1,14 @@
-This notebook contains an example of applying reverse image search using SerpAPI ```https://serpapi.com/``` to retrieve a wiki link.
+This notebook contains an example of applying reverse image search using SerpAPI ```https://serpapi.com/``` to retrieve a wiki link. 
+This is the example image used in the notebook: ![Monalisa -- Leonardo Da Vinchi](https://upload.wikimedia.org/wikipedia/commons/6/6a/Mona_Lisa.jpg)
 
-In order to run the notebook, please follow the instruction:
-```
+**In order to run the notebook, please follow the instruction:**
+
 Step 1: Register an account for SerpAPI using this link ```https://serpapi.com/users/sign_up``` and subscribe for the free version which allows to query 200 times a month (I think it's enough for us since we have 1000 times in total for 5 of us).
 
 Step 2: After successful subscription, go to the account page and copy your api key
 
 Step 3: Paste it to the ```API_key``` variable in the notebook and run the notebook
-```
+
 
 
 **A few things still need to be optimized or implemented:**
