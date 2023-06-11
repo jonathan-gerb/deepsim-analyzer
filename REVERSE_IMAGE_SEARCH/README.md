@@ -5,7 +5,7 @@ This is the example image used in the notebook: ![Monalisa -- Leonardo Da Vinchi
 
 Step 1: Register an account for SerpAPI using this link ```https://serpapi.com/users/sign_up``` and subscribe for the free version which allows to query 200 times a month (I think it's enough for us since we have 1000 times in total for 5 of us).
 
-Step 2: After successful subscription, go to the account page and copy your api key
+Step 2: After successful subscription, go to the account page and copy your api key. (You can also use my API key: ```0d2698a815b3195e2b4c5f001fed00f6c907661f5877be83454a987020db7bcf```, which has around 198 searches left)
 
 Step 3: Paste it to the ```API_key``` variable in the notebook and run the notebook
 
