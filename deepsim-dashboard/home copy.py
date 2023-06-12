@@ -13,7 +13,6 @@ import pandas as pd
 from widgets.wordcloud_widget import WordcloudWidget
 from widgets.embbedding_scatterplot_widget import ScatterplotWidget
 from widgets.tree_widget import HistoryTimelineWidget
-from widgets.model_vis_widget import ModelVis
 
 import configparser
 import h5py
@@ -31,7 +30,44 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Image Viewer")
         # self.resize(1366, 768)
         # self.resize(1566, 768)
-        self.resize(1563, 780)
+        self.resize(1565, 775)
+
+        # Create a label to display the photo
+        left_img_size=300
+        self.photo_label = QLabel(self)
+        self.photo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.photo_label.setFixedSize(left_img_size, left_img_size)  # Set the fixed size to 200x200
+
+        # Create a label to display the photo
+        top_img_size=150
+        self.top1 = QLabel(self)
+        self.top1.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.top1.setFixedSize(top_img_size, top_img_size)  # Set the fixed size to 200x200
+
+        # Create a label to display the photo
+        self.top2 = QLabel(self)
+        self.top2.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.top2.setFixedSize(top_img_size, top_img_size)  # Set the fixed size to 200x200
+
+        # Create a label to display the photo
+        self.top3 = QLabel(self)
+        self.top3.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.top3.setFixedSize(top_img_size, top_img_size)  # Set the fixed size to 200x200
+
+        # Create a button to upload a photo
+        self.upload_button = QPushButton("Upload Photo", self)
+        self.upload_button.clicked.connect(self.upload_photo)
+
+        # Create a text field for input
+        self.input_text = QLineEdit(self)
+        self.input_text.setPlaceholderText("Ask a question about the image")
+
+        # Create a label to display the predicted answer
+        self.answer_label = QLabel(self)
+        self.answer_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.submit_button = QPushButton("Submit question", self)
+        self.submit_button.clicked.connect(self.get_QA)
 
         # load the config file 'config.ini'
         self.config = configparser.ConfigParser()
@@ -50,10 +86,6 @@ class MainWindow(QMainWindow):
             self.image_features = hf["image_features"][:]
             print(hf.keys())
 
-
-        # img_array1 = da.io.load_image("../data/raw_immutable/Branches_with_Almond_Blossom.png")
-        
-        # datafile_path="../data/processed/test_dataset.h5"
         # self.image_features=  da.io.read_feature(datafile_path, img_hash, feature_name)
 
         if sample_selection == 'random':
@@ -70,23 +102,26 @@ class MainWindow(QMainWindow):
         self.image_features = self.image_features[self.indices]
         self.img_paths = df['image'].iloc[self.indices].values
 
+        print('points[0]', self.points[0])
         # recompute the tag embedding coordinates to umap
         if bool(self.config['main']['recompute_embedding']):
             self.points = self.compute_umap(self.image_features)
+        print(self.points[0])
+        
 
-        # Create a layout and add the label, button, input field, and timeline
-        main_widget = QWidget()
-        Hbox = QHBoxLayout()
+        self.scatterplot = ScatterplotWidget(self.points,self.indices, self.img_paths, self.config)
+        # self.scatterplot.setGeometry(QtCore.QRect(330, 20, 331, 351))
+        # self.scatterplot.point_clicked.connect(self.on_canvas_click)
+        # self.scatterplot.plot_widget.scene().sigMouseClicked.connect(self.scatterplot.point_clicked.emit)
+        self.scatterplot.plot_widget.scene().sigMouseClicked.connect(self.on_canvas_click)
+        self.dot_plot = QPushButton("Dot Scatterplot")
+        self.dot_plot.clicked.connect(self.scatterplot.draw_scatterplot_dots)
+        self.images_button = QPushButton("Images Scatterplot")
+        self.images_button.clicked.connect(self.scatterplot.draw_scatterplot)
 
+        
 
-        ############## col 1 ##################
-
-        # Create a label to display the photo
-        left_img_size=300
-        self.photo_label = QLabel(self)
-        self.photo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.photo_label.setFixedSize(left_img_size, left_img_size) 
-
+        # Create labels for the timeline
         self.date_label = QLabel("", self)
         self.artist_label = QLabel("", self)
         self.style_label = QLabel("", self)
@@ -97,57 +132,30 @@ class MainWindow(QMainWindow):
         self.style_label.setWordWrap(True)
         self.tag_label.setWordWrap(True)
 
+        # Create a layout for the timeline
         img_info_layout = QGridLayout()
         img_info_layout.addWidget(self.date_label, 0, 0)
         img_info_layout.addWidget(self.artist_label, 0, 1)
         img_info_layout.addWidget(self.style_label, 0, 2)
-        img_info_layout.addWidget(self.tag_label, 1, 0, 1, 3) 
+        img_info_layout.addWidget(self.tag_label, 1, 0, 1, 3)  # Span tag_label across 3 columns
         img_info = QWidget() 
         img_info.setLayout(img_info_layout)
-        img_info.setFixedWidth(left_img_size)  
-        img_info.setFixedHeight(50)  
+        img_info.setFixedWidth(300)  # Set the fixed width of the img_info widget
 
+        self.init_id =np.random.randint(len(self.points))
+        print(self.points[self.init_id], self.img_paths[self.init_id])
+        self.initialize_images(self.points[self.init_id],self.img_paths[self.init_id], self.init_id)
 
-        # Create a button to upload a photo
-        self.upload_button = QPushButton("Upload Photo", self)
-        self.upload_button.clicked.connect(self.upload_photo)
-
-        # Create a text field for input
-        self.input_text = QLineEdit(self)
-        self.input_text.setPlaceholderText("Ask a question about the image")
-
-        # Create a label to display the predicted answer
-        self.answer_label = QLabel(self)
-        self.answer_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        self.submit_button = QPushButton("Submit question", self)
-        self.submit_button.clicked.connect(self.get_QA)
-
-    
+        # Create a layout and add the label, button, input field, and timeline
+        main_widget = QWidget()
+        Hbox = QHBoxLayout()
         col1 = QVBoxLayout()
         col1.addWidget(self.photo_label)
         col1.addWidget(img_info)
         col1.addWidget(self.upload_button)
         col1.addWidget(self.input_text)
-        col1.addWidget(self.submit_button)
         col1.addWidget(self.answer_label)
-
-        self.timeline = HistoryTimelineWidget()
-        self.timeline.populate_tree(["Item 1", "Item 2", "Item 3"])
-        col1.addWidget(self.timeline)
-
-        ############## col 2 ##################
-
-        self.scatterplot = ScatterplotWidget(self.points,self.indices, self.img_paths, self.config)
-        # self.scatterplot.setGeometry(QtCore.QRect(330, 20, 331, 351))
-        # self.scatterplot.point_clicked.connect(self.on_canvas_click)
-        # self.scatterplot.plot_widget.scene().sigMouseClicked.connect(self.scatterplot.point_clicked.emit)
-        self.scatterplot.plot_widget.scene().sigMouseClicked.connect(self.on_canvas_click)
-        
-        self.dot_plot = QPushButton("Dot Scatterplot")
-        self.dot_plot.clicked.connect(self.scatterplot.draw_scatterplot_dots)
-        self.images_button = QPushButton("Images Scatterplot")
-        self.images_button.clicked.connect(self.scatterplot.draw_scatterplot)
+        col1.addWidget(self.submit_button)
 
         col2 = QVBoxLayout()
         col2.addWidget(self.scatterplot)
@@ -162,55 +170,34 @@ class MainWindow(QMainWindow):
         scroll_area.setWidgetResizable(True)
         buttons_widget = QWidget()
 
+        # Create push buttons and connect them to the scatter plot
         button_texts = ["Semantic Similarity", "Low-Level Similarity", "High-Level Similarity",
                         "Color Similarity", "Selected Object Similarity"]
         button_layout = QHBoxLayout()
+        # button_layout.setSpacing(10)  # Set spacing between buttons
+
         for text in button_texts:
             button = QtWidgets.QPushButton(text)
             button.clicked.connect(lambda checked, t=text: self.trigger_scatterplot(button_texts.index(t) + 1))
             button_layout.addWidget(button)
 
+        # Set the button layout to the buttons widget
         buttons_widget.setLayout(button_layout)
+
+        # Set the buttons widget as the widget for the scroll area
         scroll_area.setWidget(buttons_widget)
+
+        # Adjust the size of the scroll container to fit the buttons
         scroll_area.setMinimumHeight(buttons_widget.sizeHint().height()+18)
         scroll_area.setMaximumHeight(buttons_widget.sizeHint().height()+18)
+
+        # Add the scroll area to the main layout
         col2.addWidget(scroll_area)
 
-        self.model_vis = ModelVis()
-        col2.addWidget(self.model_vis)
 
-
-        ############## col 3 ##################
-
-        # left_img_size=300
-        # self.selected_photo = QLabel(self)
-        # self.selected_photo.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        # self.selected_photo.setFixedSize(left_img_size, left_img_size) 
-
-        # self.to_left_button = QPushButton("To left", self)
-        # self.to_left_button.setFixedSize(50, 50) 
-
-        # # Create a container widget to hold the label and button
-        # container_widget = QWidget()
-        # container_layout = QVBoxLayout(container_widget)
-        # container_layout.addWidget(self.selected_photo)
-        # container_layout.addWidget(self.to_left_button, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight)
-
-        # col3.addWidget(container_layout)
-
-
-        top_img_size=150
-        self.top1 = QLabel(self)
-        self.top1.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.top1.setFixedSize(top_img_size, top_img_size)  
-
-        self.top2 = QLabel(self)
-        self.top2.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.top2.setFixedSize(top_img_size, top_img_size)  
-
-        self.top3 = QLabel(self)
-        self.top3.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.top3.setFixedSize(top_img_size, top_img_size)  
+        self.timeline = HistoryTimelineWidget()
+        self.timeline.populate_tree(["Item 1", "Item 2", "Item 3"])
+        col2.addWidget(self.timeline)
 
         col3 = QVBoxLayout()
         self.top = QHBoxLayout()
@@ -251,12 +238,6 @@ class MainWindow(QMainWindow):
         slider_container.setLayout(slider_layout)
         col3.addWidget(slider_container)
 
-
-        ############################
-
-        self.init_id =np.random.randint(len(self.points))
-        print(self.points[self.init_id], self.img_paths[self.init_id])
-        self.initialize_images(self.points[self.init_id],self.img_paths[self.init_id], self.init_id)
 
         Hbox.addLayout(col1)
         Hbox.addLayout(col2)
@@ -358,19 +339,19 @@ class MainWindow(QMainWindow):
             self.scatterplot.draw_scatterplot()
         elif button_num == 2:
             print("Button 2 clicked")
-            # # If you create new instance, remove the existing scatterplot widget from the layout
+            # If you create new instance, remove the existing scatterplot widget from the layout
 
-            # # Create a new scatterplot with different data or settings
-            # new_scatterplot = ScatterplotWidget(self.points,self.indices, self.img_paths, self.config)
-            # new_scatterplot.setGeometry(QtCore.QRect(330, 20, 331, 351))
-            # new_scatterplot.plot_widget.scene().sigMouseClicked.connect(self.on_canvas_click)
+            # Create a new scatterplot with different data or settings
+            new_scatterplot = ScatterplotWidget(self.points,self.indices, self.img_paths, self.config)
+            new_scatterplot.setGeometry(QtCore.QRect(330, 20, 331, 351))
+            new_scatterplot.plot_widget.scene().sigMouseClicked.connect(self.on_canvas_click)
 
-            # # Replace the old scatterplot with the new one in the layout
-            # self.layout().replaceWidget(self.scatterplot, new_scatterplot)
+            # Replace the old scatterplot with the new one in the layout
+            self.layout().replaceWidget(self.scatterplot, new_scatterplot)
 
-            # self.scatterplot.deleteLater()
-            # # Add the new scatterplot widget to the layout
-            # self.scatterplot = new_scatterplot
+            self.scatterplot.deleteLater()
+            # Add the new scatterplot widget to the layout
+            self.scatterplot = new_scatterplot
 
         elif button_num == 3:
             print("Button 3 clicked")
