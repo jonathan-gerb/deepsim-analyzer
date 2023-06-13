@@ -74,10 +74,10 @@ class TimelineWindow(QMainWindow):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     ## define images to be ploted
-    images = [{"image_path":'/Users/wangyangwu/Downloads/131107152744-mona-lisa.jpg', 'year':2000}, 
-              {"image_path":'/Users/wangyangwu/Downloads/131107152744-mona-lisa.jpg', 'year':2010},
-              {"image_path":'/Users/wangyangwu/Downloads/131107152744-mona-lisa.jpg', 'year':1990},
-              {"image_path":'/Users/wangyangwu/Downloads/131107152744-mona-lisa.jpg', 'year':2020}
+    images = [{"image_path":'mona-lisa.jpg', 'year':2000}, 
+              {"image_path":'mona-lisa.jpg', 'year':2010},
+              {"image_path":'mona-lisa.jpg', 'year':1990},
+              {"image_path":'mona-lisa.jpg', 'year':2020}
              ]
     window = TimelineWindow(images)
     window.show()
