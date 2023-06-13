@@ -101,8 +101,11 @@ def start_gui(args):
     start_dashboard(key_dict, args.dataset_file, args.image_folder)
 
 
-if __name__ == "__main__":
+def main():
     # Example usage:
     args = parse_arguments()
     prepare_dataset(args)
     start_gui(args)
+
+if __name__ == "__main__":
+    main()

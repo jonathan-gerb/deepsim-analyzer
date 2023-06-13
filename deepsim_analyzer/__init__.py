@@ -3,3 +3,4 @@ from .similarity_methods import dummy, dino
 from .preprocessing import *
 from . import deepsim_dashboard
 from .projection import calculate_projection, project_feature
+from .__main__ import main
