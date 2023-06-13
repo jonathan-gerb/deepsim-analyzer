@@ -1,6 +1,7 @@
 
 import numpy as np
 from scipy import spatial
+from tqdm import tqdm
 
 def get_similarity_image(image_a, image_b):
     """Get similarity between two images, first calculates image features and then calculates similarity
@@ -34,3 +35,21 @@ def calculate_feature_vector(image):
     feature_vector = np.stack([mean, sum, median, std])
 
     return feature_vector
+
+def calc_features_batch(images, datafile_path):
+    """Process list of images. For dummy this doesnt make any difference but with other features you would not 
+    want to reload a model for each image processing step, therefore a batch processing function for each feature
+    is very necessary. This is an exaple of how to set this up for other features.
+
+    Args:
+        images (list): list of filepaths to the images
+        datafile_path (str): path to the dataset file to save the outputs to
+    """
+    # local import inside function to avoid circular import problem
+    from deepsim_analyzer.io import save_feature, load_image, get_image_hash
+
+    for image_path in tqdm(images, desc=f"calculating dummy features", total=len(images)):
+        image = load_image(image_path)
+        hash = get_image_hash(image)
+        feature_vector = calculate_feature_vector(image)
+        save_feature(datafile_path, hash, feature_vector, 'dummy')

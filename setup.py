@@ -37,6 +37,9 @@ setup(
         "Operating System :: OS Independent",
         'Development Status :: 3 - Alpha'
     ],
+    entry_points={
+        "console_scripts" : ['ds-analyzer=deepsim_analyzer:main']
+    },
     python_requires=">=3.9",
     # zip_safe=False
 )
