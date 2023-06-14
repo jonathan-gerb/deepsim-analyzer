@@ -170,6 +170,104 @@ def get_feature_maps(attention_dict, resize_to=False):
     return feature_maps
 
 
+def get_features_batch(
+    images, 
+    patch_size=8,
+    arch="vit_base",
+    image_size=(480, 480),
+    threshold=None,
+    pretrained_model_path="",
+    return_feature_maps=False,
+    resize=True
+    ):
+    
+    model = load_model(arch, pretrained_model_path, patch_size)
+    model = model.to(device)
+    
+    if resize:
+        resize = image.size
+
+    transform = pth_transforms.Compose(
+        [
+            pth_transforms.Resize(image_size),
+            pth_transforms.ToTensor(),
+            pth_transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+        ]
+    )
+    feature_maps = []
+    feature_vectors = []
+
+    for image in images:
+        image = transform(image)
+
+        # make the image divisible by the patch size
+        w, h = (
+            image.shape[1] - image.shape[1] % patch_size,
+            image.shape[2] - image.shape[2] % patch_size,
+        )
+        image = image[:, :w, :h].unsqueeze(0)
+
+        w_featmap = image.shape[-2] // patch_size
+        h_featmap = image.shape[-1] // patch_size
+
+        device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        # move model and image to gpu (if available)
+        image = image.to(device)
+
+        attention_dict = get_attention_maps(model, image)
+
+        image = image.to("cpu")
+
+        for key, attentions in attention_dict.items():
+            nh = attentions.shape[1]  # number of head
+
+            # we keep only the output patch attention
+            attentions = attentions[0, :, 0, 1:].reshape(nh, -1)
+            # filter attention maps
+            if threshold is not None:
+                # we keep only a certain percentage of the mass
+                val, idx = torch.sort(attentions)
+                val /= torch.sum(val, dim=1, keepdim=True)
+                cumval = torch.cumsum(val, dim=1)
+                th_attn = cumval > (1 - threshold)
+                idx2 = torch.argsort(idx)
+                for head in range(nh):
+                    th_attn[head] = th_attn[head][idx2[head]]
+                th_attn = th_attn.reshape(nh, w_featmap, h_featmap).float()
+                # interpolate
+                th_attn = (
+                    nn.functional.interpolate(
+                        th_attn.unsqueeze(0), scale_factor=patch_size, mode="nearest"
+                    )[0]
+                    .cpu()
+                    .numpy()
+                )
+
+            attentions = attentions.reshape(nh, w_featmap, h_featmap)
+            attentions = (
+                nn.functional.interpolate(
+                    attentions.unsqueeze(0), scale_factor=patch_size, mode="nearest"
+                )[0]
+                .cpu()
+                .numpy()
+            )
+            attention_dict[key] = attentions
+
+        feature_vector = get_att_feature_vector(attention_dict)
+        feature_vectors.append(feature_vector)
+
+        if return_feature_maps:
+            feature_maps_image = get_feature_maps(attention_dict, resize_to=resize)
+            feature_maps.append(feature_maps_image)
+
+    feature_vectors = np.stack(feature_vectors, axis=0)
+    
+    if return_feature_maps:
+        return feature_vectors, feature_maps
+    else:
+        return feature_vectors
+
+
 def get_features(
     image,
     patch_size=8,
