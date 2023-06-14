@@ -160,6 +160,6 @@ cython_debug/
 #.idea/
 
 data/raw_immutable/models/*
-data/processed/*
+data/processed/*.h5
 
 deepsim-dashboard/images/*

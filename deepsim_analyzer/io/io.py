@@ -149,7 +149,7 @@ def load_image(image_path, return_np=True):
     img = Image.open(image_path).convert("RGB")
     # sometimes we might not want to conver to a numpy array, for vizualization for example.
     if not return_np:
-        img
+        return img
     else:
         return np.array(img)
 

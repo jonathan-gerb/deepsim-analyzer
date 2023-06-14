@@ -17,11 +17,23 @@ git clone https://github.com/jonathan-gerb/deepsim-analyzer
 cd deepsim-analyzer
 pip install -e .
 ```
+You can start the GUI by calling.
+```
+ds-analyzer -i "path/to/images"
+```
+For a description of the parameters use the help argument:
+```
+ds-analyzer --help
+```
 
 
 # Using the GUI
 ## Installing
-To use the GUI, please install the package using pip:
+To use the GUI, please install first the package using pip:
 ```
 pip install git+https://github.com/jonathan-gerb/deepsim-analyzer
+```
+now run the GUI with
+```
+ds-analyzer -i "path/to/images"
 ```
