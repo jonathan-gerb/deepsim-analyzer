@@ -10,6 +10,8 @@ from PyQt6.QtWidgets import (
     QFileDialog,
     QGridLayout,
     QLineEdit,
+    QMessageBox,
+    QFrame
 )
 from PyQt6.QtWidgets import QGroupBox, QScrollArea
 from PyQt6.QtGui import QPixmap
@@ -25,7 +27,7 @@ from .widgets.wordcloud_widget import WordcloudWidget
 from .widgets.embbedding_scatterplot_widget import ScatterplotWidget
 from .widgets.tree_widget import HistoryTimelineWidget
 from .widgets.model_vis_widget import ModelVis
-from .widgets.model_vis_widget import ModelVis
+from .widgets.timeline_widget import TimelineWindow
 
 import configparser
 from pathlib import Path
@@ -43,7 +45,7 @@ class DeepSimDashboard(QMainWindow):
         self.setWindowTitle("Image Viewer")
         # self.resize(1366, 768)
         # self.resize(1566, 768)
-        self.resize(1563, 780)
+        self.resize(1530, 786)
 
         # load the config file 'config.ini'
         self.config = configparser.ConfigParser()
@@ -55,7 +57,7 @@ class DeepSimDashboard(QMainWindow):
         sample_selection = str(self.config["main"]["sample_selection"])
 
         self.image_key_dict = key_dict
-        self.image_keys = [key for key in key_dict.keys()]
+        self.image_keys = [key for key in key_dict.keys()] # hashes
         self.image_indices = [i for i in range(len(key_dict))]
         self.image_paths = [str(Path(images_filepath) / image_name) for image_name in key_dict.values()]
 
@@ -65,7 +67,6 @@ class DeepSimDashboard(QMainWindow):
         default_img = str(Path(images_filepath) / first_image_path)
 
         feature_name = "dummy"
-        
         test_feature = da.io.read_feature(
             datafile_path, first_image_key, feature_name, read_projection=False
         )
@@ -91,7 +92,6 @@ class DeepSimDashboard(QMainWindow):
             metadata_image = da.read_metadata(datafile_path, k)
             self.metadata[k] = metadata_image
 
-        # Create a layout and add the label, button, input field, and timeline
         main_widget = QWidget()
         Hbox = QHBoxLayout()
 
@@ -146,8 +146,9 @@ class DeepSimDashboard(QMainWindow):
         col1.addWidget(self.submit_button)
         col1.addWidget(self.answer_label)
 
-        self.timeline = HistoryTimelineWidget()
-        self.timeline.populate_tree(["Item 1", "Item 2", "Item 3"])
+        main_photo=''
+        self.timeline = TimelineWindow(main_photo)
+        self.timeline.draw_timeline( main_photo)
         col1.addWidget(self.timeline)
 
         ############## col 2 ##################
@@ -207,64 +208,57 @@ class DeepSimDashboard(QMainWindow):
 
         ############## col 3 ##################
 
-        # left_img_size=300
-        # self.title_col3 = QLabel("Selected image and its top most similar images" ,self)
-        # self.selected_photo = QLabel(self)
-        # self.selected_photo.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        # self.selected_photo.setFixedSize(left_img_size, left_img_size)
+        col3 = QVBoxLayout()
 
-        # self.to_left_button = QPushButton("To left", self)
-        # self.to_left_button.setFixedSize(50, 50)
+        left_img_size=300
+        self.title_col3 = QLabel("Selected image and its top most similar images" ,self)
+        self.selected_photo = QLabel(self)
+        self.selected_photo.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.selected_photo.setFixedSize(left_img_size, left_img_size)
 
-        # # Create a container widget to hold the label and button
+        self.to_left_button = QPushButton("To left", self)
+        self.to_left_button.setFixedSize(50, 50)
+        self.to_left_button.clicked.connect(lambda: self.display_photo(self.filename, left=True))
+
+        # Create a container widget to hold the label and button
         # container_widget = QWidget()
         # container_layout = QVBoxLayout(container_widget)
         # container_layout.addWidget(self.selected_photo)
         # container_layout.addWidget(self.to_left_button, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight)
 
-        # col3.addWidget(container_layout)
+        # col3.addLayout(container_layout)
+        # col3.addWidget(container_widget)
 
-        # # Create the scroll area for the preview photos
-        # scroll_area = QScrollArea()
-        # scroll_area.setWidgetResizable(True)
+        # Create a frame as the container
+        container_frame = QFrame(self)
+        # Create layout for the container
+        container_layout = QVBoxLayout(container_frame)
+        container_layout.addWidget(self.selected_photo)
+        container_layout.addWidget(self.to_left_button, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight)
+        
+        col3.addWidget(container_frame)
 
-        # # Create a container widget for the preview photos
-        # preview_widget = QWidget()
-        # preview_layout = QHBoxLayout(preview_widget)
+        # Create the scroll area for the preview photos
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
 
-        # # Add smaller preview photos to the container layout
-        # preview_photo_paths = ["path/to/preview1.png", "path/to/preview2.png", "path/to/preview3.png"]
+        # Create a container widget for the preview photos
+        preview_widget = QWidget()
+        preview_layout = QHBoxLayout(preview_widget)
 
-        # for preview_photo_path in preview_photo_paths:
-        #     preview_photo_label = QLabel()
-        #     preview_photo_pixmap = QPixmap(preview_photo_path)
-        #     preview_photo_label.setPixmap(preview_photo_pixmap.scaledToWidth(100))  # Scale the preview photo width
-        #     preview_layout.addWidget(preview_photo_label)
+        # Add smaller preview photos to the container layout
+        num_of_previews = 3 # remove hard code later
+        self.preview_photo_labels = []
+        for i in range(num_of_previews):
+            preview_photo_label = QLabel()
+            preview_layout.addWidget(preview_photo_label)
+            self.preview_photo_labels.append(preview_photo_label)
 
-        # # Set the container widget as the scroll area's widget
-        # scroll_area.setWidget(preview_widget)
+        # Set the container widget as the scroll area's widget
+        scroll_area.setWidget(preview_widget)
 
-        # col3.addWidget(scroll_area)
+        col3.addWidget(scroll_area)
 
-        top_img_size = 150
-        self.top1 = QLabel(self)
-        self.top1.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.top1.setFixedSize(top_img_size, top_img_size)
-
-        self.top2 = QLabel(self)
-        self.top2.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.top2.setFixedSize(top_img_size, top_img_size)
-
-        self.top3 = QLabel(self)
-        self.top3.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.top3.setFixedSize(top_img_size, top_img_size)
-
-        col3 = QVBoxLayout()
-        self.top = QHBoxLayout()
-        self.top.addWidget(self.top1)
-        self.top.addWidget(self.top2)
-        self.top.addWidget(self.top3)
-        col3.addLayout(self.top)
 
         # Create a container for the sliders
         slider_container = QGroupBox("Sliders")
@@ -315,10 +309,12 @@ class DeepSimDashboard(QMainWindow):
         ############################
 
         init_id = np.random.randint(len(self.image_indices))
+        self.filename=self.image_paths[init_id]
 
         self.initialize_images(
             self.data_dict[feature_name]["projection"][init_id], self.image_paths[init_id], self.image_keys[init_id]
         )
+        self.display_photo(self.image_paths[init_id], left=True)
 
         Hbox.addLayout(col1)
         Hbox.addLayout(col2)
@@ -331,8 +327,28 @@ class DeepSimDashboard(QMainWindow):
         scroll_area.setWidget(main_widget)
         self.setCentralWidget(scroll_area)
 
+    def upload_photo(self):
+        file_dialog = QFileDialog()
+        file_dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
+        file_dialog.setNameFilter("Images (*.png *.xpm *.jpg *.jpeg)")
 
-    def initialize_images(self, init_point, filepath, init_key=None):
+        if file_dialog.exec() == QFileDialog.DialogCode.Accepted:
+            filenames = file_dialog.selectedFiles()
+            if len(filenames) > 0:
+                self.filename = filenames[0]
+                # get point for new image
+                new_point = self.get_point_new_img(self.filename)
+                self.initialize_images(new_point, self.filename)
+
+    def get_point_new_img(self, filename):
+        # image_features = da.io.read_feature(filename)
+        random_array = np.random.uniform(low=-10.0, high=10.0, size=(2,))
+        print('random_array', random_array)
+        image_features = random_array
+        new_point = image_features
+        return new_point
+
+    def initialize_images(self, init_point, filepath, init_key=None, left=False):
         self.display_photo(filepath)
         nearest_indices = self.scatterplot.find_nearest_neighbors(init_point, n=3)
         print("nearest_indices", nearest_indices)
@@ -343,10 +359,10 @@ class DeepSimDashboard(QMainWindow):
         self.display_top_photo(nearest_images)
 
         if init_key is None:
-            print("hier when upload image")
+            print("here when upload image")
             self.update_image_info("unk", "unk", "unk", "unk")
         else:
-            print("hier when clicked in plot")
+            print("here when clicked in plot")
             self.update_image_info(
                 self.metadata[init_key]['date'],
                 self.metadata[init_key]['artist_name'],
@@ -354,47 +370,28 @@ class DeepSimDashboard(QMainWindow):
                 self.metadata[init_key]['tags'],
             )
 
-    def upload_photo(self):
-        file_dialog = QFileDialog()
-        file_dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
-        file_dialog.setNameFilter("Images (*.png *.xpm *.jpg *.jpeg)")
-
-        if file_dialog.exec() == QFileDialog.DialogCode.Accepted:
-            filenames = file_dialog.selectedFiles()
-            if len(filenames) > 0:
-                self.filename = filenames[0]
-                # self.display_photo(self.filename)
-                # get point aka embedding for new image
-                new_point = self.get_point_new_img(self.filename)
-                self.initialize_images(new_point, self.filename)
-
     def update_image_info(self, date, artist, style, tags):
         # Update the label texts
-        self.date_label.setText(f"Date: {date}")
+        self.date_label.setText(f"Date: {int(date)}")
         self.artist_label.setText(f"Artist: {artist}")
         self.style_label.setText(f"Style: {style}")
         self.tag_label.setText(f"Tags: {tags}")
 
-    def get_point_new_img(self, filename):
-        # image_features = da.io.read_feature(filename)
-        # image_features = np.array([[-0.2143612 , 7.560753 ]])
-        # image_features = self.compute_umap(image_features)[0]
-
-        random_array = np.random.uniform(low=-10.0, high=10.0, size=(2,))
-        print(random_array)
-        image_features = random_array
-        new_point = image_features
-        return new_point
-
-    def display_photo(self, filename):
+    def display_photo(self, filename, left=False):
+        if left:
+            label = self.photo_label
+        else:
+            label = self.selected_photo
+        print('filename',filename)
         pixmap = QPixmap(filename)
-        self.photo_label.setPixmap(pixmap.scaledToWidth(self.photo_label.width()))
+        label.setPixmap(pixmap.scaledToWidth(label.width()))
 
     def display_top_photo(self, filenames):
-        top_photos = [self.top1, self.top2, self.top3]
         for i, filename in enumerate(filenames):
-            pixmap = QPixmap(filename)
-            top_photos[i].setPixmap(pixmap.scaledToWidth(top_photos[i].width()))
+            if i < len(self.preview_photo_labels):
+                label = self.preview_photo_labels[i]
+                pixmap = QPixmap(filename)
+                label.setPixmap(pixmap.scaledToWidth(label.width()))
 
     def get_QA(self):
         text = self.input_text.text()
@@ -420,60 +417,51 @@ class DeepSimDashboard(QMainWindow):
             self.scatterplot.draw_scatterplot()
         elif button_num == 2:
             print("Button 2 clicked")
-            # # If you create new instance, remove the existing scatterplot widget from the layout
-
-            # # Create a new scatterplot with different data or settings
-            # new_scatterplot = ScatterplotWidget(self.points,self.indices, self.image_paths, self.config)
-            # new_scatterplot.setGeometry(QtCore.QRect(330, 20, 331, 351))
-            # new_scatterplot.plot_widget.scene().sigMouseClicked.connect(self.on_canvas_click)
-
-            # # Replace the old scatterplot with the new one in the layout
-            # self.layout().replaceWidget(self.scatterplot, new_scatterplot)
-
-            # self.scatterplot.deleteLater()
-            # # Add the new scatterplot widget to the layout
-            # self.scatterplot = new_scatterplot
-
+            self.scatterplot.draw_scatterplot()
         elif button_num == 3:
             print("Button 3 clicked")
-            # Create a new scatterplot with different data or settings
             self.scatterplot = ScatterplotWidget(...)
         elif button_num == 4:
             print("Button 4 clicked")
-            # Create a new scatterplot with different data or settings
             self.scatterplot = ScatterplotWidget(...)
         elif button_num == 5:
             print("Button 5 clicked")
-            # Create a new scatterplot with different data or settings
             self.scatterplot = ScatterplotWidget(...)
 
         elif button_num == 10:
             print("Button 10 sliders submitted")
-            # Create a new scatterplot with different data or settings
             self.scatterplot.draw_scatterplot()
 
     def on_canvas_click(self, ev):
         pos = ev.scenePos()
         print("on canvas click:", pos)
         if ev.button() == Qt.MouseButton.LeftButton:
-            print("self.scatterplot.image_items", self.scatterplot.image_items)
+            # print("self.scatterplot.image_items", self.scatterplot.image_items)
             for idx, index, item in self.scatterplot.image_items:
-                print("item.mapFromScene(pos)", item, item.mapFromScene(pos))
+                # print("item.mapFromScene(pos)", item, item.mapFromScene(pos))
                 if item.contains(item.mapFromScene(pos)):
                     self.scatterplot.selected_point = int(pos.x()), int(pos.y())
                     self.scatterplot.selected_index = index
                     self.scatterplot.plot_index = idx
+                    print('selected_index==plot_index?',index==idx)
                     self.clicked_on_point()
                     break
 
     def clicked_on_point(self):
         print("point/ image clicked, load on the left")
-        # Get the selected point
-        self.filename = self.scatterplot.get_image_path(self.scatterplot.selected_index)
+        # self.filename = self.scatterplot.get_image_path(self.scatterplot.selected_index)
+        self.filename= self.image_paths[self.scatterplot.selected_index]
         self.initialize_images(
-            self.scatterplot.selected_point, self.filename, self.scatterplot.plot_index
+            self.scatterplot.selected_point, self.filename, self.image_keys[self.scatterplot.plot_index]
         )
 
+    # def closeEvent(self, event):
+    #     reply = QMessageBox.question(self, "Close Window", "Are you sure you want to close the window?",
+    #                                  QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+    #     if reply == QMessageBox.StandardButton.Yes:
+    #         event.accept()
+    #     else:
+    #         event.ignore()
 
 def start_dashboard(key_dict, dataset_filepath, images_filepath):
     app = QApplication(sys.argv)
@@ -485,6 +473,3 @@ def start_dashboard(key_dict, dataset_filepath, images_filepath):
     window.show()
     sys.exit(app.exec())
 
-
-if __name__ == "__main__":
-    start_dashboard()
