@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QPushButton, QWidget
+from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QPushButton, QWidget,QDialog
 from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QSize
 import numpy as np
 import pyqtgraph as pg
@@ -169,117 +169,536 @@ class ScatterplotWidget(QWidget):
 
 
     def draw_scatterplot(self):
+        print('draw_scatterplot')
         self.plot_widget.clear()
-
         for idx, index, item in self.image_items:
             self.plot_widget.scene().removeItem(item)
 
         self.image_items = []
-        new_pos = []
-        # scale_factor = 0.5  # Initial scale factor for the images
-        scale_factor = 10
-
+        new_pos=[]
         for i, point in enumerate(self.points):
-            x, y = point
+            x,y =point
             image_path = self.img_paths[i]
             pixmap = QPixmap(image_path)
 
-            # # Calculate the image size based on the current zoom level
-            # zoom_level = self.plot_widget.getScale()  # Replace 'getScale()' with the appropriate method for your plotting library
-            # image_size = max(1, scale_factor / zoom_level)  # Ensure a minimum size of 1 to avoid zero division
+            # Flip the pixmap vertically
+            pixmap = pixmap.transformed(QTransform().scale(1, -1))
 
-
-
-            # Resize the pixmap based on the scale factor
-            scaled_width = int(pixmap.width() * scale_factor)
-            scaled_height = int(pixmap.height() * scale_factor)
-            scaled_pixmap = pixmap.scaled(QSize(scaled_width, scaled_height), Qt.AspectRatioMode.KeepAspectRatio)
+            # Resize the pixmap to a smaller size
+            scaled_pixmap = pixmap.scaled(QSize(50, 50), Qt.AspectRatioMode.KeepAspectRatio)
 
             pixmap_item = QGraphicsPixmapItem(scaled_pixmap)
-            # pixmap_item= pixmap_item.setTransform(1,-1)
-
-            # Adjust the position based on the scaled image size
-            x_pos = x - scaled_width / 2
-            y_pos = y - scaled_height / 2
-
-            # Check for overlap and adjust the position if needed
-            for pos in new_pos:
-                if abs(x_pos - pos[0]) < scaled_width and abs(y_pos - pos[1]) < scaled_height:
-                    x_pos += scaled_width
-                    y_pos += scaled_height
-
-            new_pos.append((x_pos, y_pos))
+            scale2= 5
+            x_=x - pixmap.width() * scale2 / 2
+            y_=y + pixmap.height() * scale2 / 2
+            if len(self.points)<5:
+                print(x_, y_)
+                    
+            new_pos.append((x_, y_))
             pixmap_item.setPos(new_pos[i][0], new_pos[i][1])
-
+            
             self.plot_widget.addItem(pixmap_item)
-            self.image_items.append((i, self.indices[i], pixmap_item))
-
-            # Update the scale factor based on the current zoom level
-            # current_scale = self.plot_widget.getViewBox().getState()['scale']
-            # current_scale =  self.plot_widget.scale()
-            # current_scale = self.plot_widget.scale().x(), self.plot_widget.scale().y()
-            current_scale = self.plot_widget.transform().m11()
-
-            scale_factor = 0.5 / current_scale
+            self.image_items.append((i, self.indices[i], pixmap_item)) 
 
         self.reset_scatterplot(np.array(new_pos))
         self.plot_widget.update()
 
 
+    # def is_point_in_rectangle(self, point):
+    #     if self.start_point[0] < self.end_point[0]:
+    #         x1, x2 = self.start_point[0], self.end_point[0]
+    #     else:
+    #         x1, x2 = self.end_point[0], self.start_point[0]
+    #     if self.start_point[1] < self.end_point[1]:
+    #         y1, y2 = self.start_point[1], self.end_point[1]
+    #     else:
+    #         y1, y2 = self.end_point[1], self.start_point[1]
+
+    #     x, y = point[0], point[1]
+
+    #     if x1 <= x <= x2 and y1 <= y <= y2:
+    #         return True
+    #     else:
+    #         return False
+
+    # def set_outside_points_visible(self, visible):
+    #     self.outside_points_visible = visible
+    #     self.draw_scatterplot()
+
+
+
+
+
+########################## other attempts #######################################
+
 
     # def draw_scatterplot(self):
-    #     print('draw_scatterplot')
     #     self.plot_widget.clear()
 
     #     for idx, index, item in self.image_items:
     #         self.plot_widget.scene().removeItem(item)
 
     #     self.image_items = []
-    #     new_pos=[]
+    #     new_pos = []
+    #     # scale_factor = 0.5  # Initial scale factor for the images
+    #     scale_factor = 10
+
     #     for i, point in enumerate(self.points):
-    #         x,y =point
+    #         x, y = point
     #         image_path = self.img_paths[i]
     #         pixmap = QPixmap(image_path)
 
-    #         # Resize the pixmap to a smaller size
-    #         scaled_pixmap = pixmap.scaled(QSize(50, 50), Qt.AspectRatioMode.KeepAspectRatio)
+    #         # # Calculate the image size based on the current zoom level
+    #         # zoom_level = self.plot_widget.getScale()  # Replace 'getScale()' with the appropriate method for your plotting library
+    #         # image_size = max(1, scale_factor / zoom_level)  # Ensure a minimum size of 1 to avoid zero division
+
+
+
+    #         # Resize the pixmap based on the scale factor
+    #         scaled_width = int(pixmap.width() * scale_factor)
+    #         scaled_height = int(pixmap.height() * scale_factor)
+    #         scaled_pixmap = pixmap.scaled(QSize(scaled_width, scaled_height), Qt.AspectRatioMode.KeepAspectRatio)
 
     #         pixmap_item = QGraphicsPixmapItem(scaled_pixmap)
-    #         scale2= 5
-    #         x_=x - pixmap.width() * scale2 / 2
-    #         y_=y + pixmap.height() * scale2 / 2
-    #         # x_=x * scale2 
-    #         # y_=y * scale2 
-    #         if len(self.points)<5:
-    #             print(x_, y_)
-                    
-    #         new_pos.append((x_, y_))
+    #         # pixmap_item= pixmap_item.setTransform(1,-1)
+
+    #         # Adjust the position based on the scaled image size
+    #         x_pos = x - scaled_width / 2
+    #         y_pos = y - scaled_height / 2
+
+    #         # Check for overlap and adjust the position if needed
+    #         for pos in new_pos:
+    #             if abs(x_pos - pos[0]) < scaled_width and abs(y_pos - pos[1]) < scaled_height:
+    #                 x_pos += scaled_width
+    #                 y_pos += scaled_height
+
+    #         new_pos.append((x_pos, y_pos))
     #         pixmap_item.setPos(new_pos[i][0], new_pos[i][1])
-            
+
     #         self.plot_widget.addItem(pixmap_item)
-    #         self.image_items.append((i, self.indices[i], pixmap_item)) 
+    #         self.image_items.append((i, self.indices[i], pixmap_item))
+
+    #         # Update the scale factor based on the current zoom level
+    #         # current_scale = self.plot_widget.getViewBox().getState()['scale']
+    #         # current_scale =  self.plot_widget.scale()
+    #         # current_scale = self.plot_widget.scale().x(), self.plot_widget.scale().y()
+    #         current_scale = self.plot_widget.transform().m11()
+
+    #         scale_factor = 0.5 / current_scale
 
     #     self.reset_scatterplot(np.array(new_pos))
     #     self.plot_widget.update()
 
 
-    def is_point_in_rectangle(self, point):
-        if self.start_point[0] < self.end_point[0]:
-            x1, x2 = self.start_point[0], self.end_point[0]
-        else:
-            x1, x2 = self.end_point[0], self.start_point[0]
-        if self.start_point[1] < self.end_point[1]:
-            y1, y2 = self.start_point[1], self.end_point[1]
-        else:
-            y1, y2 = self.end_point[1], self.start_point[1]
 
-        x, y = point[0], point[1]
 
-        if x1 <= x <= x2 and y1 <= y <= y2:
-            return True
-        else:
-            return False
 
-    def set_outside_points_visible(self, visible):
-        self.outside_points_visible = visible
-        self.draw_scatterplot()
+
+
+
+# from pathlib import Path
+#         # basepath = Path(__file__)
+#         # imgs_filepath = basepath.parent.parent.parent.parent / 'data/raw_immutable/test_images'
+#         # print(str(imgs_filepath)+'/ad-reinhardt_abstract-painting-red-1952.jpg')
+#         # self.images = [
+#         #     str(imgs_filepath)+'/ad-reinhardt_abstract-painting-red-1952.jpg',
+#         #     str(imgs_filepath)+'/balthus_sleeping-girl-1943.jpg',
+#         #     str(imgs_filepath)+'/frederic-bazille_after-the-bath.jpg'
+#         # ]
+
+# import sys
+# import pyqtgraph.opengl as gl
+# from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel
+# from PyQt6.QtGui import QPixmap, QColor
+# from PyQt6.QtCore import Qt
+
+# class ScatterPlotWidget(QMainWindow):
+#     def __init__(self):
+#         super().__init__()
+
+#         self.scatter_plot = gl.GLViewWidget()
+#         self.setCentralWidget(self.scatter_plot)
+
+#         basepath = Path(__file__)
+#         imgs_filepath = basepath.parent.parent.parent.parent / 'data/raw_immutable/test_images'
+#         print(str(imgs_filepath)+'/ad-reinhardt_abstract-painting-red-1952.jpg')
+#         self.images = [
+#             str(imgs_filepath)+'/ad-reinhardt_abstract-painting-red-1952.jpg',
+#             str(imgs_filepath)+'/balthus_sleeping-girl-1943.jpg',
+#             str(imgs_filepath)+'/frederic-bazille_after-the-bath.jpg'
+#         ]
+
+#         self.image_labels = []
+
+#         # Generate random data for demonstration
+#         num_points = 100
+#         x = [i for i in range(num_points)]
+#         y = [i for i in range(num_points)]
+#         z = [i for i in range(num_points)]
+
+#         self.scatter_plot.opts['distance'] = 20
+#         self.scatter_plot.setBackgroundColor(QColor(255, 255, 255))
+#         self.scatter_plot.setCameraPosition(distance=40, elevation=20, azimuth=135)
+#         # self.scatter_plot.setZoomMethod(self.scatter_plot.ZoomMethod.NoZoom)
+#         self.scatter_plot.setWindowTitle('3D Scatter Plot')
+
+#         scatter_item = gl.GLScatterPlotItem(pos=np.vstack((x, y, z)), size=5)
+#         self.scatter_plot.addItem(scatter_item)
+
+#     def wheelEvent(self, event):
+#         zoom_in_factor = 1.1
+#         zoom_out_factor = 0.9
+
+#         if event.angleDelta().y() > 0:
+#             self.scatter_plot.opts['distance'] /= zoom_in_factor
+#         else:
+#             self.scatter_plot.opts['distance'] *= zoom_out_factor
+
+#         self.update_image_labels()
+#         event.accept()
+
+#     def update_image_labels(self):
+#         current_distance = self.scatter_plot.opts['distance']
+
+#         if current_distance < 15:
+#             if not self.image_labels:
+#                 # Create image labels at the initial zoom level
+#                 self.create_image_labels()
+
+#             # Calculate the new label size based on the distance
+#             label_size = int(40 * (15 - current_distance) / 15)
+
+#             # Update the size of the image labels
+#             for label in self.image_labels:
+#                 label.setFont(label.font().pointSize() + label_size)
+
+#         else:
+#             # Remove the image labels if the distance is high
+#             self.remove_image_labels()
+
+#     def create_image_labels(self):
+#         for image_path in self.images:
+#             pixmap = QPixmap(image_path)
+#             label = QLabel(self.scatter_plot)
+
+#             # Set the pixmap on the label
+#             label.setPixmap(pixmap)
+
+#             # Set the label position
+#             label.setPos(0, 0, 0)
+
+#             # Add the label to the scatter plot
+#             self.scatter_plot.addItem(label)
+
+#             self.image_labels.append(label)
+
+#     def remove_image_labels(self):
+#         for label in self.image_labels:
+#             self.scatter_plot.removeItem(label)
+#         self.image_labels = []
+
+
+# if __name__ == '__main__':
+#     app = QApplication(sys.argv)
+#     window = ScatterPlotWidget()
+#     window.show()
+#     sys.exit(app.exec())
+
+
+
+
+
+
+
+# import sys
+# import numpy as np
+# from PyQt6.QtCore import Qt, QSize
+# from PyQt6.QtGui import QColor, QImage, QPixmap, QTransform
+# from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout
+# import pyqtgraph.opengl as gl
+
+# class ScatterPlotWidget(QMainWindow):
+#     def __init__(self):
+#         super().__init__()
+
+#         self.scatter_plot = gl.GLViewWidget(self)
+#         self.setCentralWidget(self.scatter_plot)
+
+#         # Generate random data for demonstration
+#         num_points = 100
+#         pos = np.random.normal(size=(num_points, 3))
+
+#         self.scatter_plot.setBackgroundColor(QColor(255, 255, 255))
+#         self.scatter_plot.setCameraPosition(distance=50, elevation=30, azimuth=135)  # Set camera position
+
+#         # Add images at each point in the scatter plot
+#         self.add_images(pos)
+
+#         self.scatter_plot.setWindowTitle('3D Scatter Plot')
+
+#     def add_images(self, pos):
+#         image_paths = ["path_to_image_1.jpg", "path_to_image_2.jpg", "path_to_image_3.jpg"]  # Replace with actual image paths
+
+#         for i in range(len(pos)):
+#             x, y, z = pos[i]
+
+#             image_path = image_paths[i % len(image_paths)]
+#             image = QImage(image_path)
+
+#             # Flip the image vertically
+#             image = image.mirrored(False, True)
+
+#             # Convert QImage to QPixmap
+#             pixmap = QPixmap.fromImage(image)
+
+#             # Create a texture from the QPixmap
+#             texture = gl.Texture(pixmap)
+
+#             # Create a GLScatterPlotItem and add it to the scatter plot
+#             item = gl.GLScatterPlotItem(pos=np.array([[x, y, z]]), size=10)
+#             item.setGLOptions('translucent')
+#             item.setTexture(texture)
+#             self.scatter_plot.addItem(item)
+
+# if __name__ == '__main__':
+#     app = QApplication(sys.argv)
+#     window = ScatterPlotWidget()
+#     window.show()
+#     sys.exit(app.exec())
+
+
+
+
+
+
+# from PyQt6.QtCore import Qt, QRectF
+# from PyQt6.QtGui import QPixmap, QPainter
+# from PyQt6.QtWidgets import (
+#     QApplication,
+#     QMainWindow,
+#     QGraphicsView,
+#     QGraphicsScene,
+#     QGraphicsObject,
+#     QGraphicsPixmapItem,
+#     QLabel,
+#     QVBoxLayout,
+#     QWidget
+# )
+# from pathlib import Path
+# import sys
+
+
+# class ImageDotItem(QGraphicsPixmapItem):
+#     def __init__(self, x, y, image_path):
+#         super().__init__()
+
+#         self.setFlag(QGraphicsPixmapItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
+
+#         self.setPixmap(QPixmap(image_path).scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio))
+#         self.setOffset(-100, -100)  # Adjust the position of the image
+
+#         self.setPos(x, y)
+
+
+# class Scatterplot(QGraphicsView):
+#     def __init__(self, points, images, parent=None):
+#         super().__init__(parent)
+#         self.setRenderHints(QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform)
+#         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
+
+#         self.scene = QGraphicsScene(self)
+#         self.setScene(self.scene)
+
+#         self.points = points
+#         self.images = images
+#         self.image_items = []
+
+#         self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)  # Enable panning of the entire scene
+
+#         self.draw_scatterplot()
+
+#     def draw_scatterplot(self):
+#         self.scene.clear()
+#         self.image_items.clear()
+
+#         for point, image_path in zip(self.points, self.images):
+#             x, y = point
+#             dot_item = ImageDotItem(x, y, image_path)
+#             self.scene.addItem(dot_item)
+#             self.image_items.append(dot_item)
+
+#     def wheelEvent(self, event):
+#         zoom_in_factor = 1.15
+#         zoom_out_factor = 1 / zoom_in_factor
+
+#         if event.angleDelta().y() > 0:
+#             zoom_factor = zoom_in_factor
+#         else:
+#             zoom_factor = zoom_out_factor
+
+#         self.scale(zoom_factor, zoom_factor)
+
+
+# app = QApplication(sys.argv)
+
+# points = [(100, 100), (200, 200), (300, 300)]
+# basepath = Path(__file__)
+# imgs_filepath = basepath.parent.parent.parent.parent / 'data/raw_immutable/test_images'
+# print(str(imgs_filepath)+'/ad-reinhardt_abstract-painting-red-1952.jpg')
+# images = [
+#     str(imgs_filepath)+'/ad-reinhardt_abstract-painting-red-1952.jpg',
+#     str(imgs_filepath)+'/balthus_sleeping-girl-1943.jpg',
+#     str(imgs_filepath)+'/frederic-bazille_after-the-bath.jpg'
+# ]
+
+# window = QMainWindow()
+# scatterplot = Scatterplot(points, images)
+# window.setCentralWidget(scatterplot)
+# window.setGeometry(100, 100, 800, 600)
+# window.show()
+
+# sys.exit(app.exec())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# from PyQt6.QtCore import Qt, QRectF
+# from PyQt6.QtGui import QPixmap, QPainter
+# from PyQt6.QtWidgets import (
+#     QApplication,
+#     QMainWindow,
+#     QGraphicsView,
+#     QGraphicsScene,
+#     QGraphicsObject,
+#     QGraphicsProxyWidget,
+#     QLabel,
+#     QVBoxLayout,
+#     QWidget
+# )
+# from pathlib import Path
+# import sys
+
+
+# class ImageDotItem(QGraphicsObject):
+#     def __init__(self, x, y, image_path):
+#         super().__init__()
+
+#         self.setFlag(QGraphicsObject.GraphicsItemFlag.ItemIgnoresTransformations, True)
+
+#         self.image_path = image_path
+#         self.label_widget = None
+
+#         self.updateLabelWidget()
+#         self.setPos(x, y)
+
+#     def updateLabelWidget(self):
+#         if self.label_widget is not None:
+#             self.scene().removeItem(self.label_widget)
+
+#         self.label_widget = QGraphicsProxyWidget(self)
+
+#         label_layout = QVBoxLayout()
+#         label_widget = QWidget()
+#         label_widget.setLayout(label_layout)
+
+#         image_label = QLabel()
+#         pixmap = QPixmap(self.image_path)
+#         image_label.setPixmap(pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio))
+#         label_layout.addWidget(image_label)
+
+#         self.label_widget.setWidget(label_widget)
+#         self.label_widget.setPos(-100, -250)  # Adjust the position of the label widget
+
+#     def boundingRect(self):
+#         zoom_factor = self.scene().views()[0].transform().m11()
+#         size = max(self.pixmap().width(), self.pixmap().height()) * zoom_factor
+#         return QRectF(-size / 2, -size / 2, size, size)
+
+#     def paint(self, painter, option, widget):
+#         pass
+
+#     def pixmap(self):
+#         return QPixmap(self.image_path)
+
+#     def boundingRect(self):
+#         return QRectF(-self.pixmap().width() / 2, -self.pixmap().height() / 2,
+#                       self.pixmap().width(), self.pixmap().height())
+
+
+# class ZoomableScatterplot(QGraphicsView):
+#     def __init__(self, points, images, parent=None):
+#         super().__init__(parent)
+#         self.setRenderHints(QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform)
+#         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
+
+#         self.scene = QGraphicsScene(self)
+#         self.setScene(self.scene)
+
+#         self.points = points
+#         self.images = images
+#         self.image_items = []
+
+#         self.draw_scatterplot()
+
+#     def draw_scatterplot(self):
+#         self.scene.clear()
+#         self.image_items.clear()
+
+#         for point, image_path in zip(self.points, self.images):
+#             x, y = point
+#             dot_item = ImageDotItem(x, y, image_path)
+#             self.scene.addItem(dot_item)
+#             self.image_items.append(dot_item)
+
+#     def wheelEvent(self, event):
+#         zoom_in_factor = 1.15
+#         zoom_out_factor = 1 / zoom_in_factor
+
+#         if event.angleDelta().y() > 0:
+#             zoom_factor = zoom_in_factor
+#         else:
+#             zoom_factor = zoom_out_factor
+
+#         self.scale(zoom_factor, zoom_factor)
+
+
+# app = QApplication(sys.argv)
+
+# points = [(100, 100), (200, 200), (300, 300)]
+# basepath = Path(__file__)
+# imgs_filepath = basepath.parent.parent.parent.parent / 'data/raw_immutable/test_images'
+# print(str(imgs_filepath)+'/ad-reinhardt_abstract-painting-red-1952.jpg')
+# images = [
+#     str(imgs_filepath)+'/ad-reinhardt_abstract-painting-red-1952.jpg',
+#     str(imgs_filepath)+'/balthus_sleeping-girl-1943.jpg',
+#     str(imgs_filepath)+'/frederic-bazille_after-the-bath.jpg'
+# ]
+
+# window = QMainWindow()
+# scatterplot = ZoomableScatterplot(points, images)
+# window.setCentralWidget(scatterplot)
+# window.setGeometry(100, 100, 800, 600)
+# window.show()
+
+# sys.exit(app.exec())

@@ -12,50 +12,12 @@ class TimelineView(QGraphicsView):
     ## define backgrounds including the timeline to be drawn
     def drawBackground(self, painter: QPainter, rect):
         painter.fillRect(rect, Qt.GlobalColor.white)
-
         pen = QPen(Qt.GlobalColor.darkYellow)
         pen.setWidth(3)
         painter.setPen(pen)
-
         timeline_y = 70
         timeline_length = int(self.sceneRect().width())
-
         painter.drawLine(0, timeline_y, timeline_length, timeline_y)
-
-
-# class TimelineWindow(QWidget):
-#     def __init__(self, main_photo):
-#         super().__init__()
-
-#         # self.setWindowTitle("Timeline Visualization")
-#         # self.setGeometry(100, 100, 800, 600)
-
-#         images = [{"image_path":'./widgets/mona-lisa.jpg', 'year':2000}, 
-#               {"image_path":'./widgets/mona-lisa.jpg', 'year':2010},
-#               {"image_path":'./widgets/mona-lisa.jpg', 'year':1990},
-#               {"image_path":'./widgets/mona-lisa.jpg', 'year':2020}
-#              ]
-        
-#         images= self.get_timeline_photos(main_photo)
-
-#         self.scene = QGraphicsScene(self)
-#         self.images = images
-
-#         # Define the years to be ploted
-#         years = sorted([img['year'] for img in self.images])
-#         for year in years:
-#             x_pos = (year-min(years)) * 20
-#             self.create_timeline_point(str(year), x_pos)
-
-#         for image_data in self.images:
-#             print(image_data["image_path"])
-#             item = self.create_timeline_item(image_data["image_path"], image_data["year"])
-#             self.scene.addItem(item)
-
-#         view = TimelineView(self.scene)
-#         view.setAlignment(Qt.AlignmentFlag.AlignTop)
-
-#         # self.setCentralWidget(view)
 
 
 class TimelineWindow(QWidget):
@@ -63,12 +25,12 @@ class TimelineWindow(QWidget):
         super().__init__()
 
         self.scene = QGraphicsScene(self)
-        
         self.draw_timeline(main_photo)
-
         view = TimelineView(self.scene)
-        view.setAlignment(Qt.AlignmentFlag.AlignTop)
-
+        # view.setAlignment(Qt.AlignmentFlag.AlignTop)
+        view.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        view.setFixedWidth(300)
+        view.setFixedHeight(100)
         self.setLayout(QVBoxLayout())
         self.layout().addWidget(view)
 
@@ -123,11 +85,3 @@ class TimelineWindow(QWidget):
         item.setPos(x_pos, 50)
         
         return item
-
-
-# if __name__ == "__main__":
-#     app = QApplication(sys.argv)
-#     ## define images to be ploted
-#     window = TimelineWindow('')
-#     window.show()
-#     sys.exit(app.exec())
