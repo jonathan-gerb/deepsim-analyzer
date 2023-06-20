@@ -88,11 +88,11 @@ class TimelineWindow(QWidget):
     
         # retrieve paths of images created before and after the input image
         images_before_paths = [p.split('/')[-1] for p in data[data['id'].isin(ids_before)]['image'].values]
-        images_before_years = data[data['id'].isin(ids_before)]['date'].values
+        images_before_years = list(data[data['id'].isin(ids_before)]['date'].values)
     
         # retrieve years of images created before and after the input image
         images_after_paths = [p.split('/')[-1] for p in data[data['id'].isin(ids_after)]['image'].values]
-        images_after_years = data[data['id'].isin(ids_after)]['date'].values
+        images_after_years = list(data[data['id'].isin(ids_after)]['date'].values)
     
         return images_before_paths, images_before_years, images_after_paths, images_after_years
 
