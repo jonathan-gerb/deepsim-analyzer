@@ -36,7 +36,7 @@ def calculate_feature_vector(image):
 
     return feature_vector
 
-def calc_features_batch(images, datafile_path):
+def calc_and_save_features(images, datafile_path):
     """Process list of images. For dummy this doesnt make any difference but with other features you would not 
     want to reload a model for each image processing step, therefore a batch processing function for each feature
     is very necessary. This is an exaple of how to set this up for other features.
@@ -49,7 +49,8 @@ def calc_features_batch(images, datafile_path):
     from deepsim_analyzer.io import save_feature, load_image, get_image_hash
 
     for image_path in tqdm(images, desc=f"calculating dummy features", total=len(images)):
+        image_path = str(image_path)
         image = load_image(image_path)
-        hash = get_image_hash(image)
+        hash = get_image_hash(image_path, is_filepath=True)
         feature_vector = calculate_feature_vector(image)
         save_feature(datafile_path, hash, feature_vector, 'dummy')

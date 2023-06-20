@@ -41,6 +41,11 @@ def save_feature(dataset_filepath, img_hash, img_feature, feature_name, is_proje
             else:    
                 f.create_dataset(f"{img_hash}/features/{feature_name}/full", data=img_feature)
 
+def key_in_dataset(dataset_filepath, img_hash):
+    with h5py.File(dataset_filepath, "r") as f:
+        return img_hash in f.keys()
+
+
 
 def read_feature(dataset_filepath, img_hash, feature_name, read_projection=False):
     with h5py.File(dataset_filepath, "r") as f:
@@ -94,9 +99,9 @@ def calculate_features(image_folder, dataset_filepath, target_features=["dummy"]
 
     for feature in target_features:
         if feature == "dummy":
-            dummy.calc_features_batch(image_paths, dataset_filepath)
+            dummy.calc_and_save_features(image_paths, dataset_filepath)
         if feature == "dino":
-            print("cannot process dino yet")
+            dino.calc_and_save_features(image_paths, dataset_filepath)
 
 
 def create_dataset(image_folder, dataset_filepath="dataset.h5"):

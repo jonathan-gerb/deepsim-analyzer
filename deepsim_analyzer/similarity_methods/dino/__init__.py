@@ -1,1 +1,1 @@
-from .visualize_attention import get_features, get_feature_maps, get_att_feature_vector, get_attention_maps
+from .visualize_attention import get_features, get_feature_maps, get_att_feature_vector, get_attention_maps, calc_and_save_features

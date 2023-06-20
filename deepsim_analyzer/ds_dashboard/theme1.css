@@ -1,0 +1,87 @@
+QMainWindow {
+    background-color: #f0f0f0;
+}
+
+QPushButton {
+    background-color: #007bff;
+    color: #ffffff;
+    border-radius: 5px;
+    padding: 5px 10px;
+}
+
+QPushButton:hover {
+    background-color: #0056b3;
+}
+
+QLabel {
+    color: #333333;
+}
+
+QLineEdit {
+    padding: 5px;
+    border: 1px solid #cccccc;
+    border-radius: 5px;
+}
+
+QWidget#main_widget {
+    background-color: #ffffff;
+    padding: 20px;
+}
+
+QLabel#photo_label {
+    border: 2px dashed #cccccc;
+    border-radius: 5px;
+    padding: 20px;
+    background-color: #f8f8f8;
+}
+
+QLabel#top5 {
+    background-color: #f8f8f8;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+QLabel#answer_label {
+    font-size: 16px;
+    font-weight: bold;
+    margin-top: 20px;
+}
+
+QPushButton#submit_button {
+    margin-top: 10px;
+}
+
+QHBoxLayout {
+    spacing: 20px;
+}
+
+QVBoxLayout {
+    spacing: 10px;
+}
+
+QGridLayout {
+    margin: 0px;
+    padding: 0px;
+}
+
+QGridLayout#timeline_layout QSpacerItem {
+    width: 20px;
+    height: 10px;
+}
+
+QLabel#first-photo {
+    /* CSS styles for the first (biggest) photo */
+    width: 300px;
+    height: 300px;
+    background-color: #f0f0f0;
+    margin-right: 1px;
+}
+
+QLabel#preview-photo {
+    /* CSS styles for the smaller preview photos */
+    width: 150px;
+    height: 150px;
+    background-color: #e0e0e0;
+    margin-right: 1px;
+}
