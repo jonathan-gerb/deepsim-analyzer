@@ -66,7 +66,7 @@ class TimelineWindow(QWidget):
         #     {"image_path": str(imgs_filepath / imag_name), 'year': 1990},
         #     {"image_path": str(imgs_filepath / imag_name), 'year': 2020}
         # ]
-        images = [{"image_path":name, 'year':year} for name, year in zip(image_names, image_years]
+        images = [{"image_path":name, 'year':year} for name, year in zip(image_names, image_years)]
         return images
 
     def get_images_paths_years(data, most_sim_img:str):
