@@ -11,7 +11,7 @@ from sklearn.preprocessing import minmax_scale
 
 # qt imports
 from PyQt6 import QtWidgets
-from PyQt6.QtWidgets import QMainWindow, QFileDialog, QApplication, QVBoxLayout
+from PyQt6.QtWidgets import QMainWindow, QFileDialog, QApplication, QVBoxLayout, QTabWidget
 from PyQt6.QtGui import QPixmap, QPainter, QColor
 from PyQt6.QtCore import QRect, Qt
 
@@ -21,26 +21,11 @@ from .custom_widgets import ButtonWidget, ScatterplotWidget, ImageWidget, ModelV
 # deepsim analyzer package
 import deepsim_analyzer as da
 
-# from PyQt6.QtWidgets import (
-#    QApplication,
-#    QMainWindow,
-#    QLabel,
-#    QPushButton,
-#    QVBoxLayout,
-#    QHBoxLayout,
-#    QWidget,
-#    QFileDialog,
-#    QGridLayout,
-#    QLineEdit,
-#    QMessageBox,
-#    QFrame
-#)
-
-
 # Important:
 # You need to run the following command to generate the ui_form.py file
 #     pyside6-uic form.ui -o ui_form.py, or
 #     pyside2-uic form.ui -o ui_form.py
+# additionally run python fix_ui_script.py, which replaces the not working ui stuff.
 from .ui_form import Ui_MainWindow
 
 class MainWindow(QMainWindow):
@@ -67,7 +52,12 @@ class MainWindow(QMainWindow):
 
         # in time we have to get all features for all the data, we will start with
         # just the dummy feature
-        self.available_features = ["dummy", "dino"]
+        self.available_features = ["dummy", "dino", "texture"]
+
+        # metric option defaults
+        self.dino_distance_measure = "euclidian"
+        self.texture_distance_measure = "euclidian"
+        self.dino_opt_sim_vector_type = "full"
 
         # set color for main ui
         self.set_color_element(self.ui.centralwidget, [71, 71, 71])
@@ -130,21 +120,103 @@ class MainWindow(QMainWindow):
 
         # setup scatterplot
         # TODO: setup feature projection plot with combined and individual plots!
-        self.scatterplot = ScatterplotWidget(
-            self.data_dict['dino']["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame
-        )
-        self.scatterplot.plot_widget.scene().sigMouseClicked.connect(
-            self.on_canvas_click
-        )
+        self.ui.box_metric_tabs.currentChanged.connect(self.setup_scatterplot)
         self.ui.r_image_points.toggled.connect(self.change_scatterplot_pointtype)
         # toggle the the dots to images radio button
         self.ui.r_image_points.toggle()
+
+        # SETUP TEXTURE OPTIONs
+        # options for what distance measure to use.
+        self.ui.texture_opt_cosdist.toggled.connect(self.texture_opt_dist_cos)
+        self.ui.texture_opt_eucdist.toggled.connect(self.texture_opt_dist_euc)
+        self.ui.texture_opt_eucdist.toggle()
+
+        # SETUP DINO OPTIONS
+
+        # options for what distance measure to use.
+        self.ui.dino_opt_cosdist.toggled.connect(self.dino_opt_dist_cos)
+        self.ui.dino_opt_eucdist.toggled.connect(self.dino_opt_dist_euc)
+        self.ui.dino_opt_eucdist.toggle()
+
+        # options for calculating similarity based on what vector
+        self.ui.dino_opt_2dsim.toggled.connect(self.dino_opt_simtype)
+        self.ui.dino_opt_fullsim.toggled.connect(self.dino_opt_simtype)
+        self.ui.dino_opt_headsim.toggled.connect(self.dino_opt_simtype)
+        self.ui.dino_opt_fullsim.toggle()
+
+        # dropdown options for dino head-specific similarity
+        self.ui.dino_opt_headsim_cbox.editTextChanged.connect(self.dino_opt_simtype)
+        self.ui.dino_opt_layersim_cbox.editTextChanged.connect(self.dino_opt_simtype)
+
+        # option for showing crossattention map
+        self.ui.dino_opt_showcamap.pressed.connect(self.dino_show_camap)
+
+        # add options for head similarity to comboboxes
+        for i in range(12):
+            self.ui.dino_opt_headsim_cbox.addItem(f"{i+1}")
+            self.ui.dino_opt_layersim_cbox.addItem(f"{i+1}")
+            self.ui.dino_opt_headvis_cbox.addItem(f"{i+1}")
+            self.ui.dino_opt_layervis_cbox.addItem(f"{i+1}")
+
+        self.ui.box_metric_tabs.setCurrentIndex(0)
 
         # ================ SETUP RIGHT COLUMN ================
         topk_dict = self.calculate_nearest_neighbours()
         self.display_nearest_neighbours(topk_dict)
         
+        self.ui.recalc_similarity.pressed.connect(self.recalc_similarity)
 
+
+    def setup_scatterplot(self):
+        current_metric_type = self.ui.box_metric_tabs.tabText(self.ui.box_metric_tabs.currentIndex())
+        print("changing 2d scatterplot to: ", current_metric_type)
+        self.scatterplot = ScatterplotWidget(
+            self.data_dict[current_metric_type.lower()]["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame
+        )
+        self.scatterplot.plot_widget.scene().sigMouseClicked.connect(
+            self.on_canvas_click
+        )
+
+    def recalc_similarity(self):
+        topk_dict = self.calculate_nearest_neighbours()
+        self.display_nearest_neighbours(topk_dict)
+        
+    def texture_opt_dist_cos(self):
+        self.texture_distance_measure = "cosine"
+        topk_dict = self.calculate_nearest_neighbours()
+        self.display_nearest_neighbours(topk_dict)
+    
+    def texture_opt_dist_euc(self):
+        self.texture_distance_measure = "euclidian"
+        topk_dict = self.calculate_nearest_neighbours()
+        self.display_nearest_neighbours(topk_dict)
+
+    def dino_opt_dist_cos(self):
+        self.dino_distance_measure = "cosine"
+        topk_dict = self.calculate_nearest_neighbours()
+        self.display_nearest_neighbours(topk_dict)
+    
+    def dino_opt_dist_euc(self):
+        self.dino_distance_measure = "euclidian"
+        topk_dict = self.calculate_nearest_neighbours()
+        self.display_nearest_neighbours(topk_dict)
+
+    def dino_opt_simtype(self):
+        if self.ui.dino_opt_fullsim.isChecked:
+            self.dino_opt_sim_vector_type = "full"
+        elif self.ui.dino_opt_2dsim.isChecked:
+            self.dino_opt_sim_vector_type = "projection"
+        elif self.ui.dino_opt_headsim.isChecked:
+            l = self.ui.dino_opt_layersim_cbox.currentText()
+            h = self.ui.dino_opt_headsim_cbox.currentText()
+            self.dino_opt_sim_vector_type = f"{l}_{h}"
+
+        else:
+            raise ValueError("something is wrong with the dino similarity options.")
+    
+
+    def dino_show_camap(self):
+        raise NotImplementedError("cannot yet show ca-maps!")
 
     def set_color_element(self, ui_element, color):
         ui_element.setAutoFillBackground(True)
@@ -188,37 +260,58 @@ class MainWindow(QMainWindow):
             ui_element.setPixmap(pixmap.scaled(w,h,Qt.AspectRatioMode.KeepAspectRatio))
             ui_element.setAlignment(Qt.AlignmentFlag.AlignCenter)
             
+    def get_metric_combo_weights(self):
+        dummy = self.ui.combo_dummy_slider.value()
+        dino = self.ui.combo_dino_slider.value()
+        texture = self.ui.combo_texture_slider.value()
+        feature_weight_dict = {
+            "dummy": dummy / 100,
+            "dino": dino / 100,
+            "texture": texture / 100
+        }
+        return feature_weight_dict
 
-    def calculate_nearest_neighbours(self, topk=5, combined=False, feature_weight_dict=None, use_projection=True):
+    def calculate_nearest_neighbours(self, topk=5):
         # get features for current image
         topk_results = {}
         distances_dict = {}
         
         # MANUAL OVERWRITE OF METRIC_WEIGHT_DICT
         print("performing manual overwrite of metric reweighting")
-        feature_weight_dict = {
-            "dummy": 0,
-            "dino": 1,
-        }
-
-        if use_projection:
-            print("using projection vectors to calculate distances instead of full vectors")
-            vector_type_key = 'projection'
-        else:
-            vector_type_key = 'full'
-
-        if combined:
-            raise NotImplementedError("no combined features available yet")
+        feature_weight_dict = self.get_metric_combo_weights()
+        print(feature_weight_dict)
         
         indices = np.arange(len(self.image_keys))
+        print(f"calculating dino using : {self.dino_distance_measure}")
         for feature_name in self.available_features:
+            
+            # weither to use full vector for similarity, only a specific part or the 2d reprojection
+            if feature_name == "dino":
+                vector_type_key = self.dino_opt_sim_vector_type
+            else:
+                # TODO: implement additional options for other metrics to use projection or not
+                # for metric similarity
+                vector_type_key = "full"
 
             current_vector = self.left_img_features[feature_name][vector_type_key]
             distances = np.zeros((self.data_dict[feature_name][vector_type_key].shape[0]))
 
             for i in range(self.data_dict[feature_name][vector_type_key].shape[0]):
                 target_vector = self.data_dict[feature_name][vector_type_key][i]
-                distances[i] = spatial.distance.cosine(current_vector, target_vector)
+                # similarity options
+                if feature_name == "dino":
+                    if self.dino_distance_measure == "cosine":
+                        distances[i] = spatial.distance.cosine(current_vector, target_vector)
+                    if self.dino_distance_measure == "euclidian":
+                        distances[i] = spatial.distance.euclidean(current_vector, target_vector)
+                elif feature_name == "texture":
+                    if self.texture_distance_measure == "cosine":
+                        distances[i] = spatial.distance.cosine(current_vector, target_vector)
+                    if self.texture_distance_measure == "euclidian":
+                        distances[i] = spatial.distance.euclidean(current_vector, target_vector)
+                # add more options later
+                else:
+                    distances[i] = spatial.distance.euclidean(current_vector, target_vector)
             
             # rescale distances so that the distances are always within the range of 0-1
             # this way we can combine them, the element with distance 0 is the image itself if it's 
@@ -247,7 +340,6 @@ class MainWindow(QMainWindow):
         all_distances = np.stack(list(distances_dict.values()), axis=-1)
 
         if feature_weight_dict is not None:
-            # TODO: we would do reweighting of the different metrics here
             weights = [feature_weight_dict[feature_name] for feature_name in self.available_features]
             weights = np.array(weights)
 

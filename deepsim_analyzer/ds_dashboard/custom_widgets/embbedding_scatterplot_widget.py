@@ -173,9 +173,9 @@ class ScatterplotWidget(QWidget):
 
         self.image_items = []
         new_pos = []
-        image_size = 128
+        image_size = 256
         # min, max = np.min(self.points), np.max(self.points)
-        scale = image_size * 7
+        scale = image_size * 8
         for i, point in enumerate(self.points):
             x, y = point
             x, y = x * scale, y * scale

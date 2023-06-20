@@ -8,14 +8,14 @@
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PyQt6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
     QMetaObject, QObject, QPoint, QRect,
     QSize, QTime, QUrl, Qt)
-from PyQt6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
+from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PyQt6.QtWidgets import (QApplication, QComboBox, QFrame, QGroupBox,
+from PySide6.QtWidgets import (QApplication, QComboBox, QFrame, QGroupBox,
     QHBoxLayout, QLabel, QMainWindow, QPushButton,
     QRadioButton, QSizePolicy, QSlider, QTabWidget,
     QWidget)
@@ -32,7 +32,7 @@ class Ui_MainWindow(object):
         self.b_upload = QPushButton(self.centralwidget)
         self.b_upload.setObjectName(u"b_upload")
         self.b_upload.setGeometry(QRect(10, 330, 491, 25))
-        sizePolicy = QSizePolicy()
+        sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.b_upload.sizePolicy().hasHeightForWidth())
@@ -45,13 +45,13 @@ class Ui_MainWindow(object):
         self.line_2 = QFrame(self.dino_tab)
         self.line_2.setObjectName(u"line_2")
         self.line_2.setGeometry(QRect(10, 50, 491, 20))
-        self.line_2.setFrameShape(QFrame.Shape.HLine)
-        self.line_2.setFrameShadow(QFrame.Shadow.Sunken)
+        self.line_2.setFrameShape(QFrame.HLine)
+        self.line_2.setFrameShadow(QFrame.Sunken)
         self.line_3 = QFrame(self.dino_tab)
         self.line_3.setObjectName(u"line_3")
         self.line_3.setGeometry(QRect(10, 100, 491, 16))
-        self.line_3.setFrameShape(QFrame.Shape.HLine)
-        self.line_3.setFrameShadow(QFrame.Shadow.Sunken)
+        self.line_3.setFrameShape(QFrame.HLine)
+        self.line_3.setFrameShadow(QFrame.Sunken)
         self.dino_opts1 = QGroupBox(self.dino_tab)
         self.dino_opts1.setObjectName(u"dino_opts1")
         self.dino_opts1.setGeometry(QRect(10, 0, 491, 51))
@@ -159,18 +159,17 @@ class Ui_MainWindow(object):
         self.combo_texture_slider.setGeometry(QRect(390, 70, 91, 20))
         self.combo_texture_slider.setMaximum(100)
         self.combo_texture_slider.setSliderPosition(100)
-        self.combo_texture_slider.setOrientation(Qt.Orientation.Horizontal)
-        self.combo_texture_slider.setOrientation(Qt.Orientation.Horizontal)
+        self.combo_texture_slider.setOrientation(Qt.Horizontal)
         self.combo_dummy_slider = QSlider(self.box_right_low)
         self.combo_dummy_slider.setObjectName(u"combo_dummy_slider")
         self.combo_dummy_slider.setGeometry(QRect(390, 90, 91, 20))
         self.combo_dummy_slider.setMaximum(100)
-        self.combo_dummy_slider.setOrientation(Qt.Orientation.Horizontal)
+        self.combo_dummy_slider.setOrientation(Qt.Horizontal)
         self.combo_dino_slider = QSlider(self.box_right_low)
         self.combo_dino_slider.setObjectName(u"combo_dino_slider")
         self.combo_dino_slider.setGeometry(QRect(390, 50, 91, 20))
         self.combo_dino_slider.setMaximum(100)
-        self.combo_dino_slider.setOrientation(Qt.Orientation.Horizontal)
+        self.combo_dino_slider.setOrientation(Qt.Horizontal)
         self.label_2 = QLabel(self.box_right_low)
         self.label_2.setObjectName(u"label_2")
         self.label_2.setGeometry(QRect(350, 20, 111, 21))

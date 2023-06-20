@@ -1,1 +1,3 @@
-from .io import save_feature, read_feature, create_dataset, load_image, get_image_hash, read_dataset_keys, calculate_features, read_metadata
+from .io import (calculate_features, create_dataset, get_image_hash,
+                 load_image, read_dataset_keys, read_feature, read_metadata,
+                 save_feature)

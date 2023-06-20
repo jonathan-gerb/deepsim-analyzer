@@ -1,14 +1,16 @@
 # contains all methods for saving and loading image embeddings
-import h5py
-from PIL import Image
 import hashlib
-from pathlib import Path
-import numpy as np
-from tqdm import tqdm
-import pickle
 import os
+import pickle
+from pathlib import Path
 
-from ..similarity_methods import dummy, dino
+import h5py
+import numpy as np
+from PIL import Image
+from tqdm import tqdm
+
+from ..similarity_methods import dino, dummy, texture
+
 
 def save_feature(dataset_filepath, img_hash, img_feature, feature_name, is_projection=False, overwrite=False):
     assert (
@@ -102,6 +104,8 @@ def calculate_features(image_folder, dataset_filepath, target_features=["dummy"]
             dummy.calc_and_save_features(image_paths, dataset_filepath)
         if feature == "dino":
             dino.calc_and_save_features(image_paths, dataset_filepath)
+        if feature == "texture":
+            texture.calc_and_save_features(image_paths, dataset_filepath)
 
 
 def create_dataset(image_folder, dataset_filepath="dataset.h5"):
