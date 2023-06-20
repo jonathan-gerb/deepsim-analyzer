@@ -30,6 +30,7 @@ import torchvision
 from torchvision import transforms as pth_transforms
 import numpy as np
 from PIL import Image
+from tqdm import tqdm
 import cv2
 
 from . import vision_transformer as vits
@@ -170,22 +171,25 @@ def get_feature_maps(attention_dict, resize_to=False):
     return feature_maps
 
 
-def get_features_batch(
-    images, 
+def calc_and_save_features(
+    image_paths, 
+    dataset_filepath,
     patch_size=8,
     arch="vit_base",
     image_size=(480, 480),
     threshold=None,
     pretrained_model_path="",
-    return_feature_maps=False,
+    save_feature_maps=False,
     resize=True
     ):
     
+    # local import inside function to avoid circular import problem
+    from deepsim_analyzer.io import get_image_hash, load_image, save_feature
+
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     model = load_model(arch, pretrained_model_path, patch_size)
     model = model.to(device)
     
-    if resize:
-        resize = image.size
 
     transform = pth_transforms.Compose(
         [
@@ -194,10 +198,15 @@ def get_features_batch(
             pth_transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
         ]
     )
-    feature_maps = []
-    feature_vectors = []
 
-    for image in images:
+    for image_path in tqdm(image_paths, desc=f"calculating dino features", total=len(image_paths)):
+        image_path = str(image_path)
+        hash = get_image_hash(image_path, is_filepath=True)
+        image = load_image(image_path, return_np=False)
+
+        if resize:
+            resize = image.size
+
         image = transform(image)
 
         # make the image divisible by the patch size
@@ -210,7 +219,6 @@ def get_features_batch(
         w_featmap = image.shape[-2] // patch_size
         h_featmap = image.shape[-1] // patch_size
 
-        device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         # move model and image to gpu (if available)
         image = image.to(device)
 
@@ -254,18 +262,15 @@ def get_features_batch(
             attention_dict[key] = attentions
 
         feature_vector = get_att_feature_vector(attention_dict)
-        feature_vectors.append(feature_vector)
 
-        if return_feature_maps:
+        if save_feature_maps:
             feature_maps_image = get_feature_maps(attention_dict, resize_to=resize)
-            feature_maps.append(feature_maps_image)
+            print(feature_maps_image[list(feature_maps_image.keys())[0]].shape)
+            feature_maps_image = np.stack(feature_maps_image.values(), axis=0)
+            save_feature(dataset_filepath, hash, feature_maps_image, 'dino_fm')
 
-    feature_vectors = np.stack(feature_vectors, axis=0)
-    
-    if return_feature_maps:
-        return feature_vectors, feature_maps
-    else:
-        return feature_vectors
+        save_feature(dataset_filepath, hash, feature_vector, 'dino')
+
 
 
 def get_features(
@@ -315,6 +320,7 @@ def get_features(
 
         # we keep only the output patch attention
         attentions = attentions[0, :, 0, 1:].reshape(nh, -1)
+        
         # filter attention maps
         if threshold is not None:
             # we keep only a certain percentage of the mass

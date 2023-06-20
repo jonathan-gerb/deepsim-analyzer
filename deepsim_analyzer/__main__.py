@@ -4,7 +4,9 @@ import argparse
 from pathlib import Path
 from deepsim_analyzer import create_dataset, read_dataset_keys, calculate_features
 from deepsim_analyzer import calculate_projection, project_feature
-from deepsim_analyzer.deepsim_dashboard.home import start_dashboard
+
+# from deepsim_analyzer.deepsim_dashboard.home import start_dashboard
+from deepsim_analyzer.ds_dashboard.mainwindow import start_dashboard
 
 
 def prepare_dataset(args):
@@ -29,8 +31,9 @@ def prepare_dataset(args):
             os.remove(backup_path)
 
             print(f"Calculating features for images")
+            # CHANGE THIS HERE TO ADD NEW FEAUTRES TO THE LIST OF FEATURES TO CALCULATE
             calculate_features(
-                args.image_folder, args.dataset_file, target_features=["dummy"]
+                args.image_folder, args.dataset_file, target_features=["dummy", "dino"]
             )
     else:
         print(f"    creating new dataset from images in {args.image_folder}")
@@ -43,9 +46,11 @@ def prepare_dataset(args):
 
     if args.project:
         print("calculating projection of image features")
-        target_features = ["dummy"]
+        target_features = ["dummy", "dino"]
         for feature_name in target_features:
-            calculate_projection(args.dataset_file, feature_name, overwrite=args.refresh)
+            calculate_projection(
+                args.dataset_file, feature_name, overwrite=args.refresh
+            )
 
     print(f"dataset prepared at: {args.dataset_file}")
 
@@ -106,6 +111,7 @@ def main():
     args = parse_arguments()
     prepare_dataset(args)
     start_gui(args)
+
 
 if __name__ == "__main__":
     main()
