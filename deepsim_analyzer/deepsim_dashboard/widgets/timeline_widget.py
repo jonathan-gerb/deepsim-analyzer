@@ -109,7 +109,7 @@ class TimelineWindow(QWidget):
 
     ## add images to the timeline
     def create_timeline_item(self,images, image_path, year):
-        pixmap=QPixmap(image_path).scaled(30,30)
+        pixmap=QPixmap(image_path).scaled(60,60)
         item = QGraphicsPixmapItem(pixmap)
         item.setFlag(QGraphicsPixmapItem.GraphicsItemFlag.ItemIsMovable)
         item.setFlag(QGraphicsPixmapItem.GraphicsItemFlag.ItemSendsGeometryChanges)
