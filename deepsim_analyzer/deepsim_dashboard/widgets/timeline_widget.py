@@ -55,7 +55,7 @@ class TimelineWindow(QWidget):
         # imgs_filepath = basepath.parent.parent / 'images'
         data_info_path = basepath.parent.parent.parent.parent / 'data/artistic_visual_storytelling.csv'
         data_info_df = pd.read_csv(data_info_path)
-        images_years_before_after = self.get_images_paths_years(data_info_df, main_photo)
+        images_years_before_after = self.get_images_paths_years(data_info_df, 'images/'+main_photo)
         imgs_filepath = basepath.parent.parent.parent.parent / 'data/raw_immutable/test_images'
         image_names = images_years_before_after[0]+images_years_before_after[2]
         image_years = images_years_before_after[1]+images_years_before_after[3]
@@ -70,29 +70,29 @@ class TimelineWindow(QWidget):
         return images
 
     def get_images_paths_years(data, most_sim_img:str):
-    	# define attrites for before and after 
-    	attributes_before = ['prior_10_inside_style',
-    				  		 'prior_20_inside_style',
-    				  		 'prior_50_inside_style',
-    				  		 'prior_100_inside_style'
-    				  		 ]
-    	attributes_after = ['subsequent_10_inside_style',
-    				  		'subsequent_20_inside_style',
-    				  		'subsequent_50_inside_style',
-    				  		'subsequent_100_inside_style'
-    				  		]
-    
-    	# retrieves ids of images created before and after the input image
-    	ids_before = data[data['image']==most_sim_img][attributes_before].values[0]
-    	ids_after = data[data['image']==most_sim_img][attributes_after].values[0]
+        # define attrites for before and after 
+        attributes_before = ['prior_10_inside_style',
+                             'prior_20_inside_style',
+                             'prior_50_inside_style',
+                             'prior_100_inside_style'
+                             ]
+        attributes_after = ['subsequent_10_inside_style',
+                            'subsequent_20_inside_style',
+                            'subsequent_50_inside_style',
+                            'subsequent_100_inside_style'
+                            ]
+        
+        # retrieves ids of images created before and after the input image
+        ids_before = data[data['image']==most_sim_img][attributes_before].values[0]
+        ids_after = data[data['image']==most_sim_img][attributes_after].values[0]
     
         # retrieve paths of images created before and after the input image
-    	images_before_paths = [data[data['id'].isin(ids_before)]['image']]
-    	images_before_years = [data[data['id'].isin(ids_before)]['date']]
+        images_before_paths = [p.split('/')[-1] for p in data[data['id'].isin(ids_before)]['image'].values]
+        images_before_years = data[data['id'].isin(ids_before)]['date'].values
     
-    	# retrieve years of images created before and after the input image
-    	images_after_paths = [data[data['id'].isin(ids_after)]['image']]
-    	images_after_years = [data[data['id'].isin(ids_after)]['date']]
+        # retrieve years of images created before and after the input image
+        images_after_paths = [p.split('/')[-1] for p in data[data['id'].isin(ids_after)]['image'].values]
+        images_after_years = data[data['id'].isin(ids_after)]['date'].values
     
         return images_before_paths, images_before_years, images_after_paths, images_after_years
 
