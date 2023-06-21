@@ -24,7 +24,7 @@ def calc_and_save_features(images, dataset_filepath, save_feature_maps=False):
         image_path = str(image_path)  # in case image_path is a pathlib path
 
 
-        hash = get_image_hash(image_path, is_filepath=True)
+        hash = get_image_hash(image_path)
         img = load_image(image_path, return_np=False)
 
         # resize all images to the same size to get consistent magnitudes when summing 

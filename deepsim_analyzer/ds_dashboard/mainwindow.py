@@ -8,6 +8,9 @@ from PIL import Image
 import configparser
 from scipy import spatial
 from sklearn.preprocessing import minmax_scale
+from sklearn.metrics.pairwise import cosine_distances
+import os
+from tqdm import tqdm
 
 # qt imports
 from PyQt6 import QtWidgets
@@ -36,12 +39,17 @@ class MainWindow(QMainWindow):
         self.ui.setupUi(self)
         self.ui.b_upload.clicked.connect(self.upload_image_left)
 
+        print("setting up configs")
+
         # load the config file 'config.ini'
         self.config = configparser.ConfigParser()
         basepath = Path(__file__).parent
         config_filepath = str(basepath / "config.ini")
         self.config.read(config_filepath)
         self.datafile_path = datafile_path
+
+        # set image max allocation pretty high
+        os.environ['QT_IMAGEIO_MAXALLOC'] = "512"
 
         # save passed arguments as attributes
         self.image_key_dict = key_dict
@@ -52,7 +60,7 @@ class MainWindow(QMainWindow):
 
         # in time we have to get all features for all the data, we will start with
         # just the dummy feature
-        self.available_features = ["dummy", "dino", "texture"]
+        self.available_features = ["dummy", "texture"]
 
         # metric option defaults
         self.dino_distance_measure = "euclidian"
@@ -74,11 +82,12 @@ class MainWindow(QMainWindow):
         self.set_color_element(self.ui.emotion_tab, [143, 143, 143])
 
         # ================ SETUP DATA ================
+        print("setting up internal data")
         self.metadata = {}
+
         # read metadata for all image keys that were passed
-        for key in key_dict.keys():
-            metadata_key = da.read_metadata(datafile_path, key)
-            self.metadata[key] = metadata_key
+        print("reading metadata")
+        self.metadata = da.read_metadata_batch(datafile_path, self.image_keys)
 
         # data dict should contain all the data
         self.data_dict = {}
@@ -94,14 +103,14 @@ class MainWindow(QMainWindow):
             self.data_dict[feature_name]["projection"] = np.zeros((len(self.image_keys), 2))
             self.data_dict[feature_name]["full"] = np.zeros((len(self.image_keys), test_feature.shape[0]))
 
-        for i, key in enumerate(self.image_keys):
+        for i, key in tqdm(enumerate(self.image_keys), desc="loading in feature data", total=len(self.image_keys)):
             feature_dict_key = self.get_features_from_dataset(key)
             for feature_name, value in feature_dict_key.items():
                 self.data_dict[feature_name]["projection"][i] = value['projection']
                 self.data_dict[feature_name]["full"][i] = value['full']
 
         # ================ SETUP LEFT COLUMN ================
-
+        print("setting up left column of dashboard")
         # ---------------- STARTING IMG ----------------
         # load an initial first image to display
         default_image_key = list(key_dict.keys())[0]
@@ -117,7 +126,7 @@ class MainWindow(QMainWindow):
         # add additional data in box_left_low
 
         # ================ SETUP MIDDLE COLUMN ================
-
+        print("setting up scatterplot")
         # setup scatterplot
         # TODO: setup feature projection plot with combined and individual plots!
         self.ui.box_metric_tabs.currentChanged.connect(self.setup_scatterplot)
@@ -125,6 +134,8 @@ class MainWindow(QMainWindow):
         # toggle the the dots to images radio button
         self.ui.r_image_points.toggle()
 
+
+        print("setting up middle metric options")
         # SETUP TEXTURE OPTIONs
         # options for what distance measure to use.
         self.ui.texture_opt_cosdist.toggled.connect(self.texture_opt_dist_cos)
@@ -161,10 +172,13 @@ class MainWindow(QMainWindow):
         self.ui.box_metric_tabs.setCurrentIndex(0)
 
         # ================ SETUP RIGHT COLUMN ================
+        print("setting up right column, calculating nearest neighbours")
         topk_dict = self.calculate_nearest_neighbours()
         self.display_nearest_neighbours(topk_dict)
         
+        print("recalculating")
         self.ui.recalc_similarity.pressed.connect(self.recalc_similarity)
+        print("dashboard setup complete!")
 
 
     def setup_scatterplot(self):
@@ -276,13 +290,10 @@ class MainWindow(QMainWindow):
         topk_results = {}
         distances_dict = {}
         
-        # MANUAL OVERWRITE OF METRIC_WEIGHT_DICT
-        print("performing manual overwrite of metric reweighting")
         feature_weight_dict = self.get_metric_combo_weights()
-        print(feature_weight_dict)
+        print("weights of all metrics: ", feature_weight_dict)
         
         indices = np.arange(len(self.image_keys))
-        print(f"calculating dino using : {self.dino_distance_measure}")
         for feature_name in self.available_features:
             
             # weither to use full vector for similarity, only a specific part or the 2d reprojection
@@ -295,23 +306,23 @@ class MainWindow(QMainWindow):
 
             current_vector = self.left_img_features[feature_name][vector_type_key]
             distances = np.zeros((self.data_dict[feature_name][vector_type_key].shape[0]))
-
-            for i in range(self.data_dict[feature_name][vector_type_key].shape[0]):
-                target_vector = self.data_dict[feature_name][vector_type_key][i]
-                # similarity options
-                if feature_name == "dino":
-                    if self.dino_distance_measure == "cosine":
-                        distances[i] = spatial.distance.cosine(current_vector, target_vector)
-                    if self.dino_distance_measure == "euclidian":
-                        distances[i] = spatial.distance.euclidean(current_vector, target_vector)
-                elif feature_name == "texture":
-                    if self.texture_distance_measure == "cosine":
-                        distances[i] = spatial.distance.cosine(current_vector, target_vector)
-                    if self.texture_distance_measure == "euclidian":
-                        distances[i] = spatial.distance.euclidean(current_vector, target_vector)
-                # add more options later
-                else:
-                    distances[i] = spatial.distance.euclidean(current_vector, target_vector)
+            
+            # calculate distances
+            if feature_name == "dino":
+                if self.dino_distance_measure == "cosine":
+                    distances = cosine_distances(current_vector.reshape(1, -1), self.data_dict[feature_name][vector_type_key]).squeeze()
+                if self.dino_distance_measure == "euclidian":
+                    a_min_b = current_vector.reshape(-1, 1) - self.data_dict[feature_name][vector_type_key].T
+                    distances = np.sqrt(np.einsum('ij,ij->j', a_min_b, a_min_b))
+            elif feature_name == "texture":
+                if self.texture_distance_measure == "cosine":
+                    distances = cosine_distances(current_vector.reshape(1, -1), self.data_dict[feature_name][vector_type_key]).squeeze()
+                if self.texture_distance_measure == "euclidian":
+                    a_min_b = current_vector.reshape(-1, 1) - self.data_dict[feature_name][vector_type_key].T
+                    distances = np.sqrt(np.einsum('ij,ij->j', a_min_b, a_min_b))
+            else:
+                a_min_b = current_vector.reshape(-1, 1) - self.data_dict[feature_name][vector_type_key].T
+                distances = np.sqrt(np.einsum('ij,ij->j', a_min_b, a_min_b))
             
             # rescale distances so that the distances are always within the range of 0-1
             # this way we can combine them, the element with distance 0 is the image itself if it's 
@@ -410,7 +421,7 @@ class MainWindow(QMainWindow):
             if len(filenames) > 0:
                 current_filepath = self.image_paths[self.key_to_idx[img_hash]]
                 
-                img_hash = da.get_image_hash(current_filepath, is_filepath=True)
+                img_hash = da.get_image_hash(current_filepath)
                 print(f"hash: {img_hash}")
                 self.left_img_key = img_hash
 
@@ -429,9 +440,9 @@ class MainWindow(QMainWindow):
             print(f"found metadata for image: {filepath}")
             self.update_image_info(
                 self.metadata[img_hash]['date'],
-                self.metadata[img_hash]['artist_name'],
-                self.metadata[img_hash]['style'],
-                self.metadata[img_hash]['tags'],
+                self.metadata[img_hash]['artist_name'].decode('UTF-8'),
+                self.metadata[img_hash]['style'].decode('UTF-8'),
+                self.metadata[img_hash]['tags'].decode('UTF-8'),
             )
             self.left_img_features = self.get_features_from_dataset(img_hash)
         else:

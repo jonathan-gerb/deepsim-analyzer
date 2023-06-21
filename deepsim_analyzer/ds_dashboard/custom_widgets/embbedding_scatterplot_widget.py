@@ -5,6 +5,7 @@ import pandas as pd
 import pyqtgraph as pg
 from PIL import Image
 from PIL.ImageQt import ImageQt
+from tqdm import tqdm
 
 from PyQt6.QtCore import QPoint, QSize, Qt, pyqtSignal
 from PyQt6.QtGui import QBrush, QImage, QPixmap, QTransform
@@ -173,10 +174,10 @@ class ScatterplotWidget(QWidget):
 
         self.image_items = []
         new_pos = []
-        image_size = 256
+        image_size = 24
         # min, max = np.min(self.points), np.max(self.points)
         scale = image_size * 8
-        for i, point in enumerate(self.points):
+        for i, point in tqdm(enumerate(self.points), desc="placing images on plot", total=len(self.points)):
             x, y = point
             x, y = x * scale, y * scale
             image_path = self.img_paths[i]

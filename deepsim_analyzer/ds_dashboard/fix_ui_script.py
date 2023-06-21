@@ -9,7 +9,7 @@ filedata = filedata.replace("sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSi
 filedata = filedata.replace("QFrame.HLine", "QFrame.Shape.HLine")
 filedata = filedata.replace("QFrame.Sunken", "QFrame.Shadow.Sunken")
 filedata = filedata.replace("slider.setOrientation(Qt.Horizontal)", "slider.setOrientation(Qt.Orientation.Horizontal)")
-    
+
 # Write the file out again
 with open(str(target_file), 'w') as file:
   file.write(filedata)
