@@ -53,15 +53,48 @@ class TimelineWindow(QWidget):
     def get_timeline_photos(self, main_photo):
         basepath = Path(__file__)
         # imgs_filepath = basepath.parent.parent / 'images'
+        data_info_path = basepath.parent.parent.parent.parent / 'data/artistic_visual_storytelling.csv'
+        data_info_df = pd.read_csv(data_info_path)
+        images_years_before_after = self.get_images_paths_years(data_info_df, 'images/'+main_photo)
         imgs_filepath = basepath.parent.parent.parent.parent / 'data/raw_immutable/test_images'
-        imag_name="vincent-van-gogh_still-life-with-a-basket-of-apples-and-two-pumpkins-1885.jpg"
-        images = [
-            {"image_path": str(imgs_filepath / imag_name), 'year': 2000},
-            {"image_path": str(imgs_filepath / imag_name), 'year': 2010},
-            {"image_path": str(imgs_filepath / imag_name), 'year': 1990},
-            {"image_path": str(imgs_filepath / imag_name), 'year': 2020}
-        ]
+        image_names = images_years_before_after[0]+images_years_before_after[2]
+        image_years = images_years_before_after[1]+images_years_before_after[3]
+        # imag_name="vincent-van-gogh_still-life-with-a-basket-of-apples-and-two-pumpkins-1885.jpg"
+        # images = [
+        #     {"image_path": str(imgs_filepath / imag_name), 'year': 2000},
+        #     {"image_path": str(imgs_filepath / imag_name), 'year': 2010},
+        #     {"image_path": str(imgs_filepath / imag_name), 'year': 1990},
+        #     {"image_path": str(imgs_filepath / imag_name), 'year': 2020}
+        # ]
+        images = [{"image_path":name, 'year':year} for name, year in zip(image_names, image_years)]
         return images
+
+    def get_images_paths_years(data, most_sim_img:str):
+        # define attrites for before and after 
+        attributes_before = ['prior_10_inside_style',
+                             'prior_20_inside_style',
+                             'prior_50_inside_style',
+                             'prior_100_inside_style'
+                             ]
+        attributes_after = ['subsequent_10_inside_style',
+                            'subsequent_20_inside_style',
+                            'subsequent_50_inside_style',
+                            'subsequent_100_inside_style'
+                            ]
+        
+        # retrieves ids of images created before and after the input image
+        ids_before = data[data['image']==most_sim_img][attributes_before].values[0]
+        ids_after = data[data['image']==most_sim_img][attributes_after].values[0]
+    
+        # retrieve paths of images created before and after the input image
+        images_before_paths = [p.split('/')[-1] for p in data[data['id'].isin(ids_before)]['image'].values]
+        images_before_years = list(data[data['id'].isin(ids_before)]['date'].values)
+    
+        # retrieve years of images created before and after the input image
+        images_after_paths = [p.split('/')[-1] for p in data[data['id'].isin(ids_after)]['image'].values]
+        images_after_years = list(data[data['id'].isin(ids_after)]['date'].values)
+    
+        return images_before_paths, images_before_years, images_after_paths, images_after_years
     
     ## add year on the timeline
     def create_timeline_point(self, letter, x_pos):
