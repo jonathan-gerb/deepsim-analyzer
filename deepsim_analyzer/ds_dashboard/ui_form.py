@@ -160,7 +160,6 @@ class Ui_MainWindow(object):
         self.combo_texture_slider.setMaximum(100)
         self.combo_texture_slider.setSliderPosition(100)
         self.combo_texture_slider.setOrientation(Qt.Orientation.Horizontal)
-        self.combo_texture_slider.setOrientation(Qt.Orientation.Horizontal)
         self.combo_dummy_slider = QSlider(self.box_right_low)
         self.combo_dummy_slider.setObjectName(u"combo_dummy_slider")
         self.combo_dummy_slider.setGeometry(QRect(390, 90, 91, 20))
@@ -252,7 +251,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
 
-        self.box_metric_tabs.setCurrentIndex(1)
+        self.box_metric_tabs.setCurrentIndex(0)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
@@ -280,7 +279,7 @@ class Ui_MainWindow(object):
         self.dinolabel_2.setText(QCoreApplication.translate("MainWindow", u"layer:", None))
         self.box_metric_tabs.setTabText(self.box_metric_tabs.indexOf(self.dino_tab), QCoreApplication.translate("MainWindow", u"Dino", None))
         self.texture_opts_1.setTitle("")
-        self.texture_label2.setText(QCoreApplication.translate("MainWindow", u"head:", None))
+        self.texture_label2.setText(QCoreApplication.translate("MainWindow", u"3b", None))
         self.texture_label1.setText(QCoreApplication.translate("MainWindow", u"3a", None))
         self.texture_opt_show_fm.setText(QCoreApplication.translate("MainWindow", u"show feature map", None))
         self.texture_opts_2.setTitle("")
