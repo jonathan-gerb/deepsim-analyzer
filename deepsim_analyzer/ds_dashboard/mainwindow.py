@@ -170,7 +170,7 @@ class MainWindow(QMainWindow):
             self.ui.dino_opt_headvis_cbox.addItem(f"{i+1}")
             self.ui.dino_opt_layervis_cbox.addItem(f"{i+1}")
 
-        self.ui.box_metric_tabs.setCurrentIndex(0)
+        self.ui.box_metric_tabs.setCurrentIndex(1)
 
         # ================ SETUP RIGHT COLUMN ================
         print("setting up right column, calculating nearest neighbours")
