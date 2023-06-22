@@ -201,7 +201,7 @@ def calc_and_save_features(
 
     for image_path in tqdm(image_paths, desc=f"calculating dino features", total=len(image_paths)):
         image_path = str(image_path)
-        hash = get_image_hash(image_path, is_filepath=True)
+        hash = get_image_hash(image_path)
         image = load_image(image_path, return_np=False)
 
         if resize:

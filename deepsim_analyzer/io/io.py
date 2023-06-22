@@ -1,14 +1,17 @@
 # contains all methods for saving and loading image embeddings
-import h5py
-from PIL import Image
 import hashlib
-from pathlib import Path
-import numpy as np
-from tqdm import tqdm
-import pickle
 import os
+import pickle
+from pathlib import Path
 
-from ..similarity_methods import dummy, dino
+import h5py
+import numpy as np
+from PIL import Image
+from tqdm import tqdm
+from random import shuffle
+
+from ..similarity_methods import dino, dummy, texture
+
 
 def save_feature(dataset_filepath, img_hash, img_feature, feature_name, is_projection=False, overwrite=False):
     assert (
@@ -70,23 +73,34 @@ def add_metadata_from_pickle(dataset_filepath, pickle_filepath, image_folder):
             full_image_path = image_folder / Path(partial_img_path).name
             if os.path.exists(str(full_image_path)):
                 added += 1
-                img_hash = get_image_hash(str(full_image_path), is_filepath=True)
+                img_hash = get_image_hash(str(full_image_path))
+                    
                 for column_idx, col in enumerate(metadata_dict['columns']):
-                    data = metadata_dict['data'][image_idx]
-                    f.attrs[f"{img_hash}/{col}"] = data[column_idx]
-
-        print(f"added metadata for {added} images ")
+                    if f"metadata/{col}" in f[f"{img_hash}"]:
+                        print(f"metadata image {str(full_image_path)} with hash {img_hash} already exists!")
+                        break
+                    else:
+                        data = metadata_dict['data'][image_idx]
+                        f[f"{img_hash}"].create_dataset(f"metadata/{col}", data=data[column_idx])
 
 
 def read_metadata(dataset_filepath, img_hash):
     with h5py.File(dataset_filepath, "r") as f:
-        keys = list(f.attrs.keys())
-        keys = [key for key in keys if img_hash in key]
-        metadata = {}
-        for key in keys:
-            actual_key = key.split("/")[-1]
-            metadata[actual_key] = f.attrs[key]
-        return metadata
+        metadata_keys = list(f[img_hash]['metadata'].keys())
+        return {
+            key : f[img_hash]['metadata'][key][()] for key in metadata_keys
+        }
+    
+def read_metadata_batch(dataset_filepath, img_hashes):
+    with h5py.File(dataset_filepath, "r") as f:
+        metadata_dict = {}
+        for img_hash in tqdm(img_hashes, desc="reading metadata", total=len(img_hashes)):
+            metadata_keys = list(f[img_hash]['metadata'].keys())
+            metadata_for_key =  {
+                key : f[img_hash]['metadata'][key][()] for key in metadata_keys
+            }
+            metadata_dict[img_hash] = metadata_for_key
+    return metadata_dict
 
 
 def calculate_features(image_folder, dataset_filepath, target_features=["dummy"]):
@@ -102,6 +116,8 @@ def calculate_features(image_folder, dataset_filepath, target_features=["dummy"]
             dummy.calc_and_save_features(image_paths, dataset_filepath)
         if feature == "dino":
             dino.calc_and_save_features(image_paths, dataset_filepath)
+        if feature == "texture":
+            texture.calc_and_save_features(image_paths, dataset_filepath)
 
 
 def create_dataset(image_folder, dataset_filepath="dataset.h5"):
@@ -112,12 +128,17 @@ def create_dataset(image_folder, dataset_filepath="dataset.h5"):
     image_paths_jpeg = list(image_dir.glob("*.jpeg"))
     image_paths = image_paths_png + image_paths_jpg + image_paths_jpeg
 
+    shuffle(image_paths) # shuffle for more consistency in time estimate, otherwise it slows up and down
+
     # create dataset file and add hash for each image.
     # function overwrites existing dataset file on the same location by default
     with h5py.File(dataset_filepath, "w") as f:
-        for image_path in image_paths:
-            img_hash = get_image_hash(str(image_path), is_filepath=True)
-            f.create_dataset(f"{img_hash}/filename", data=str(image_path.name))
+        for image_path in tqdm(image_paths, desc="calculating image hashes", total=len(image_paths)):
+            img_hash = get_image_hash(str(image_path))
+            if f"{img_hash}/filename" in f:
+                print(f"file {image_path} with hash {img_hash} already exists!")
+            else:
+                f.create_dataset(f"{img_hash}/filename", data=str(image_path.name))
 
     basepath = Path(__file__)
     pickle_path = (
@@ -158,19 +179,6 @@ def load_image(image_path, return_np=True):
     else:
         return np.array(img)
 
-
-def get_image_hash(image, is_filepath=False):
-    if is_filepath:
-        assert (
-            type(image) == str
-        ), f"Please pass a string filepath when using the is_filepath argument, got: {type(image)}"
-        # return numpy array, always calculate hash from np array to avoid errors
-        img_array = load_image(image, return_np=True)
-    else:
-        assert (
-            type(image) == np.ndarray
-        ), f"Please pass an numpy array to hash function, got: {type(image)}"
-        img_array = image
-
-    md5hash = hashlib.md5(img_array.tobytes())
-    return md5hash.hexdigest()
+def get_image_hash(filename):
+    with open(filename, 'rb', buffering=0) as f:
+        return hashlib.file_digest(f, 'md5').hexdigest()

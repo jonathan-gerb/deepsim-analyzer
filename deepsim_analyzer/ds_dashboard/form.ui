@@ -29,6 +29,9 @@
       <verstretch>0</verstretch>
      </sizepolicy>
     </property>
+    <property name="toolTip">
+     <string>Upload a new image to analyse</string>
+    </property>
     <property name="text">
      <string>Upload Image</string>
     </property>
@@ -36,63 +39,402 @@
    <widget class="QTabWidget" name="box_metric_tabs">
     <property name="geometry">
      <rect>
-      <x>510</x>
+      <x>500</x>
       <y>460</y>
       <width>511</width>
       <height>261</height>
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="dino_tab">
      <attribute name="title">
       <string>Dino</string>
      </attribute>
-     <widget class="QRadioButton" name="dino_opt1">
+     <widget class="Line" name="line_2">
       <property name="geometry">
        <rect>
-        <x>390</x>
-        <y>10</y>
-        <width>112</width>
-        <height>23</height>
+        <x>10</x>
+        <y>50</y>
+        <width>491</width>
+        <height>20</height>
        </rect>
       </property>
-      <property name="text">
-       <string>Option 1</string>
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
       </property>
      </widget>
-     <widget class="QRadioButton" name="dino_opt2">
+     <widget class="Line" name="line_3">
       <property name="geometry">
        <rect>
-        <x>390</x>
-        <y>40</y>
-        <width>112</width>
-        <height>23</height>
+        <x>10</x>
+        <y>100</y>
+        <width>491</width>
+        <height>16</height>
        </rect>
       </property>
-      <property name="text">
-       <string>Option 2</string>
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
       </property>
      </widget>
-     <widget class="QRadioButton" name="dino_opt3">
+     <widget class="QGroupBox" name="dino_opts1">
       <property name="geometry">
        <rect>
-        <x>390</x>
-        <y>70</y>
-        <width>112</width>
-        <height>23</height>
+        <x>10</x>
+        <y>0</y>
+        <width>491</width>
+        <height>51</height>
        </rect>
       </property>
-      <property name="text">
-       <string>Option 3</string>
+      <property name="title">
+       <string/>
       </property>
+      <widget class="QLabel" name="dinolabl2">
+       <property name="geometry">
+        <rect>
+         <x>370</x>
+         <y>10</y>
+         <width>41</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>head:</string>
+       </property>
+      </widget>
+      <widget class="QComboBox" name="dino_opt_layervis_cbox">
+       <property name="geometry">
+        <rect>
+         <x>290</x>
+         <y>10</y>
+         <width>61</width>
+         <height>31</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QLabel" name="dinolabel">
+       <property name="geometry">
+        <rect>
+         <x>230</x>
+         <y>10</y>
+         <width>51</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>layer:</string>
+       </property>
+      </widget>
+      <widget class="QComboBox" name="dino_opt_headvis_cbox">
+       <property name="geometry">
+        <rect>
+         <x>420</x>
+         <y>10</y>
+         <width>61</width>
+         <height>31</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QRadioButton" name="dino_opt_showcamap">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>10</y>
+         <width>211</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>show crossattention map</string>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QGroupBox" name="dino_opts2">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>60</y>
+        <width>491</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string/>
+      </property>
+      <widget class="QRadioButton" name="dino_opt_eucdist">
+       <property name="geometry">
+        <rect>
+         <x>290</x>
+         <y>10</y>
+         <width>161</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>euclidian distance</string>
+       </property>
+      </widget>
+      <widget class="QRadioButton" name="dino_opt_cosdist">
+       <property name="geometry">
+        <rect>
+         <x>150</x>
+         <y>10</y>
+         <width>131</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>cosine distance</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label">
+       <property name="geometry">
+        <rect>
+         <x>30</x>
+         <y>10</y>
+         <width>111</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>distance metric:</string>
+       </property>
+       <property name="wordWrap">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QGroupBox" name="dino_opts3">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>110</y>
+        <width>491</width>
+        <height>111</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string/>
+      </property>
+      <widget class="QRadioButton" name="dino_opt_headsim">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>70</y>
+         <width>231</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>similarity from specific head</string>
+       </property>
+      </widget>
+      <widget class="QComboBox" name="dino_opt_headsim_cbox">
+       <property name="geometry">
+        <rect>
+         <x>290</x>
+         <y>70</y>
+         <width>61</width>
+         <height>31</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QRadioButton" name="dino_opt_fullsim">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>20</y>
+         <width>251</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>full feature vector similarity</string>
+       </property>
+      </widget>
+      <widget class="QRadioButton" name="dino_opt_2dsim">
+       <property name="geometry">
+        <rect>
+         <x>290</x>
+         <y>20</y>
+         <width>200</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>2d reprojection similarity</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="dinolabl2_2">
+       <property name="geometry">
+        <rect>
+         <x>360</x>
+         <y>70</y>
+         <width>41</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>head:</string>
+       </property>
+      </widget>
+      <widget class="QComboBox" name="dino_opt_layersim_cbox">
+       <property name="geometry">
+        <rect>
+         <x>420</x>
+         <y>70</y>
+         <width>61</width>
+         <height>31</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QLabel" name="dinolabel_2">
+       <property name="geometry">
+        <rect>
+         <x>240</x>
+         <y>70</y>
+         <width>51</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>layer:</string>
+       </property>
+      </widget>
      </widget>
     </widget>
     <widget class="QWidget" name="texture_tab">
      <attribute name="title">
       <string>Texture</string>
      </attribute>
+     <widget class="QGroupBox" name="texture_opts_1">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>491</width>
+        <height>51</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string/>
+      </property>
+      <widget class="QLabel" name="texture_label2">
+       <property name="geometry">
+        <rect>
+         <x>370</x>
+         <y>10</y>
+         <width>41</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>head:</string>
+       </property>
+      </widget>
+      <widget class="QComboBox" name="texture_opt_filtervis_3a">
+       <property name="geometry">
+        <rect>
+         <x>290</x>
+         <y>10</y>
+         <width>61</width>
+         <height>31</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QLabel" name="texture_label1">
+       <property name="geometry">
+        <rect>
+         <x>230</x>
+         <y>10</y>
+         <width>51</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>3a</string>
+       </property>
+      </widget>
+      <widget class="QComboBox" name="texture_opt_filtervis_3b">
+       <property name="geometry">
+        <rect>
+         <x>420</x>
+         <y>10</y>
+         <width>61</width>
+         <height>31</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QRadioButton" name="texture_opt_show_fm">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>10</y>
+         <width>211</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>show feature map</string>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QGroupBox" name="texture_opts_2">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>70</y>
+        <width>491</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string/>
+      </property>
+      <widget class="QRadioButton" name="texture_opt_eucdist">
+       <property name="geometry">
+        <rect>
+         <x>290</x>
+         <y>10</y>
+         <width>161</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>euclidian distance</string>
+       </property>
+      </widget>
+      <widget class="QRadioButton" name="texture_opt_cosdist">
+       <property name="geometry">
+        <rect>
+         <x>150</x>
+         <y>10</y>
+         <width>131</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>cosine distance</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_6">
+       <property name="geometry">
+        <rect>
+         <x>30</x>
+         <y>10</y>
+         <width>111</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>distance metric:</string>
+       </property>
+       <property name="wordWrap">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </widget>
     </widget>
     <widget class="QWidget" name="emotion_tab">
      <attribute name="title">
@@ -124,6 +466,122 @@
       <height>261</height>
      </rect>
     </property>
+    <widget class="QSlider" name="combo_texture_slider">
+     <property name="geometry">
+      <rect>
+       <x>390</x>
+       <y>70</y>
+       <width>91</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="maximum">
+      <number>100</number>
+     </property>
+     <property name="sliderPosition">
+      <number>100</number>
+     </property>
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+    <widget class="QSlider" name="combo_dummy_slider">
+     <property name="geometry">
+      <rect>
+       <x>390</x>
+       <y>90</y>
+       <width>91</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="maximum">
+      <number>100</number>
+     </property>
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+    <widget class="QSlider" name="combo_dino_slider">
+     <property name="geometry">
+      <rect>
+       <x>390</x>
+       <y>50</y>
+       <width>91</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="maximum">
+      <number>100</number>
+     </property>
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_2">
+     <property name="geometry">
+      <rect>
+       <x>350</x>
+       <y>20</y>
+       <width>111</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>metric weights</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_3">
+     <property name="geometry">
+      <rect>
+       <x>320</x>
+       <y>50</y>
+       <width>67</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>dino</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_4">
+     <property name="geometry">
+      <rect>
+       <x>320</x>
+       <y>70</y>
+       <width>67</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>texture</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_5">
+     <property name="geometry">
+      <rect>
+       <x>320</x>
+       <y>90</y>
+       <width>67</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>dummy</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="recalc_similarity">
+     <property name="geometry">
+      <rect>
+       <x>320</x>
+       <y>120</y>
+       <width>161</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>recalculate similarity</string>
+     </property>
+    </widget>
    </widget>
    <widget class="QWidget" name="box_metainfo" native="true">
     <property name="geometry">
@@ -240,7 +698,7 @@
      <item>
       <widget class="QPushButton" name="b_metric">
        <property name="text">
-        <string>recalculate</string>
+        <string>recalculate projection</string>
        </property>
       </widget>
      </item>
@@ -267,9 +725,9 @@
     <property name="geometry">
      <rect>
       <x>1030</x>
-      <y>330</y>
+      <y>360</y>
       <width>161</width>
-      <height>121</height>
+      <height>91</height>
      </rect>
     </property>
     <property name="text">
@@ -280,9 +738,9 @@
     <property name="geometry">
      <rect>
       <x>1190</x>
-      <y>330</y>
+      <y>360</y>
       <width>171</width>
-      <height>121</height>
+      <height>91</height>
      </rect>
     </property>
     <property name="text">
@@ -293,13 +751,29 @@
     <property name="geometry">
      <rect>
       <x>1360</x>
-      <y>330</y>
+      <y>360</y>
       <width>161</width>
-      <height>121</height>
+      <height>91</height>
      </rect>
     </property>
     <property name="text">
      <string/>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton">
+    <property name="geometry">
+     <rect>
+      <x>1030</x>
+      <y>330</y>
+      <width>491</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>Send the above image to the left for deeper analysis</string>
+    </property>
+    <property name="text">
+     <string>inspect</string>
     </property>
    </widget>
   </widget>

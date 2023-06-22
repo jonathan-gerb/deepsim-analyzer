@@ -8,10 +8,13 @@ from PIL import Image
 import configparser
 from scipy import spatial
 from sklearn.preprocessing import minmax_scale
+from sklearn.metrics.pairwise import cosine_distances
+import os
+from tqdm import tqdm
 
 # qt imports
 from PyQt6 import QtWidgets
-from PyQt6.QtWidgets import QMainWindow, QFileDialog, QApplication, QVBoxLayout
+from PyQt6.QtWidgets import QMainWindow, QFileDialog, QApplication, QVBoxLayout, QTabWidget
 from PyQt6.QtGui import QPixmap, QPainter, QColor
 from PyQt6.QtCore import QRect, Qt
 
@@ -21,26 +24,11 @@ from .custom_widgets import  ScatterplotWidget, TimelineView, TimelineWindow
 # deepsim analyzer package
 import deepsim_analyzer as da
 
-# from PyQt6.QtWidgets import (
-#    QApplication,
-#    QMainWindow,
-#    QLabel,
-#    QPushButton,
-#    QVBoxLayout,
-#    QHBoxLayout,
-#    QWidget,
-#    QFileDialog,
-#    QGridLayout,
-#    QLineEdit,
-#    QMessageBox,
-#    QFrame
-#)
-
-
 # Important:
 # You need to run the following command to generate the ui_form.py file
 #     pyside6-uic form.ui -o ui_form.py, or
 #     pyside2-uic form.ui -o ui_form.py
+# additionally run python fix_ui_script.py, which replaces the not working ui stuff.
 from .ui_form import Ui_MainWindow
 
 class MainWindow(QMainWindow):
@@ -51,12 +39,17 @@ class MainWindow(QMainWindow):
         self.ui.setupUi(self)
         self.ui.b_upload.clicked.connect(self.upload_image_left)
 
+        print("setting up configs")
+
         # load the config file 'config.ini'
         self.config = configparser.ConfigParser()
         basepath = Path(__file__).parent
         config_filepath = str(basepath / "config.ini")
         self.config.read(config_filepath)
         self.datafile_path = datafile_path
+
+        # set image max allocation pretty high
+        os.environ['QT_IMAGEIO_MAXALLOC'] = "512"
 
         # save passed arguments as attributes
         self.image_key_dict = key_dict
@@ -67,7 +60,12 @@ class MainWindow(QMainWindow):
 
         # in time we have to get all features for all the data, we will start with
         # just the dummy feature
-        self.available_features = ["dummy", "dino"]
+        self.available_features = ["dummy", "texture"]
+
+        # metric option defaults
+        self.dino_distance_measure = "euclidian"
+        self.texture_distance_measure = "euclidian"
+        self.dino_opt_sim_vector_type = "full"
 
         # set color for main ui
         self.set_color_element(self.ui.centralwidget, [71, 71, 71])
@@ -84,11 +82,12 @@ class MainWindow(QMainWindow):
         self.set_color_element(self.ui.emotion_tab, [143, 143, 143])
 
         # ================ SETUP DATA ================
+        print("setting up internal data")
         self.metadata = {}
+
         # read metadata for all image keys that were passed
-        for key in key_dict.keys():
-            metadata_key = da.read_metadata(datafile_path, key)
-            self.metadata[key] = metadata_key
+        print("reading metadata")
+        self.metadata = da.read_metadata_batch(datafile_path, self.image_keys)
 
         # data dict should contain all the data
         self.data_dict = {}
@@ -104,14 +103,14 @@ class MainWindow(QMainWindow):
             self.data_dict[feature_name]["projection"] = np.zeros((len(self.image_keys), 2))
             self.data_dict[feature_name]["full"] = np.zeros((len(self.image_keys), test_feature.shape[0]))
 
-        for i, key in enumerate(self.image_keys):
+        for i, key in tqdm(enumerate(self.image_keys), desc="loading in feature data", total=len(self.image_keys)):
             feature_dict_key = self.get_features_from_dataset(key)
             for feature_name, value in feature_dict_key.items():
                 self.data_dict[feature_name]["projection"][i] = value['projection']
                 self.data_dict[feature_name]["full"][i] = value['full']
 
         # ================ SETUP LEFT COLUMN ================
-
+        print("setting up left column of dashboard")
         # ---------------- STARTING IMG ----------------
         # load an initial first image to display
         default_image_key = list(key_dict.keys())[0]
@@ -127,22 +126,112 @@ class MainWindow(QMainWindow):
         # add additional data in box_left_low
 
         # ================ SETUP MIDDLE COLUMN ================
-
+        print("setting up scatterplot")
         # setup scatterplot
         # TODO: setup feature projection plot with combined and individual plots!
+        self.ui.box_metric_tabs.currentChanged.connect(self.setup_scatterplot)
+        self.ui.r_image_points.toggled.connect(self.change_scatterplot_pointtype)
+        # toggle the the dots to images radio button
+        self.ui.r_image_points.toggle()
+
+
+        print("setting up middle metric options")
+        # SETUP TEXTURE OPTIONs
+        # options for what distance measure to use.
+        self.ui.texture_opt_cosdist.toggled.connect(self.texture_opt_dist_cos)
+        self.ui.texture_opt_eucdist.toggled.connect(self.texture_opt_dist_euc)
+        self.ui.texture_opt_eucdist.toggle()
+
+        # SETUP DINO OPTIONS
+
+        # options for what distance measure to use.
+        self.ui.dino_opt_cosdist.toggled.connect(self.dino_opt_dist_cos)
+        self.ui.dino_opt_eucdist.toggled.connect(self.dino_opt_dist_euc)
+        self.ui.dino_opt_eucdist.toggle()
+
+        # options for calculating similarity based on what vector
+        self.ui.dino_opt_2dsim.toggled.connect(self.dino_opt_simtype)
+        self.ui.dino_opt_fullsim.toggled.connect(self.dino_opt_simtype)
+        self.ui.dino_opt_headsim.toggled.connect(self.dino_opt_simtype)
+        self.ui.dino_opt_fullsim.toggle()
+
+        # dropdown options for dino head-specific similarity
+        self.ui.dino_opt_headsim_cbox.editTextChanged.connect(self.dino_opt_simtype)
+        self.ui.dino_opt_layersim_cbox.editTextChanged.connect(self.dino_opt_simtype)
+
+        # option for showing crossattention map
+        self.ui.dino_opt_showcamap.pressed.connect(self.dino_show_camap)
+
+        # add options for head similarity to comboboxes
+        for i in range(12):
+            self.ui.dino_opt_headsim_cbox.addItem(f"{i+1}")
+            self.ui.dino_opt_layersim_cbox.addItem(f"{i+1}")
+            self.ui.dino_opt_headvis_cbox.addItem(f"{i+1}")
+            self.ui.dino_opt_layervis_cbox.addItem(f"{i+1}")
+
+        self.ui.box_metric_tabs.setCurrentIndex(0)
+
+        # ================ SETUP RIGHT COLUMN ================
+        print("setting up right column, calculating nearest neighbours")
+        topk_dict = self.calculate_nearest_neighbours()
+        self.display_nearest_neighbours(topk_dict)
+        
+        print("recalculating")
+        self.ui.recalc_similarity.pressed.connect(self.recalc_similarity)
+        print("dashboard setup complete!")
+
+
+    def setup_scatterplot(self):
+        current_metric_type = self.ui.box_metric_tabs.tabText(self.ui.box_metric_tabs.currentIndex())
+        print("changing 2d scatterplot to: ", current_metric_type)
         self.scatterplot = ScatterplotWidget(
-            self.data_dict['dino']["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame
+            self.data_dict[current_metric_type.lower()]["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame
         )
         self.scatterplot.plot_widget.scene().mousePressEvent=self.on_canvas_click
         self.ui.r_image_points.toggled.connect(self.change_scatterplot_pointtype)
         # toggle the the dots to images radio button
         self.ui.r_image_points.toggle()
 
-        # ================ SETUP RIGHT COLUMN ================
+    def recalc_similarity(self):
         topk_dict = self.calculate_nearest_neighbours()
         self.display_nearest_neighbours(topk_dict)
         
+    def texture_opt_dist_cos(self):
+        self.texture_distance_measure = "cosine"
+        topk_dict = self.calculate_nearest_neighbours()
+        self.display_nearest_neighbours(topk_dict)
+    
+    def texture_opt_dist_euc(self):
+        self.texture_distance_measure = "euclidian"
+        topk_dict = self.calculate_nearest_neighbours()
+        self.display_nearest_neighbours(topk_dict)
 
+    def dino_opt_dist_cos(self):
+        self.dino_distance_measure = "cosine"
+        topk_dict = self.calculate_nearest_neighbours()
+        self.display_nearest_neighbours(topk_dict)
+    
+    def dino_opt_dist_euc(self):
+        self.dino_distance_measure = "euclidian"
+        topk_dict = self.calculate_nearest_neighbours()
+        self.display_nearest_neighbours(topk_dict)
+
+    def dino_opt_simtype(self):
+        if self.ui.dino_opt_fullsim.isChecked:
+            self.dino_opt_sim_vector_type = "full"
+        elif self.ui.dino_opt_2dsim.isChecked:
+            self.dino_opt_sim_vector_type = "projection"
+        elif self.ui.dino_opt_headsim.isChecked:
+            l = self.ui.dino_opt_layersim_cbox.currentText()
+            h = self.ui.dino_opt_headsim_cbox.currentText()
+            self.dino_opt_sim_vector_type = f"{l}_{h}"
+
+        else:
+            raise ValueError("something is wrong with the dino similarity options.")
+    
+
+    def dino_show_camap(self):
+        raise NotImplementedError("cannot yet show ca-maps!")
 
     def set_color_element(self, ui_element, color):
         ui_element.setAutoFillBackground(True)
@@ -186,37 +275,55 @@ class MainWindow(QMainWindow):
             ui_element.setPixmap(pixmap.scaled(w,h,Qt.AspectRatioMode.KeepAspectRatio))
             ui_element.setAlignment(Qt.AlignmentFlag.AlignCenter)
             
+    def get_metric_combo_weights(self):
+        dummy = self.ui.combo_dummy_slider.value()
+        dino = self.ui.combo_dino_slider.value()
+        texture = self.ui.combo_texture_slider.value()
+        feature_weight_dict = {
+            "dummy": dummy / 100,
+            "dino": dino / 100,
+            "texture": texture / 100
+        }
+        return feature_weight_dict
 
-    def calculate_nearest_neighbours(self, topk=5, combined=False, feature_weight_dict=None, use_projection=True):
+    def calculate_nearest_neighbours(self, topk=5):
         # get features for current image
         topk_results = {}
         distances_dict = {}
         
-        # MANUAL OVERWRITE OF METRIC_WEIGHT_DICT
-        print("performing manual overwrite of metric reweighting")
-        feature_weight_dict = {
-            "dummy": 0,
-            "dino": 1,
-        }
-
-        if use_projection:
-            print("using projection vectors to calculate distances instead of full vectors")
-            vector_type_key = 'projection'
-        else:
-            vector_type_key = 'full'
-
-        if combined:
-            raise NotImplementedError("no combined features available yet")
+        feature_weight_dict = self.get_metric_combo_weights()
+        print("weights of all metrics: ", feature_weight_dict)
         
         indices = np.arange(len(self.image_keys))
         for feature_name in self.available_features:
+            
+            # weither to use full vector for similarity, only a specific part or the 2d reprojection
+            if feature_name == "dino":
+                vector_type_key = self.dino_opt_sim_vector_type
+            else:
+                # TODO: implement additional options for other metrics to use projection or not
+                # for metric similarity
+                vector_type_key = "full"
 
             current_vector = self.left_img_features[feature_name][vector_type_key]
             distances = np.zeros((self.data_dict[feature_name][vector_type_key].shape[0]))
-
-            for i in range(self.data_dict[feature_name][vector_type_key].shape[0]):
-                target_vector = self.data_dict[feature_name][vector_type_key][i]
-                distances[i] = spatial.distance.cosine(current_vector, target_vector)
+            
+            # calculate distances
+            if feature_name == "dino":
+                if self.dino_distance_measure == "cosine":
+                    distances = cosine_distances(current_vector.reshape(1, -1), self.data_dict[feature_name][vector_type_key]).squeeze()
+                if self.dino_distance_measure == "euclidian":
+                    a_min_b = current_vector.reshape(-1, 1) - self.data_dict[feature_name][vector_type_key].T
+                    distances = np.sqrt(np.einsum('ij,ij->j', a_min_b, a_min_b))
+            elif feature_name == "texture":
+                if self.texture_distance_measure == "cosine":
+                    distances = cosine_distances(current_vector.reshape(1, -1), self.data_dict[feature_name][vector_type_key]).squeeze()
+                if self.texture_distance_measure == "euclidian":
+                    a_min_b = current_vector.reshape(-1, 1) - self.data_dict[feature_name][vector_type_key].T
+                    distances = np.sqrt(np.einsum('ij,ij->j', a_min_b, a_min_b))
+            else:
+                a_min_b = current_vector.reshape(-1, 1) - self.data_dict[feature_name][vector_type_key].T
+                distances = np.sqrt(np.einsum('ij,ij->j', a_min_b, a_min_b))
             
             # rescale distances so that the distances are always within the range of 0-1
             # this way we can combine them, the element with distance 0 is the image itself if it's 
@@ -245,7 +352,6 @@ class MainWindow(QMainWindow):
         all_distances = np.stack(list(distances_dict.values()), axis=-1)
 
         if feature_weight_dict is not None:
-            # TODO: we would do reweighting of the different metrics here
             weights = [feature_weight_dict[feature_name] for feature_name in self.available_features]
             weights = np.array(weights)
 
@@ -319,7 +425,7 @@ class MainWindow(QMainWindow):
             if len(filenames) > 0:
                 current_filepath = self.image_paths[self.key_to_idx[img_hash]]
                 
-                img_hash = da.get_image_hash(current_filepath, is_filepath=True)
+                img_hash = da.get_image_hash(current_filepath)
                 print(f"hash: {img_hash}")
                 self.left_img_key = img_hash
 
@@ -338,9 +444,9 @@ class MainWindow(QMainWindow):
             print(f"found metadata for image: {filepath}")
             self.update_image_info(
                 self.metadata[img_hash]['date'],
-                self.metadata[img_hash]['artist_name'],
-                self.metadata[img_hash]['style'],
-                self.metadata[img_hash]['tags'],
+                self.metadata[img_hash]['artist_name'].decode('UTF-8'),
+                self.metadata[img_hash]['style'].decode('UTF-8'),
+                self.metadata[img_hash]['tags'].decode('UTF-8'),
             )
             self.left_img_features = self.get_features_from_dataset(img_hash)
         else:

@@ -51,6 +51,6 @@ def calc_and_save_features(images, datafile_path):
     for image_path in tqdm(images, desc=f"calculating dummy features", total=len(images)):
         image_path = str(image_path)
         image = load_image(image_path)
-        hash = get_image_hash(image_path, is_filepath=True)
+        hash = get_image_hash(image_path)
         feature_vector = calculate_feature_vector(image)
         save_feature(datafile_path, hash, feature_vector, 'dummy')
