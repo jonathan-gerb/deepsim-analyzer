@@ -237,6 +237,6 @@ CMakeLists.txt.user*
 # CUSTOM STUFF
 
 data/raw_immutable/models/*
-# data/processed/*.h5
+data/processed/*.h5
 
 deepsim-dashboard/images/*
