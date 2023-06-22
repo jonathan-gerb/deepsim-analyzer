@@ -65,7 +65,7 @@ class ScatterplotWidget(QWidget):
         self.plot_widget.scene().mouseMoveEvent = self.on_scene_mouse_move
         self.plot_widget.scene().mouseDoubleClickEvent = self.on_scene_mouse_double_click
         
-        self.draw_scatterplot_dots()
+        # self.draw_scatterplot_dots()
 
     def initialize(self, points, indices,img_paths, config):
         self.points = points
@@ -210,10 +210,10 @@ class ScatterplotWidget(QWidget):
         print('self.selected_points', len(self.selected_points))
         
         # Redraw the scatterplot
-        if self.dots_plot:
-            self.draw_scatterplot_dots()
-        else:
-            self.draw_scatterplot()
+        # if self.dots_plot:
+        #     self.draw_scatterplot_dots()
+        # else:
+        #     self.draw_scatterplot()
 
 
     def draw_scatterplot_dots(self):

@@ -188,6 +188,11 @@ class MainWindow(QMainWindow):
         self.scatterplot = ScatterplotWidget(
             self.data_dict[current_metric_type.lower()]["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame
         )
+        # self.scatterplot = ScatterplotWidget(
+        #     self.data_dict[current_metric_type.lower()]["projection"], self.image_indices, self.image_paths, self.config
+        # )
+        # self.ui.addWidget(self.scatterplot)
+
         self.scatterplot.plot_widget.scene().mousePressEvent=self.on_canvas_click
         self.ui.r_image_points.toggled.connect(self.change_scatterplot_pointtype)
         # toggle the the dots to images radio button
