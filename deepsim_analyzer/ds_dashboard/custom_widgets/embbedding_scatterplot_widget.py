@@ -66,7 +66,7 @@ class ScatterplotWidget(QWidget):
 
         self.plot_widget.scene().sigMouseMoved.connect(self.on_mouse_move)
 
-        self.draw_scatterplot()
+        self.draw_scatterplot_dots()
         # self.resize_widget()
 
     def resize_widget(self):
