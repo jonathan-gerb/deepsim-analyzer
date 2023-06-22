@@ -378,7 +378,7 @@ class MainWindow(QMainWindow):
         """
         # TODO: REIMPLEMENT
         if self.ui.r_image_points.isChecked():
-            self.scatterplot.draw_scatterplot()
+            self.scatterplot.draw_scatterplot_images()
         else:
             self.scatterplot.draw_scatterplot_dots()
 
