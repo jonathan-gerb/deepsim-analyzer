@@ -11,31 +11,14 @@ from PyQt6.QtCore import QPoint, QSize, Qt, pyqtSignal
 from PyQt6.QtGui import QBrush, QImage, QPixmap, QTransform,QPen,QColor
 from PyQt6.QtWidgets import (QApplication, QDialog, QGraphicsEllipseItem,
                                QGraphicsPixmapItem, QMainWindow, QPushButton,
-                               QVBoxLayout, QWidget,QGraphicsRectItem,QGraphicsScene)
+                               QVBoxLayout, QWidget,QGraphicsRectItem,QGraphicsScene,QGraphicsView)
 
 import matplotlib.pyplot as plt
 
-class SelectablePixmapItem(QGraphicsPixmapItem):
-    def __init__(self, pixmap):
-        super().__init__(pixmap)
-        self.isSelected = False
-
-    def mousePressEvent(self, event):
-        print('mousePressEvent selectable pixmap')
-        if event.button() == Qt.LeftButton:
-            self.isSelected = True
-            for item in self.scene().items():
-                print('item', item)
-                if isinstance(item, SelectablePixmapItem) and item != self:
-                    item.isSelected = False
-        else:
-            self.isSelected = False
 
 class ScatterplotWidget(QWidget):
     # signal that emits the index of the selected points
     selected_idx = pyqtSignal(int)
-    #signal that emits the current mouse position
-    label = pyqtSignal(str)
 
     # Define a custom signal to emit when a point is clicked
     point_clicked = pyqtSignal(tuple)
@@ -79,8 +62,9 @@ class ScatterplotWidget(QWidget):
         self.start_point = None
         self.end_point = None
         self.image_items = []
-        self.selected_point=None
         self.selected_index=None
+        # self.selected_point=self.points[0]
+        self.selected_idx.connect(self.highlight_selected_point)
         self.plot_inex=None
         self.selected_points = []
         self.outside_points_visible = False
@@ -106,54 +90,50 @@ class ScatterplotWidget(QWidget):
 
 
     def on_scene_mouse_double_click(self, event):
-        print("mousePressEvent")
+        print("mouseDBPressEvent")
         if event.button() == Qt.MouseButton.LeftButton:
             self.start_selection(event)
         
     def on_scene_mouse_release(self, event):
         print("mouseReleaseEvent")
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.end_selection(event)
+        if event.button() == Qt.MouseButton.LeftButton and self.start_point is not None:
+            self.get_selection_in_rectangle()
+            if self.dots_plot:
+                self.draw_scatterplot_dots()
+            else:
+                self.draw_scatterplot()
+
+        self.clear_selection() # ? but will also put selected_points = [] or
+        # self.start_point=None
+        # self.end_point=None
+        # if self.rect is not None and self.rect in self.plot_widget.scene().items():
+        #     self.plot_widget.scene().removeItem(self.rect)
 
     def on_scene_mouse_move(self, event):
         # print('mouseMoveEvent')
         # super().mouseMoveEvent(event)
-        if event.buttons() == Qt.MouseButton.RightButton:
-            pos = event.scenePos()
-            delta = pos - event.lastPos()
-            self.plot_widget.getViewBox().translateBy(delta.x(), delta.y())
-
-        # pos = self.plot_widget.mapToScene(QPoint(int(event.x()), int(event.y())))
-        # self.label.emit(f"Current Mouse Position: {pos.x():.2f}, {pos.y():.2f}")
+        # QGraphicsScene.mouseMoveEvent(self, event)
+        
+        if self.start_point is not None:
+            self.end_selection(event)
 
     def start_selection(self, ev):
         print('start ev', ev)
         if ev.button() == Qt.MouseButton.LeftButton:
             pos = ev.scenePos()
-
-            # if self.dots_plot:
-            if True:
-                view_coords = self.plot_widget.mapToView(pos)
-                self.start_point = (view_coords.x(), view_coords.y())
-            else:
-                self.start_point = (pos.x(), pos.y())
+            view_coords = self.plot_widget.mapToView(pos)
+            self.start_point = (view_coords.x(), view_coords.y())
 
     def end_selection(self, ev):
-        if ev.button() == Qt.MouseButton.LeftButton and self.start_point is not None:
-            print("end_selection" )
-            pos = ev.scenePos()
-
-            # if self.dots_plot:
-            if True:
-                view_coords = self.plot_widget.mapToView(pos)
-                self.end_point = (view_coords.x(), view_coords.y())
-            else:
-                self.end_point = (pos.x(), pos.y())
-
-            if self.start_point!= self.end_point:
-                print('start pos', self.start_point)
-                print('end pos', self.end_point)
-                self.draw_selection_rectangle()
+        # if ev.button() == Qt.MouseButton.LeftButton and self.start_point is not None:
+        # print("end_selection" )
+        pos = ev.scenePos()
+        view_coords = self.plot_widget.mapToView(pos)
+        self.end_point = (view_coords.x(), view_coords.y())
+        if self.start_point!= self.end_point:
+            # print('start pos', self.start_point)
+            # print('end pos', self.end_point)
+            self.draw_selection_rectangle()
 
 
     def get_indices_nearest_neighbors(self, point):
@@ -179,8 +159,16 @@ class ScatterplotWidget(QWidget):
     def draw_selection_rectangle(self):
         """Method that draws the selection rectangle on the plot"""
         # Get coordinates of the selection rectangle
+
+        # print('draw_selection_rectangle')
         x1, y1 = self.start_point[0], self.start_point[1]
         x2, y2 = self.end_point[0], self.end_point[1]
+
+        # Calculate the position and size of the rectangle
+        x = min(x1, x2)
+        y = min(y1, y2)
+        w = abs(x1 - x2)
+        h = abs(y1 - y2)
 
         # Calculate the position and size of the rectangle
         x = min(x1, x2)
@@ -199,53 +187,26 @@ class ScatterplotWidget(QWidget):
         color.setAlphaF(self.rectangle_opacity)
         self.rect.setBrush(pg.mkBrush(color))
         self.rect.setZValue(10)
-        self.plot_widget.scene().addItem(self.rect)
+        # self.plot_widget.scene().addItem(self.rect)
+        self.plot_widget.addItem(self.rect)
 
-        # Emit a signal with the index of the selected points
+
+    def get_selection_in_rectangle(self):
+        x1, y1 = self.start_point[0], self.start_point[1]
+        x2, y2 = self.end_point[0], self.end_point[1]
+
         xmin, xmax = sorted([x1, x2])
         ymin, ymax = sorted([y1, y2])
-
-        # Get the indices of the selected points
-        # indices = [i for i, p in enumerate(self.points) if xmin <= p[0] <= xmax and ymin <= p[1] <= ymax]
-        
         # Update the selected points
-        for i, p in enumerate(self.points):
-            print( xmin , p[0], xmax,  ymin , p[1] ,ymax)
+        # for i, p in enumerate(self.points):
+        #     print( xmin , p[0], xmax,  ymin , p[1] ,ymax)
         self.selected_points = np.array([p for p in self.points if xmin <= p[0] <= xmax and ymin <= p[1] <= ymax])
-        print('self.selected_points', len(self.selected_points))
-        
-        # Redraw the scatterplot
-        if self.dots_plot:
-            self.draw_scatterplot_dots()
-        else:
-            self.draw_scatterplot()
-
-
-    def draw_scatterplot_dots(self):
-        print('draw_scatterplot_dots')
-        self.plot_widget.clear()
-
-        if self.selected_points!=[]:
-            print('draw selected points')
-            points= self.selected_points
-        else:
-            points=self.points
-
-        # self.plot_widget.plot(points[:, 0], points[:, 1], pen=None, symbolBrush=self.points_color, symbolSize=self.points_size)
-        print(len(points))
-        for point in points:
-            if len(points)<5:
-                print(' only pos ', point[0], point[1])
-            self.plot_widget.plot([point[0]], [point[1]], pen=None, symbolBrush=self.selection_color, symbolSize=self.selection_points_size)
-
-        self.reset_scatterplot(points)
-        self.plot_widget.update()
+        # print('self.selected_points', len(self.selected_points))
         
 
-    def draw_scatterplot(self):
+    def draw_scatterplot(self,reset=True) :
         print('draw_scatterplot')
         self.plot_widget.clear()
-
         if self.selected_points!=[]:
             points= self.selected_points
         else:
@@ -253,6 +214,7 @@ class ScatterplotWidget(QWidget):
 
         self.image_items = []
         new_pos=[]
+        print(len(points))
         for i, point in enumerate(points):
             x,y = point
             # Read in image
@@ -273,26 +235,48 @@ class ScatterplotWidget(QWidget):
 
             # Add to plot
             self.plot_widget.addItem(image_item)
-            
-            # Make it clickable.
             self.image_items.append((i, self.indices[i], image_item)) 
 
-
-        # self.reset_scatterplot(np.array(new_pos))
+        if reset:
+            self.reset_scatterplot(np.array(new_pos))
         self.plot_widget.update()
 
- 
+    def draw_scatterplot_dots(self,reset=True):
+        print('draw_scatterplot_dots')
+        self.plot_widget.clear()
+        if self.selected_points!=[]:
+            print('draw selected points')
+            points= self.selected_points
+        else:
+            points=self.points
+
+        self.plot_widget.plot(points[:, 0], points[:, 1], pen=None, symbolBrush=self.points_color, symbolSize=self.points_size)
+        print(len(points))
+        also_show_not_selected=True
+        if also_show_not_selected:
+            for point in self.points:
+                self.plot_widget.plot([point[0]], [point[1]], pen=None, symbolBrush=self.selection_color, symbolSize=self.selection_points_size)
+
+        if reset:
+            self.reset_scatterplot(points)
+        self.plot_widget.update()
+
+    def highlight_selected_point(self, id):
+        print('draw border, id:', id)
+
+        if self.dots_plot:
+            for i, point in enumerate(self.points):
+                if i == id:
+                    border_color = pg.mkPen(color='r', width=4)
+                    self.plot_widget.plot([point[0]], [point[1]], pen=None, symbolBrush=self.points_color, symbolSize=self.points_size, symbolPen=border_color)
+                else:
+                    self.plot_widget.plot([point[0]], [point[1]], pen=None, symbolBrush=self.selection_color, symbolSize=self.selection_points_size)
+        else:
+            for _, _, image_item in self.image_items:
+                # Remove border from all image items
+                image_item.setBorder(None)
+
+            _,_,image_item=self.image_items[id]
+            border_color = pg.mkPen(color='r', width=4)
+            image_item.setBorder(border_color)
     
-
-    def handle_selection_changed(self, idx):
-        print('handle_selection_changed')
-        for _,_,pixmap_item in self.image_items:
-            print('pixmap_item.isSelected', pixmap_item.isSelected)
-            if pixmap_item.isSelected:
-                pen = QPen(QColor(255, 0, 0))  
-                pen.setWidth(2) 
-                # pixmap_item.setPen(pen)
-                pixmap_item.setOpacity(0.5)
-            else:
-                pixmap_item.setOpacity(1)
-

@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 # qt imports
 from PyQt6 import QtWidgets
-from PyQt6.QtWidgets import QMainWindow, QFileDialog, QApplication, QVBoxLayout, QTabWidget
+from PyQt6.QtWidgets import QMainWindow, QFileDialog, QApplication, QVBoxLayout, QTabWidget,QGraphicsView
 from PyQt6.QtGui import QPixmap, QPainter, QColor
 from PyQt6.QtCore import QRect, Qt
 
@@ -132,10 +132,9 @@ class MainWindow(QMainWindow):
         self.ui.box_metric_tabs.currentChanged.connect(self.setup_scatterplot)
         # And setup up once to initialize
         self.setup_scatterplot()
-
+    
         # toggle the the dots to images radio button
         self.ui.r_image_points.toggle()
-        self.dots_plot=False
         self.ui.r_image_points.toggled.connect(self.change_scatterplot_pointtype)
 
 
@@ -194,12 +193,15 @@ class MainWindow(QMainWindow):
                 self.data_dict[current_metric_type.lower()]["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame
             )
             self.scatterplot.plot_widget.scene().mousePressEvent=self.on_canvas_click
+            self.scatterplot.selected_idx.emit(0)
         else:
             print('only redraw scatterplot')
             if self.scatterplot.dots_plot:
                 self.scatterplot.draw_scatterplot_dots()
             else:
                 self.scatterplot.draw_scatterplot()
+            self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
+            
 
     def recalc_similarity(self):
         topk_dict = self.calculate_nearest_neighbours()
@@ -389,14 +391,19 @@ class MainWindow(QMainWindow):
         # TODO: REIMPLEMENT
         print('change_scatterplot_pointtype is called')
         if self.ui.r_image_points.isChecked():
-
+            #TODO: give user reset option/button. initially its FALSE
             self.scatterplot.dots_plot=False
-            self.scatterplot.draw_scatterplot()
+            self.scatterplot.draw_scatterplot(reset=False)
+            self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
         else:
             self.scatterplot.dots_plot=True
-            self.scatterplot.draw_scatterplot_dots()
+            self.scatterplot.draw_scatterplot_dots(reset=False)
+            self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
 
     def on_canvas_click(self, ev):
+        # QGraphicsScene.mousePressEvent(self.scatterplot.plot_widget.scene(), ev)
+        # super().mousePressEvent(ev)
+
         self.scatterplot.clear_selection()
         pos = ev.scenePos()
         print("on canvas click:", pos)
@@ -407,15 +414,18 @@ class MainWindow(QMainWindow):
                 if item.contains(item.mapFromScene(pos)):
                     self.scatterplot.selected_point = int(pos.x()), int(pos.y())
                     self.scatterplot.selected_index = index
+                    self.scatterplot.selected_idx.emit(index)
                     self.scatterplot.plot_index = idx
+                    # TODO: rmv after all check, partial select ect
                     print('selected_index==plot_index?',index==idx)
                     self.clicked_on_point()
                     break
 
+    # TODO: maybe change loc of this fn, or split its a little in between scatterplot and main
     def clicked_on_point(self):
         print("point/ image clicked, load on the left")
         self.left_img_filename = self.image_paths[self.scatterplot.selected_index]
-        self.left_img_key = self.image_keys[self.scatterplot.plot_index]
+        self.left_img_key = self.image_keys[self.scatterplot.selected_index]
         # set features for left 
         self.left_img_features = self.get_features_from_dataset(self.left_img_key)
         # display the image
