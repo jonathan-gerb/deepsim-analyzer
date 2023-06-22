@@ -46,7 +46,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="dino_tab">
      <attribute name="title">
@@ -320,25 +320,12 @@
       <property name="title">
        <string/>
       </property>
-      <widget class="QLabel" name="texture_label2">
-       <property name="geometry">
-        <rect>
-         <x>370</x>
-         <y>10</y>
-         <width>41</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>3b</string>
-       </property>
-      </widget>
-      <widget class="QComboBox" name="texture_opt_filtervis_3a">
+      <widget class="QComboBox" name="texture_opt_filtervis">
        <property name="geometry">
         <rect>
          <x>290</x>
          <y>10</y>
-         <width>61</width>
+         <width>191</width>
          <height>31</height>
         </rect>
        </property>
@@ -346,24 +333,14 @@
       <widget class="QLabel" name="texture_label1">
        <property name="geometry">
         <rect>
-         <x>230</x>
+         <x>200</x>
          <y>10</y>
-         <width>51</width>
+         <width>81</width>
          <height>31</height>
         </rect>
        </property>
        <property name="text">
-        <string>3a</string>
-       </property>
-      </widget>
-      <widget class="QComboBox" name="texture_opt_filtervis_3b">
-       <property name="geometry">
-        <rect>
-         <x>420</x>
-         <y>10</y>
-         <width>61</width>
-         <height>31</height>
-        </rect>
+        <string>filter index</string>
        </property>
       </widget>
       <widget class="QRadioButton" name="texture_opt_show_fm">

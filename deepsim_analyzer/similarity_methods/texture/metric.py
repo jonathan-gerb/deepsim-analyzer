@@ -3,7 +3,7 @@ import torch
 from tqdm import tqdm
 
 
-def calc_and_save_features(images, dataset_filepath, save_feature_maps=False):
+def calc_and_save_features(images, dataset_filepath, save_feature_maps=True):
     """Process list of images.
     Args:
         images (list): list of filepaths to the images

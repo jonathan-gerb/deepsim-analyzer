@@ -148,6 +148,16 @@ class MainWindow(QMainWindow):
         self.ui.texture_opt_eucdist.toggled.connect(self.texture_opt_dist_euc)
         self.ui.texture_opt_eucdist.toggle()
 
+        # add options for head similarity to comboboxes
+        for i in range(256):
+            self.ui.texture_opt_filtervis.addItem(f"3a {i+1}")
+
+        for i in range(480):
+            self.ui.texture_opt_filtervis.addItem(f"3b {i+1}")
+
+        self.ui.texture_opt_filtervis.currentIndexChanged.connect(self.texture_show_fm)
+        self.ui.texture_opt_show_fm.toggled.connect(self.texture_show_fm)
+
         # SETUP DINO OPTIONS
 
         # options for what distance measure to use.
@@ -186,7 +196,7 @@ class MainWindow(QMainWindow):
         self.display_nearest_neighbours(topk_dict)
         
         print("recalculating")
-        self.ui.recalc_similarity.pressed.connect(self.recalc_similarity)
+        self.ui.recalc_similarity.toggled.connect(self.recalc_similarity)
         print("dashboard setup complete!")
       
 
@@ -243,6 +253,69 @@ class MainWindow(QMainWindow):
         else:
             raise ValueError("something is wrong with the dino similarity options.")
     
+
+    def texture_show_fm(self):
+        if not self.ui.texture_opt_show_fm.isChecked():
+            self.display_photo_left(self.left_img_filename)
+            self.display_photo_right(self.right_img_filename)
+            print("not checked", self.ui.texture_opt_show_fm)
+        else:
+            # get selected head
+            (layer, index) = self.ui.texture_opt_filtervis.currentText().split(" ")
+            index = int(index) - 1
+            if layer == "3a":
+                layer_key = "texture_fm_3a"
+            else:
+                layer_key = "texture_fm_3b"
+            
+            feature_maps_left = da.io.read_feature(
+                    self.datafile_path, self.left_img_key, layer_key, read_projection=False
+                ).squeeze()[index]
+            feature_maps_right = da.io.read_feature(
+                    self.datafile_path, self.right_img_key, layer_key, read_projection=False
+                ).squeeze()[index]
+            
+            # feature_maps_right = np.moveaxis(feature_maps_right[index], 0, -1)
+            # feature_maps_left = np.moveaxis(feature_maps_left[index]
+
+                
+            original_img_left = da.io.load_image(self.left_img_filename)
+            original_img_right = da.io.load_image(self.right_img_filename)
+            l_h, l_w, l_c = original_img_left.shape
+            r_h, r_w, l_c = original_img_right.shape
+
+            print(original_img_left.shape)
+            print(original_img_right.shape)
+            print("-----------")
+            print(feature_maps_left.shape)
+            print(feature_maps_right.shape)
+
+            feature_maps_left = cv2.resize(
+                        feature_maps_left, dsize=(l_w, l_h), interpolation=cv2.INTER_NEAREST
+                    )
+            feature_maps_right = cv2.resize(
+                        feature_maps_right, dsize=(r_w, r_h), interpolation=cv2.INTER_NEAREST
+                    )
+            print(feature_maps_left.shape)
+            print(feature_maps_right.shape)
+            print("-----------")
+            
+            heatmap, minmaxed = da.similarity_methods.heatmap_utils.feature_map_to_colormap(feature_maps_left)
+            overlayed_left = da.similarity_methods.heatmap_utils.overlay_heatmap(original_img_left, heatmap, minmaxed)
+
+            heatmap, minmaxed = da.similarity_methods.heatmap_utils.feature_map_to_colormap(feature_maps_right)
+            overlayed_right = da.similarity_methods.heatmap_utils.overlay_heatmap(original_img_right, heatmap, minmaxed)
+            
+            leftname = "_tmp_overlay_left.png"
+            rightname = "_tmp_overlay_right.png"
+            left = Image.fromarray(overlayed_left)
+            left.save(leftname)
+
+            right = Image.fromarray(overlayed_right)
+            right.save(rightname)
+
+            self.display_photo_left(leftname)
+            self.display_photo_right(rightname)
 
     def dino_show_camap(self):
         
