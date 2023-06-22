@@ -239,4 +239,6 @@ CMakeLists.txt.user*
 data/raw_immutable/models/*
 data/processed/*.h5
 
+data/processed/reducers/*.umap
+
 deepsim-dashboard/images/*

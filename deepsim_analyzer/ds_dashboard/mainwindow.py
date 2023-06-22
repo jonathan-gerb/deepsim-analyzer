@@ -132,6 +132,9 @@ class MainWindow(QMainWindow):
         self.ui.box_metric_tabs.currentChanged.connect(self.setup_scatterplot)
         # And setup up once to initialize
         self.setup_scatterplot()
+
+        # toggle the the dots to images radio button
+        self.ui.r_image_points.toggle()
         self.ui.r_image_points.toggled.connect(self.change_scatterplot_pointtype)
 
 
@@ -179,7 +182,7 @@ class MainWindow(QMainWindow):
         print("recalculating")
         self.ui.recalc_similarity.pressed.connect(self.recalc_similarity)
         print("dashboard setup complete!")
-
+      
 
     def setup_scatterplot(self):
         current_metric_type = self.ui.box_metric_tabs.tabText(self.ui.box_metric_tabs.currentIndex())
@@ -196,7 +199,6 @@ class MainWindow(QMainWindow):
                 self.scatterplot.draw_scatterplot_dots()
             else:
                 self.scatterplot.draw_scatterplot()
-
 
     def recalc_similarity(self):
         topk_dict = self.calculate_nearest_neighbours()
@@ -387,6 +389,7 @@ class MainWindow(QMainWindow):
         # TODO: check if the always indeed start as checked, meaning images. It needs an initial state
         print('change_scatterplot_pointtype is called')
         if self.ui.r_image_points.isChecked():
+
             self.scatterplot.dots_plot=False
             self.scatterplot.draw_scatterplot()
         else:
@@ -501,20 +504,6 @@ class MainWindow(QMainWindow):
         image_features = random_array
         new_point = image_features
         return new_point
-
-
-    def initialize_images(self, init_point, filepath, init_key, upload=False, left=False):
-        self.display_photo_left(filepath)
-        nearest_indices = self.scatterplot.find_nearest_neighbors(init_point, n=3)
-        print("nearest_indices", nearest_indices)
-
-        nearest_images = []
-        for near_idx in nearest_indices:
-            nearest_images.append(self.image_paths[near_idx])
-        self.display_preview_photos(nearest_images)
-
-        if left:
-            self.display_photo_left(filepath, init_key=init_key, upload=upload)
 
     def update_image_info(self, date, artist, style, tags):
         # Update the label texts

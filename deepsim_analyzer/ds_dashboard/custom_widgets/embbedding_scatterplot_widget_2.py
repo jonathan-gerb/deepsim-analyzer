@@ -26,7 +26,7 @@ class ScatterplotWidget(QWidget):
     # Define a custom signal to emit when a point is clicked
     point_clicked = pyqtSignal(tuple)
 
-    def __init__(self, points, indices,img_paths, config):
+    def __init__(self, points, indices,img_paths, config, plot_widget):
         super().__init__()
 
         # self.window = MainWindow()
@@ -48,7 +48,7 @@ class ScatterplotWidget(QWidget):
         self.start_point = None
         self.end_point = None
 
-        self.plot_widget = pg.PlotWidget()
+        self.plot_widget = plot_widget
         self.plot_widget.setMouseEnabled(True, True)
         self.plot_widget.setLimits(xMin=-np.inf, xMax=np.inf, yMin=-np.inf, yMax=np.inf)
         self.plot_widget.setAspectLocked(lock=True)
@@ -73,7 +73,7 @@ class ScatterplotWidget(QWidget):
         # self.plot_widget.scene().sigMouseClicked.connect(self.on_canvas_click)
         self.plot_widget.scene().sigMouseMoved.connect(self.on_mouse_move)
 
-        self.draw_scatterplot_images()
+        self.draw_scatterplot()
         # self.resize_widget()
 
     def resize_widget(self):
@@ -132,7 +132,7 @@ class ScatterplotWidget(QWidget):
         indices = [i for i, p in enumerate(self.points) if xmin <= p[0] <= xmax and ymin <= p[1] <= ymax]
 
         self.selected_points = indices
-        self.draw_scatterplot_images()
+        # self.draw_scatterplot()
 
 
     def draw_scatterplot_dots(self):
@@ -148,7 +148,7 @@ class ScatterplotWidget(QWidget):
         self.plot_widget.update()
         
 
-    def draw_scatterplot_images(self):
+    def draw_scatterplot(self):
         self.plot_widget.clear()
         for idx, index, item in self.image_items:
             self.plot_widget.scene().removeItem(item)
