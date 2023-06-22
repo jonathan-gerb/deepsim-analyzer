@@ -46,7 +46,6 @@ class ScatterplotWidget(QWidget):
         super().__init__()
 
         self.plot_widget = plot_widget
-
         self.setMouseTracking(True)
         self.initialize(points, indices,img_paths, config)
 
@@ -57,6 +56,7 @@ class ScatterplotWidget(QWidget):
         self.rectangle_color = config['scatterplot']['rectangle_color']
         self.rectangle_opacity = float(config['scatterplot']['rectangle_opacity'])
 
+        
         self.plot_widget.setMouseEnabled(True, True)
         # self.plot_widget.setLimits(xMin=-np.inf, xMax=np.inf, yMin=-np.inf, yMax=np.inf)
         self.plot_widget.setLimits(xMin=-1000000, xMax=1000000, yMin=-1000000, yMax=1000000)
@@ -66,7 +66,7 @@ class ScatterplotWidget(QWidget):
         self.plot_widget.scene().mouseMoveEvent = self.on_scene_mouse_move
         self.plot_widget.scene().mouseDoubleClickEvent = self.on_scene_mouse_double_click
         
-        # self.draw_scatterplot_dots()
+        self.draw_scatterplot()
 
     def initialize(self, points, indices,img_paths, config):
         self.points = points
@@ -85,8 +85,6 @@ class ScatterplotWidget(QWidget):
         self.selected_points = []
         self.outside_points_visible = False
 
-        # TODO: check if the always indeed start as checked, meaning images 
-        # self.dots_plot=False
 
     def reset_scatterplot(self, pos):
         # Get the range of x and y values in the scatterplot
@@ -214,10 +212,10 @@ class ScatterplotWidget(QWidget):
         print('self.selected_points', len(self.selected_points))
         
         # Redraw the scatterplot
-        # if self.dots_plot:
-        #     self.draw_scatterplot_dots()
-        # else:
-        #     self.draw_scatterplot()
+        if self.dots_plot:
+            self.draw_scatterplot_dots()
+        else:
+            self.draw_scatterplot()
 
 
     def draw_scatterplot_dots(self):

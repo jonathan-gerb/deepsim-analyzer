@@ -386,7 +386,6 @@ class MainWindow(QMainWindow):
         """Use radio toggle to draw dots or images, triggered on toggle of the radio button.
         """
         # TODO: REIMPLEMENT
-        # TODO: check if the always indeed start as checked, meaning images. It needs an initial state
         print('change_scatterplot_pointtype is called')
         if self.ui.r_image_points.isChecked():
 
