@@ -16,7 +16,7 @@ from PyQt6.QtGui import QPixmap, QPainter, QColor
 from PyQt6.QtCore import QRect, Qt
 
 # custom widgets
-from .custom_widgets import ButtonWidget, ScatterplotWidget, ImageWidget, ModelVis, TimelineView, TimelineWindow, HistoryTimelineWidget
+from .custom_widgets import  ScatterplotWidget, TimelineView, TimelineWindow
 
 # deepsim analyzer package
 import deepsim_analyzer as da
@@ -133,9 +133,7 @@ class MainWindow(QMainWindow):
         self.scatterplot = ScatterplotWidget(
             self.data_dict['dino']["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame
         )
-        self.scatterplot.plot_widget.scene().sigMouseClicked.connect(
-            self.on_canvas_click
-        )
+        self.scatterplot.plot_widget.scene().mousePressEvent=self.on_canvas_click
         self.ui.r_image_points.toggled.connect(self.change_scatterplot_pointtype)
         # toggle the the dots to images radio button
         self.ui.r_image_points.toggle()
@@ -275,11 +273,14 @@ class MainWindow(QMainWindow):
         """
         # TODO: REIMPLEMENT
         if self.ui.r_image_points.isChecked():
+            self.scatterplot.dots_plot=False
             self.scatterplot.draw_scatterplot()
         else:
+            self.scatterplot.dots_plot=True
             self.scatterplot.draw_scatterplot_dots()
 
     def on_canvas_click(self, ev):
+        self.scatterplot.clear_selection()
         pos = ev.scenePos()
         print("on canvas click:", pos)
         if ev.button() == Qt.MouseButton.LeftButton:
