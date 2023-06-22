@@ -135,6 +135,7 @@ class MainWindow(QMainWindow):
 
         # toggle the the dots to images radio button
         self.ui.r_image_points.toggle()
+        self.dots_plot=False
         self.ui.r_image_points.toggled.connect(self.change_scatterplot_pointtype)
 
 

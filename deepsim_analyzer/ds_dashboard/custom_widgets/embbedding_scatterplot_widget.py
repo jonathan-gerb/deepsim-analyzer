@@ -85,6 +85,9 @@ class ScatterplotWidget(QWidget):
         self.selected_points = []
         self.outside_points_visible = False
 
+        # We now toggle in setup to insure images are plotted first
+        self.dots_plot=False
+
 
     def reset_scatterplot(self, pos):
         # Get the range of x and y values in the scatterplot
@@ -238,51 +241,6 @@ class ScatterplotWidget(QWidget):
         self.reset_scatterplot(points)
         self.plot_widget.update()
         
-
-    # def draw_scatterplot(self):
-    #     print('draw_scatterplot')
-    #     self.plot_widget.clear()
-
-    #     if self.selected_points!=[]:
-    #         points= self.selected_points
-    #     else:
-    #         points=self.points
-
-    #     self.image_items = []
-    #     new_pos = []
-    #     image_size = 24
-    #     # min, max = np.min(self.points), np.max(self.points)
-    #     scale = image_size * 8
-    #     for i, point in tqdm(enumerate(points), desc="placing images on plot", total=len(points)):
-    #         x, y = point
-    #         x, y = x * scale, y * scale
-    #         image_path = self.img_paths[i]
-    #         pixmap = QPixmap(image_path)
-
-    #         # Flip the pixmap vertically
-    #         pixmap = pixmap.transformed(QTransform().scale(1, -1))
-
-    #         # Resize the pixmap to a smaller size
-    #         scaled_pixmap = pixmap.scaled(QSize(image_size, image_size), Qt.AspectRatioMode.KeepAspectRatio)
-
-    #         # pixmap_item = QGraphicsPixmapItem(scaled_pixmap)
-    #         pixmap_item = SelectablePixmapItem(scaled_pixmap)
-    #         x_ = x - (pixmap.width() / 2)
-    #         y_ = y + (pixmap.height() / 2)
-
-    #         # print('img pos', (x_, y_))
-    #         pixmap_item.setPos(x_, y_)
-    #         new_pos.append((x_, y_))
-            
-    #         # pixmap_item.setZValue(10)
-    #         # highlight selected point
-    #         pixmap_item.mousePressEvent=self.handle_selection_changed
-
-    #         self.plot_widget.addItem(pixmap_item)
-    #         self.image_items.append((i, self.indices[i], pixmap_item)) 
-
-    #     self.reset_scatterplot(np.array(new_pos))
-    #     self.plot_widget.update()
 
     def draw_scatterplot(self):
         print('draw_scatterplot')
