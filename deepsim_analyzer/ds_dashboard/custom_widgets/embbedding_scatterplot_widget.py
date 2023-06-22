@@ -13,6 +13,7 @@ from PyQt6.QtWidgets import (QApplication, QDialog, QGraphicsEllipseItem,
                                QGraphicsPixmapItem, QMainWindow, QPushButton,
                                QVBoxLayout, QWidget,QGraphicsRectItem,QGraphicsScene)
 
+import matplotlib.pyplot as plt
 
 class SelectablePixmapItem(QGraphicsPixmapItem):
     def __init__(self, pixmap):
@@ -45,7 +46,6 @@ class ScatterplotWidget(QWidget):
         super().__init__()
 
         self.plot_widget = plot_widget
-
         self.setMouseTracking(True)
         self.initialize(points, indices,img_paths, config)
 
@@ -56,6 +56,7 @@ class ScatterplotWidget(QWidget):
         self.rectangle_color = config['scatterplot']['rectangle_color']
         self.rectangle_opacity = float(config['scatterplot']['rectangle_opacity'])
 
+        
         self.plot_widget.setMouseEnabled(True, True)
         # self.plot_widget.setLimits(xMin=-np.inf, xMax=np.inf, yMin=-np.inf, yMax=np.inf)
         self.plot_widget.setLimits(xMin=-1000000, xMax=1000000, yMin=-1000000, yMax=1000000)
@@ -65,7 +66,7 @@ class ScatterplotWidget(QWidget):
         self.plot_widget.scene().mouseMoveEvent = self.on_scene_mouse_move
         self.plot_widget.scene().mouseDoubleClickEvent = self.on_scene_mouse_double_click
         
-        # self.draw_scatterplot_dots()
+        self.draw_scatterplot()
 
     def initialize(self, points, indices,img_paths, config):
         self.points = points
@@ -83,6 +84,10 @@ class ScatterplotWidget(QWidget):
         self.plot_inex=None
         self.selected_points = []
         self.outside_points_visible = False
+
+        # We now toggle in setup to insure images are plotted first
+        self.dots_plot=False
+
 
     def reset_scatterplot(self, pos):
         # Get the range of x and y values in the scatterplot
@@ -210,10 +215,10 @@ class ScatterplotWidget(QWidget):
         print('self.selected_points', len(self.selected_points))
         
         # Redraw the scatterplot
-        # if self.dots_plot:
-        #     self.draw_scatterplot_dots()
-        # else:
-        #     self.draw_scatterplot()
+        if self.dots_plot:
+            self.draw_scatterplot_dots()
+        else:
+            self.draw_scatterplot()
 
 
     def draw_scatterplot_dots(self):
@@ -247,40 +252,37 @@ class ScatterplotWidget(QWidget):
             points=self.points
 
         self.image_items = []
-        new_pos = []
-        image_size = 24
-        # min, max = np.min(self.points), np.max(self.points)
-        scale = image_size * 8
-        for i, point in tqdm(enumerate(points), desc="placing images on plot", total=len(points)):
-            x, y = point
-            x, y = x * scale, y * scale
+        new_pos=[]
+        for i, point in enumerate(points):
+            x,y = point
+            # Read in image
             image_path = self.img_paths[i]
-            pixmap = QPixmap(image_path)
+            image = plt.imread(image_path)
+            # TODO: change resolution
+            w, h, _ = image.shape
+            # Create image item
+            image_item = pg.ImageItem()
+            image_item.setImage(image)
+            # Adjust image
+            scale = 0.3
+            rotation = -90
+            image_item.setScale(scale / np.sqrt(w**2 + h**2))
+            image_item.setPos(x, y)
+            image_item.setRotation(rotation)
+            new_pos.append((x,y))
 
-            # Flip the pixmap vertically
-            pixmap = pixmap.transformed(QTransform().scale(1, -1))
-
-            # Resize the pixmap to a smaller size
-            scaled_pixmap = pixmap.scaled(QSize(image_size, image_size), Qt.AspectRatioMode.KeepAspectRatio)
-
-            # pixmap_item = QGraphicsPixmapItem(scaled_pixmap)
-            pixmap_item = SelectablePixmapItem(scaled_pixmap)
-            x_ = x - (pixmap.width() / 2)
-            y_ = y + (pixmap.height() / 2)
-
-            # print('img pos', (x_, y_))
-            pixmap_item.setPos(x_, y_)
-            new_pos.append((x_, y_))
+            # Add to plot
+            self.plot_widget.addItem(image_item)
             
-            # pixmap_item.setZValue(10)
-            # highlight selected point
-            pixmap_item.mousePressEvent=self.handle_selection_changed
+            # Make it clickable.
+            self.image_items.append((i, self.indices[i], image_item)) 
 
-            self.plot_widget.addItem(pixmap_item)
-            self.image_items.append((i, self.indices[i], pixmap_item)) 
 
-        self.reset_scatterplot(np.array(new_pos))
+        # self.reset_scatterplot(np.array(new_pos))
         self.plot_widget.update()
+
+ 
+    
 
     def handle_selection_changed(self, idx):
         print('handle_selection_changed')

@@ -132,10 +132,13 @@ class MainWindow(QMainWindow):
         # setup scatterplot
         # TODO: setup feature projection plot with combined and individual plots!
         self.ui.box_metric_tabs.currentChanged.connect(self.setup_scatterplot)
-        self.ui.r_image_points.toggled.connect(self.change_scatterplot_pointtype)
-        # toggle the the dots to images radio button
-        # self.ui.r_image_points.toggle()
+        # And setup up once to initialize
         self.setup_scatterplot()
+
+        # toggle the the dots to images radio button
+        self.ui.r_image_points.toggle()
+        self.dots_plot=False
+        self.ui.r_image_points.toggled.connect(self.change_scatterplot_pointtype)
 
 
         print("setting up middle metric options")
@@ -190,18 +193,18 @@ class MainWindow(QMainWindow):
     def setup_scatterplot(self):
         current_metric_type = self.ui.box_metric_tabs.tabText(self.ui.box_metric_tabs.currentIndex())
         print("changing 2d scatterplot to: ", current_metric_type)
-        self.scatterplot = ScatterplotWidget(
-            self.data_dict[current_metric_type.lower()]["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame
-        )
-        # self.scatterplot = ScatterplotWidget(
-        #     self.data_dict[current_metric_type.lower()]["projection"], self.image_indices, self.image_paths, self.config
-        # )
-        # self.ui.addWidget(self.scatterplot)
-
-        self.scatterplot.plot_widget.scene().mousePressEvent=self.on_canvas_click
-        self.ui.r_image_points.toggled.connect(self.change_scatterplot_pointtype)
-        # toggle the the dots to images radio button
-        # self.ui.r_image_points.toggle()
+        if not hasattr(self, 'scatterplot'):
+            print('a new scatterplot is created')
+            self.scatterplot = ScatterplotWidget(
+                self.data_dict[current_metric_type.lower()]["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame
+            )
+            self.scatterplot.plot_widget.scene().mousePressEvent=self.on_canvas_click
+        else:
+            print('only redraw scatterplot')
+            if self.scatterplot.dots_plot:
+                self.scatterplot.draw_scatterplot_dots()
+            else:
+                self.scatterplot.draw_scatterplot()
 
     def recalc_similarity(self):
         topk_dict = self.calculate_nearest_neighbours()
@@ -443,6 +446,7 @@ class MainWindow(QMainWindow):
         """Use radio toggle to draw dots or images, triggered on toggle of the radio button.
         """
         # TODO: REIMPLEMENT
+        print('change_scatterplot_pointtype is called')
         if self.ui.r_image_points.isChecked():
 
             self.scatterplot.dots_plot=False
