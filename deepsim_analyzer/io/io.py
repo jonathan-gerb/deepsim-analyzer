@@ -14,9 +14,10 @@ from ..similarity_methods import dino, dummy, texture
 
 
 def save_feature(dataset_filepath, img_hash, img_feature, feature_name, is_projection=False, overwrite=False):
-    assert (
-        img_feature.ndim == 1
-    ), f"Image feature should not be multidimensional, found shape {img_feature.shape}"
+    # we now save feature maps using this same function so we can have multidim arrays
+    # assert (
+    #     img_feature.ndim == 1
+    # ), f"Image feature should not be multidimensional, found shape {img_feature.shape}"
 
     if is_projection: 
         with h5py.File(dataset_filepath, "r+") as f:
@@ -24,12 +25,12 @@ def save_feature(dataset_filepath, img_hash, img_feature, feature_name, is_proje
             if key in f:
                 if overwrite:
                     del f[key]
-                    f.create_dataset(f"{img_hash}/features/{feature_name}/projection", data=img_feature)
+                    f.create_dataset(f"{img_hash}/features/{feature_name}/projection", data=img_feature, compression="lzf")
                 else:
                     # dont overwrite existing feature
                     pass
             else:
-                f.create_dataset(f"{img_hash}/features/{feature_name}/projection", data=img_feature)
+                f.create_dataset(f"{img_hash}/features/{feature_name}/projection", data=img_feature, compression="lzf")
 
     else:
         with h5py.File(dataset_filepath, "r+") as f:
@@ -37,12 +38,12 @@ def save_feature(dataset_filepath, img_hash, img_feature, feature_name, is_proje
             if key in f:
                 if overwrite:
                     del f[key]
-                    f.create_dataset(f"{img_hash}/features/{feature_name}/full", data=img_feature)
+                    f.create_dataset(f"{img_hash}/features/{feature_name}/full", data=img_feature, compression="lzf")
                 else:
                     # dont overwrite existing feature
                     pass
             else:    
-                f.create_dataset(f"{img_hash}/features/{feature_name}/full", data=img_feature)
+                f.create_dataset(f"{img_hash}/features/{feature_name}/full", data=img_feature, compression="lzf")
 
 def key_in_dataset(dataset_filepath, img_hash):
     with h5py.File(dataset_filepath, "r") as f:

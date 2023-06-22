@@ -11,6 +11,7 @@ from sklearn.preprocessing import minmax_scale
 from sklearn.metrics.pairwise import cosine_distances
 import os
 from tqdm import tqdm
+import cv2
 
 # qt imports
 from PyQt6 import QtWidgets
@@ -60,7 +61,7 @@ class MainWindow(QMainWindow):
 
         # in time we have to get all features for all the data, we will start with
         # just the dummy feature
-        self.available_features = ["dummy", "texture"]
+        self.available_features = ["dummy", "texture", "dino"]
 
         # metric option defaults
         self.dino_distance_measure = "euclidian"
@@ -118,6 +119,7 @@ class MainWindow(QMainWindow):
         default_image_path_absolute = str(Path(images_filepath) / default_image_path)
         
         self.left_img_key = default_image_key
+        self.left_img_filename = default_image_path_absolute
 
         # display the base image
         self.display_photo_left(default_image_path_absolute)
@@ -145,6 +147,16 @@ class MainWindow(QMainWindow):
         self.ui.texture_opt_eucdist.toggled.connect(self.texture_opt_dist_euc)
         self.ui.texture_opt_eucdist.toggle()
 
+        # add options for head similarity to comboboxes
+        for i in range(256):
+            self.ui.texture_opt_filtervis.addItem(f"3a {i+1}")
+
+        for i in range(480):
+            self.ui.texture_opt_filtervis.addItem(f"3b {i+1}")
+
+        self.ui.texture_opt_filtervis.currentIndexChanged.connect(self.texture_show_fm)
+        self.ui.texture_opt_show_fm.toggled.connect(self.texture_show_fm)
+
         # SETUP DINO OPTIONS
 
         # options for what distance measure to use.
@@ -158,12 +170,15 @@ class MainWindow(QMainWindow):
         self.ui.dino_opt_headsim.toggled.connect(self.dino_opt_simtype)
         self.ui.dino_opt_fullsim.toggle()
 
+        self.ui.dino_opt_headvis_cbox.currentIndexChanged.connect(self.dino_show_camap)
+        self.ui.dino_opt_layervis_cbox.currentIndexChanged.connect(self.dino_show_camap)
+
         # dropdown options for dino head-specific similarity
         self.ui.dino_opt_headsim_cbox.editTextChanged.connect(self.dino_opt_simtype)
         self.ui.dino_opt_layersim_cbox.editTextChanged.connect(self.dino_opt_simtype)
 
         # option for showing crossattention map
-        self.ui.dino_opt_showcamap.pressed.connect(self.dino_show_camap)
+        self.ui.dino_opt_showcamap.toggled.connect(self.dino_show_camap)
 
         # add options for head similarity to comboboxes
         for i in range(12):
@@ -172,7 +187,7 @@ class MainWindow(QMainWindow):
             self.ui.dino_opt_headvis_cbox.addItem(f"{i+1}")
             self.ui.dino_opt_layervis_cbox.addItem(f"{i+1}")
 
-        self.ui.box_metric_tabs.setCurrentIndex(1)
+        self.ui.box_metric_tabs.setCurrentIndex(0)
 
         # ================ SETUP RIGHT COLUMN ================
         print("setting up right column, calculating nearest neighbours")
@@ -180,7 +195,7 @@ class MainWindow(QMainWindow):
         self.display_nearest_neighbours(topk_dict)
         
         print("recalculating")
-        self.ui.recalc_similarity.pressed.connect(self.recalc_similarity)
+        self.ui.recalc_similarity.toggled.connect(self.recalc_similarity)
         print("dashboard setup complete!")
       
 
@@ -241,8 +256,122 @@ class MainWindow(QMainWindow):
             raise ValueError("something is wrong with the dino similarity options.")
     
 
+    def texture_show_fm(self):
+        if not self.ui.texture_opt_show_fm.isChecked():
+            self.display_photo_left(self.left_img_filename)
+            self.display_photo_right(self.right_img_filename)
+            print("not checked", self.ui.texture_opt_show_fm)
+        else:
+            # get selected head
+            (layer, index) = self.ui.texture_opt_filtervis.currentText().split(" ")
+            index = int(index) - 1
+            if layer == "3a":
+                layer_key = "texture_fm_3a"
+            else:
+                layer_key = "texture_fm_3b"
+            
+            feature_maps_left = da.io.read_feature(
+                    self.datafile_path, self.left_img_key, layer_key, read_projection=False
+                ).squeeze()[index]
+            feature_maps_right = da.io.read_feature(
+                    self.datafile_path, self.right_img_key, layer_key, read_projection=False
+                ).squeeze()[index]
+            
+            # feature_maps_right = np.moveaxis(feature_maps_right[index], 0, -1)
+            # feature_maps_left = np.moveaxis(feature_maps_left[index]
+
+                
+            original_img_left = da.io.load_image(self.left_img_filename)
+            original_img_right = da.io.load_image(self.right_img_filename)
+            l_h, l_w, l_c = original_img_left.shape
+            r_h, r_w, l_c = original_img_right.shape
+
+            print(original_img_left.shape)
+            print(original_img_right.shape)
+            print("-----------")
+            print(feature_maps_left.shape)
+            print(feature_maps_right.shape)
+
+            feature_maps_left = cv2.resize(
+                        feature_maps_left, dsize=(l_w, l_h), interpolation=cv2.INTER_NEAREST
+                    )
+            feature_maps_right = cv2.resize(
+                        feature_maps_right, dsize=(r_w, r_h), interpolation=cv2.INTER_NEAREST
+                    )
+            print(feature_maps_left.shape)
+            print(feature_maps_right.shape)
+            print("-----------")
+            
+            heatmap, minmaxed = da.similarity_methods.heatmap_utils.feature_map_to_colormap(feature_maps_left)
+            overlayed_left = da.similarity_methods.heatmap_utils.overlay_heatmap(original_img_left, heatmap, minmaxed)
+
+            heatmap, minmaxed = da.similarity_methods.heatmap_utils.feature_map_to_colormap(feature_maps_right)
+            overlayed_right = da.similarity_methods.heatmap_utils.overlay_heatmap(original_img_right, heatmap, minmaxed)
+            
+            leftname = "_tmp_overlay_left.png"
+            rightname = "_tmp_overlay_right.png"
+            left = Image.fromarray(overlayed_left)
+            left.save(leftname)
+
+            right = Image.fromarray(overlayed_right)
+            right.save(rightname)
+
+            self.display_photo_left(leftname)
+            self.display_photo_right(rightname)
+
     def dino_show_camap(self):
-        raise NotImplementedError("cannot yet show ca-maps!")
+        
+        if not self.ui.dino_opt_showcamap.isChecked():
+            self.display_photo_left(self.left_img_filename)
+            self.display_photo_right(self.right_img_filename)
+        else:
+            # get selected head
+            h = int(self.ui.dino_opt_headvis_cbox.currentText()) - 1
+            l = int(self.ui.dino_opt_layervis_cbox.currentText()) - 1
+
+            feature_maps_left = da.io.read_feature(
+                    self.datafile_path, self.left_img_key, 'dino_fm', read_projection=False
+                )[h][l]
+            
+            feature_maps_right = da.io.read_feature(
+                    self.datafile_path, self.right_img_key, 'dino_fm', read_projection=False
+                )[h][l]
+            
+            original_img_left = da.io.load_image(self.left_img_filename)
+            original_img_right = da.io.load_image(self.right_img_filename)
+            l_h, l_w, l_c = original_img_left.shape
+            r_h, r_w, l_c = original_img_right.shape
+
+            print(original_img_left.shape)
+            print(original_img_right.shape)
+            print("-----------")
+
+            feature_maps_left = cv2.resize(
+                        feature_maps_left, dsize=(l_w, l_h), interpolation=cv2.INTER_NEAREST
+                    )
+            feature_maps_right = cv2.resize(
+                        feature_maps_right, dsize=(r_w, r_h), interpolation=cv2.INTER_NEAREST
+                    )
+            print(feature_maps_left.shape)
+            print(feature_maps_right.shape)
+            print("-----------")
+            
+            heatmap, minmaxed = da.similarity_methods.heatmap_utils.feature_map_to_colormap(feature_maps_left)
+            overlayed_left = da.similarity_methods.heatmap_utils.overlay_heatmap(original_img_left, heatmap, minmaxed)
+
+            heatmap, minmaxed = da.similarity_methods.heatmap_utils.feature_map_to_colormap(feature_maps_right)
+            overlayed_right = da.similarity_methods.heatmap_utils.overlay_heatmap(original_img_right, heatmap, minmaxed)
+            
+            leftname = "_tmp_overlay_left.png"
+            rightname = "_tmp_overlay_right.png"
+            left = Image.fromarray(overlayed_left)
+            left.save(leftname)
+
+            right = Image.fromarray(overlayed_right)
+            right.save(rightname)
+
+            self.display_photo_left(leftname)
+            self.display_photo_right(rightname)
 
     def set_color_element(self, ui_element, color):
         ui_element.setAutoFillBackground(True)
@@ -256,6 +385,9 @@ class MainWindow(QMainWindow):
 
         distance, idx = topk['combined']["distances"][0], int(topk['combined']['ranking'][0])
         top_img_path = self.image_paths[idx]
+        self.right_img_key = self.image_keys[idx]
+        self.right_img_filename = self.image_paths[idx]
+
         self.display_photo_right(top_img_path)
         print(topk['combined']['distances'].shape)
         distance_1, idx_1 = topk['combined']['distances'][1], int(topk['combined']["ranking"][1])
@@ -449,6 +581,7 @@ class MainWindow(QMainWindow):
                 img_hash = da.get_image_hash(current_filepath)
                 print(f"hash: {img_hash}")
                 self.left_img_key = img_hash
+                self.left_img_filename = current_filepath
 
                 self.update_leftimg_data(self.left_img_key)
                 # display the photo on the left
