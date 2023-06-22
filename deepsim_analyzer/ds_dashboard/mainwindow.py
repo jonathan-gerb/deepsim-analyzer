@@ -15,9 +15,9 @@ import cv2
 
 # qt imports
 from PyQt6 import QtWidgets
-from PyQt6.QtWidgets import QMainWindow, QFileDialog, QApplication, QVBoxLayout, QTabWidget,QGraphicsView
-from PyQt6.QtGui import QPixmap, QPainter, QColor
-from PyQt6.QtCore import QRect, Qt
+from PyQt6.QtWidgets import QMainWindow, QFileDialog, QApplication, QVBoxLayout, QTabWidget,QGraphicsView,QGraphicsScene
+from PyQt6.QtGui import QPixmap, QPainter, QColor, QMouseEvent
+from PyQt6.QtCore import QRect, Qt,QEvent,QCoreApplication
 
 # custom widgets
 from .custom_widgets import  ScatterplotWidget, TimelineView, TimelineWindow
@@ -111,7 +111,7 @@ class MainWindow(QMainWindow):
                 self.data_dict[feature_name]["full"][i] = value['full']
 
         # ================ SETUP LEFT COLUMN ================
-        print("setting up left column of dashboard")
+        print("-------setting up left column of dashboard")
         # ---------------- STARTING IMG ----------------
         # load an initial first image to display
         default_image_key = list(key_dict.keys())[0]
@@ -128,7 +128,8 @@ class MainWindow(QMainWindow):
         # add additional data in box_left_low
 
         # ================ SETUP MIDDLE COLUMN ================
-        print("setting up scatterplot")
+        print("------setting up scatterplot")
+        self.ui.box_metric_tabs.setCurrentIndex(0)
         # setup scatterplot
         # TODO: setup feature projection plot with combined and individual plots!
         self.ui.box_metric_tabs.currentChanged.connect(self.setup_scatterplot)
@@ -139,13 +140,12 @@ class MainWindow(QMainWindow):
         self.ui.r_image_points.toggle()
         self.ui.r_image_points.toggled.connect(self.change_scatterplot_pointtype)
 
-
-        print("setting up middle metric options")
+        print("------setting up middle metric options")
         # SETUP TEXTURE OPTIONs
         # options for what distance measure to use.
+        self.ui.texture_opt_eucdist.toggle()
         self.ui.texture_opt_cosdist.toggled.connect(self.texture_opt_dist_cos)
         self.ui.texture_opt_eucdist.toggled.connect(self.texture_opt_dist_euc)
-        self.ui.texture_opt_eucdist.toggle()
 
         # add options for head similarity to comboboxes
         for i in range(256):
@@ -160,15 +160,25 @@ class MainWindow(QMainWindow):
         # SETUP DINO OPTIONS
 
         # options for what distance measure to use.
+        self.ui.dino_opt_eucdist.toggle()
         self.ui.dino_opt_cosdist.toggled.connect(self.dino_opt_dist_cos)
         self.ui.dino_opt_eucdist.toggled.connect(self.dino_opt_dist_euc)
-        self.ui.dino_opt_eucdist.toggle()
+        
 
         # options for calculating similarity based on what vector
+        self.ui.dino_opt_fullsim.toggle()
         self.ui.dino_opt_2dsim.toggled.connect(self.dino_opt_simtype)
         self.ui.dino_opt_fullsim.toggled.connect(self.dino_opt_simtype)
         self.ui.dino_opt_headsim.toggled.connect(self.dino_opt_simtype)
-        self.ui.dino_opt_fullsim.toggle()
+        
+
+        # add options for head similarity to comboboxes
+        for i in range(12):
+            self.ui.dino_opt_headsim_cbox.addItem(f"{i+1}")
+            self.ui.dino_opt_layersim_cbox.addItem(f"{i+1}")
+            self.ui.dino_opt_headvis_cbox.addItem(f"{i+1}")
+            self.ui.dino_opt_layervis_cbox.addItem(f"{i+1}")
+
 
         self.ui.dino_opt_headvis_cbox.currentIndexChanged.connect(self.dino_show_camap)
         self.ui.dino_opt_layervis_cbox.currentIndexChanged.connect(self.dino_show_camap)
@@ -180,17 +190,15 @@ class MainWindow(QMainWindow):
         # option for showing crossattention map
         self.ui.dino_opt_showcamap.toggled.connect(self.dino_show_camap)
 
-        # add options for head similarity to comboboxes
-        for i in range(12):
-            self.ui.dino_opt_headsim_cbox.addItem(f"{i+1}")
-            self.ui.dino_opt_layersim_cbox.addItem(f"{i+1}")
-            self.ui.dino_opt_headvis_cbox.addItem(f"{i+1}")
-            self.ui.dino_opt_layervis_cbox.addItem(f"{i+1}")
-
-        self.ui.box_metric_tabs.setCurrentIndex(0)
+        # # add options for head similarity to comboboxes
+        # for i in range(12):
+        #     self.ui.dino_opt_headsim_cbox.addItem(f"{i+1}")
+        #     self.ui.dino_opt_layersim_cbox.addItem(f"{i+1}")
+        #     self.ui.dino_opt_headvis_cbox.addItem(f"{i+1}")
+        #     self.ui.dino_opt_layervis_cbox.addItem(f"{i+1}")
 
         # ================ SETUP RIGHT COLUMN ================
-        print("setting up right column, calculating nearest neighbours")
+        print("------setting up right column, calculating nearest neighbours")
         topk_dict = self.calculate_nearest_neighbours()
         self.display_nearest_neighbours(topk_dict)
         
@@ -208,6 +216,8 @@ class MainWindow(QMainWindow):
                 self.data_dict[current_metric_type.lower()]["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame
             )
             self.scatterplot.plot_widget.scene().mousePressEvent=self.on_canvas_click
+            # print('connected sigmouseclicked')
+            # self.scatterplot.plot_widget.scene().sigMouseClicked.connect(self.on_canvas_click)
             self.scatterplot.selected_idx.emit(0)
         else:
             print('only redraw scatterplot')
@@ -233,16 +243,19 @@ class MainWindow(QMainWindow):
         self.display_nearest_neighbours(topk_dict)
 
     def dino_opt_dist_cos(self):
+        print('dino_opt_dist_cos')
         self.dino_distance_measure = "cosine"
         topk_dict = self.calculate_nearest_neighbours()
         self.display_nearest_neighbours(topk_dict)
     
     def dino_opt_dist_euc(self):
+        print('dino_opt_dist_euc')
         self.dino_distance_measure = "euclidian"
         topk_dict = self.calculate_nearest_neighbours()
         self.display_nearest_neighbours(topk_dict)
 
     def dino_opt_simtype(self):
+        print('dino_opt_simtype')
         if self.ui.dino_opt_fullsim.isChecked:
             self.dino_opt_sim_vector_type = "full"
         elif self.ui.dino_opt_2dsim.isChecked:
@@ -257,6 +270,7 @@ class MainWindow(QMainWindow):
     
 
     def texture_show_fm(self):
+        print('texture_show_fm')
         if not self.ui.texture_opt_show_fm.isChecked():
             self.display_photo_left(self.left_img_filename)
             self.display_photo_right(self.right_img_filename)
@@ -320,6 +334,7 @@ class MainWindow(QMainWindow):
             self.display_photo_right(rightname)
 
     def dino_show_camap(self):
+        print('dino_show_camap')
         
         if not self.ui.dino_opt_showcamap.isChecked():
             self.display_photo_left(self.left_img_filename)
@@ -380,6 +395,8 @@ class MainWindow(QMainWindow):
         ui_element.setPalette(p)
     
     def display_nearest_neighbours(self, topk):
+        print('display_nearest_neighbours')
+
         # save for potential use in other parts of the program
         self.topk = topk
 
@@ -533,9 +550,6 @@ class MainWindow(QMainWindow):
             self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
 
     def on_canvas_click(self, ev):
-        # QGraphicsScene.mousePressEvent(self.scatterplot.plot_widget.scene(), ev)
-        # super().mousePressEvent(ev)
-
         self.scatterplot.clear_selection()
         pos = ev.scenePos()
         print("on canvas click:", pos)
@@ -552,6 +566,28 @@ class MainWindow(QMainWindow):
                     print('selected_index==plot_index?',index==idx)
                     self.clicked_on_point()
                     break
+
+        # self.scatterplot.plot_widget.scene().mousePressEvent
+
+
+        # QGraphicsScene.mousePressEvent(self.scatterplot.plot_widget.scene(), ev)
+        # super().mousePressEvent(ev)
+        # self.scatterplot.plot_widget.mousePressEvent(ev)
+        # QGraphicsView.mousePressEvent(self.scatterplot.plot_widget.plotItem.vb, ev)
+
+        # view = self.scatterplot.plot_widget.getViewBox()
+        # print(type(view))
+        # QGraphicsView.mousePressEvent(view.scene(), ev)
+
+        # view = self.scatterplot.plot_widget.plotItem.getViewBox()
+        # event = QMouseEvent(QEvent.MouseButtonPress, ev.localPos(), ev.screenPos(),
+        #                         ev.button(), ev.buttons(), ev.modifiers())
+        # QCoreApplication.sendEvent(view, event)
+
+        # Call the default panning behavior by invoking the mousePressEvent on the PlotWidget's view box
+        # view = self.scatterplot.plot_widget.getViewBox()
+        # view.mousePressEvent(ev)
+        
 
     # TODO: maybe change loc of this fn, or split its a little in between scatterplot and main
     def clicked_on_point(self):

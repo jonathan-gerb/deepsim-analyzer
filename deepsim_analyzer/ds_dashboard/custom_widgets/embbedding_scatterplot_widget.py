@@ -15,6 +15,9 @@ from PyQt6.QtWidgets import (QApplication, QDialog, QGraphicsEllipseItem,
 
 import matplotlib.pyplot as plt
 
+from pyqtgraph.Point import Point
+from pyqtgraph import functions as fn
+
 
 class ScatterplotWidget(QWidget):
     # signal that emits the index of the selected points
@@ -47,6 +50,7 @@ class ScatterplotWidget(QWidget):
 
         self.plot_widget.scene().mouseReleaseEvent = self.on_scene_mouse_release
         self.plot_widget.scene().mouseMoveEvent = self.on_scene_mouse_move
+        # self.plot_widget.sigSceneMouseMoved.connect(self.on_scene_mouse_move)
         self.plot_widget.scene().mouseDoubleClickEvent = self.on_scene_mouse_double_click
         
         self.draw_scatterplot()
@@ -102,6 +106,7 @@ class ScatterplotWidget(QWidget):
                 self.draw_scatterplot_dots()
             else:
                 self.draw_scatterplot()
+            self.selected_idx.emit(self.selected_index)
 
         self.clear_selection() # ? but will also put selected_points = [] or
         # self.start_point=None
@@ -109,13 +114,91 @@ class ScatterplotWidget(QWidget):
         # if self.rect is not None and self.rect in self.plot_widget.scene().items():
         #     self.plot_widget.scene().removeItem(self.rect)
 
+        QGraphicsScene.mouseReleaseEvent(self.plot_widget.scene(), event)
+        view = self.plot_widget.getViewBox()
+        view.mouseReleaseEvent(event)
+
     def on_scene_mouse_move(self, event):
         # print('mouseMoveEvent')
-        # super().mouseMoveEvent(event)
-        # QGraphicsScene.mouseMoveEvent(self, event)
-        
         if self.start_point is not None:
             self.end_selection(event)
+        QGraphicsScene.mouseMoveEvent(self.plot_widget.scene(), event)
+        # QGraphicsView.mouseMoveEvent(self.plot_widget.view(), event)
+
+        # view = self.plot_widget.getViewBox()
+        # view.mouseMoveEvent(event)
+
+    
+    # def on_scene_mouse_move(self, ev):
+    #     print('mouseMoveEvent')
+    #     if self.start_point is not None:
+    #         self.end_selection(ev)
+    #     view = self.plot_widget.getViewBox()
+    #     # view.mouseMoveEvent=self.mouse_move_view
+    #     self.mouse_move_view(ev)
+
+    # default panning fn
+    # def mouse_move_view(self, ev):
+    #     print('please pan')
+    #     lpos = ev.position() if hasattr(ev, 'position') else ev.localPos()
+    #     if self.lastMousePos is None:
+    #         self.lastMousePos = lpos
+    #     delta = Point(lpos - self.lastMousePos)
+    #     self.lastMousePos = lpos
+
+    #     view = self.plot_widget.getViewBox()
+    #     view.mouseMoveEvent(ev)  
+
+    #     # super().mouseMoveEvent(ev)
+    #     if not self.mouseEnabled:
+    #         return
+    #     self.sigSceneMouseMoved.emit(self.mapToScene(lpos))
+            
+    #     if self.clickAccepted:  ## Ignore event if an item in the scene has already claimed it.
+    #         return
+        
+    #     if ev.buttons() == Qt.MouseButton.RightButton:
+    #         delta = Point(fn.clip_scalar(delta[0], -50, 50), fn.clip_scalar(-delta[1], -50, 50))
+    #         scale = 1.01 ** delta
+    #         self.scale(scale[0], scale[1], center=self.mapToScene(self.mousePressPos))
+    #         self.sigDeviceRangeChanged.emit(self, self.range)
+
+    #     elif ev.buttons() in [Qt.MouseButton.MiddleButton, Qt.MouseButton.LeftButton]:  ## Allow panning by left or mid button.
+    #         px = self.pixelSize()
+    #         tr = -delta * px
+            
+    #         self.translate(tr[0], tr[1])
+    #         self.sigDeviceRangeChanged.emit(self, self.range)
+
+
+    # def mouse_move_view(self, ev):
+    #     lpos = ev.pos() if hasattr(ev, 'pos') else ev.scenePos()
+    #     if self.lastMousePos is None:
+    #         self.lastMousePos = lpos
+    #     delta = Point(lpos - self.lastMousePos)
+    #     self.lastMousePos = lpos
+
+    #     super().mouseMoveEvent(ev)
+    #     if not self.mouseEnabled:
+    #         return
+    #     self.sigSceneMouseMoved.emit(self.mapToScene(lpos))
+
+    #     if self.clickAccepted:  ## Ignore event if an item in the scene has already claimed it.
+    #         return
+
+    #     if ev.buttons() == Qt.MouseButton.RightButton:
+    #         delta = Point(fn.clip_scalar(delta[0], -50, 50), fn.clip_scalar(-delta[1], -50, 50))
+    #         scale = 1.01 ** delta
+    #         self.scale(scale[0], scale[1], center=self.mapToScene(self.mousePressPos))
+    #         self.sigDeviceRangeChanged.emit(self, self.range)
+
+    #     elif ev.buttons() in [Qt.MouseButton.MiddleButton, Qt.MouseButton.LeftButton]:  ## Allow panning by left or mid button.
+    #         px = self.pixelSize()
+    #         tr = -delta * px
+
+    #         self.translate(tr[0], tr[1])
+    #         self.sigDeviceRangeChanged.emit(self, self.range)
+
 
     def start_selection(self, ev):
         print('start ev', ev)
@@ -130,7 +213,7 @@ class ScatterplotWidget(QWidget):
         pos = ev.scenePos()
         view_coords = self.plot_widget.mapToView(pos)
         self.end_point = (view_coords.x(), view_coords.y())
-        if self.start_point!= self.end_point:
+        if self.start_point!= self.end_point and self.end_point is not None and self.start_point is not None:
             # print('start pos', self.start_point)
             # print('end pos', self.end_point)
             self.draw_selection_rectangle()
@@ -244,6 +327,9 @@ class ScatterplotWidget(QWidget):
     def draw_scatterplot_dots(self,reset=True):
         print('draw_scatterplot_dots')
         self.plot_widget.clear()
+        # self.plot_widget.scene().clear()
+        # for idx, index, item in self.image_items:
+        #     self.plot_widget.scene().removeItem(item)
         if self.selected_points!=[]:
             print('draw selected points')
             points= self.selected_points
@@ -264,6 +350,10 @@ class ScatterplotWidget(QWidget):
     def highlight_selected_point(self, id):
         print('draw border, id:', id)
 
+        # if current selected point not in self.selected_points, there is no border but left img stays
+        if self.points[id] in self.selected_points:
+            print('current selected point not in self.selected_points')
+
         if self.dots_plot:
             for i, point in enumerate(self.points):
                 if i == id:
@@ -272,11 +362,40 @@ class ScatterplotWidget(QWidget):
                 else:
                     self.plot_widget.plot([point[0]], [point[1]], pen=None, symbolBrush=self.selection_color, symbolSize=self.selection_points_size)
         else:
+            print('image_items', len(self.image_items))
             for _, _, image_item in self.image_items:
                 # Remove border from all image items
                 image_item.setBorder(None)
-
+            
             _,_,image_item=self.image_items[id]
             border_color = pg.mkPen(color='r', width=4)
             image_item.setBorder(border_color)
-    
+        
+    # default panning fn
+    # def mouseMoveEvent(self, ev):
+    #     lpos = ev.position() if hasattr(ev, 'position') else ev.localPos()
+    #     if self.lastMousePos is None:
+    #         self.lastMousePos = lpos
+    #     delta = Point(lpos - self.lastMousePos)
+    #     self.lastMousePos = lpos
+
+    #     super().mouseMoveEvent(ev)
+    #     if not self.mouseEnabled:
+    #         return
+    #     self.sigSceneMouseMoved.emit(self.mapToScene(lpos))
+            
+    #     if self.clickAccepted:  ## Ignore event if an item in the scene has already claimed it.
+    #         return
+        
+    #     if ev.buttons() == Qt.MouseButton.RightButton:
+    #         delta = Point(fn.clip_scalar(delta[0], -50, 50), fn.clip_scalar(-delta[1], -50, 50))
+    #         scale = 1.01 ** delta
+    #         self.scale(scale[0], scale[1], center=self.mapToScene(self.mousePressPos))
+    #         self.sigDeviceRangeChanged.emit(self, self.range)
+
+    #     elif ev.buttons() in [Qt.MouseButton.MiddleButton, Qt.MouseButton.LeftButton]:  ## Allow panning by left or mid button.
+    #         px = self.pixelSize()
+    #         tr = -delta * px
+            
+    #         self.translate(tr[0], tr[1])
+    #         self.sigDeviceRangeChanged.emit(self, self.range)
