@@ -133,6 +133,7 @@ class MainWindow(QMainWindow):
         self.ui.r_image_points.toggled.connect(self.change_scatterplot_pointtype)
         # toggle the the dots to images radio button
         # self.ui.r_image_points.toggle()
+        self.setup_scatterplot()
 
 
         print("setting up middle metric options")
@@ -190,7 +191,7 @@ class MainWindow(QMainWindow):
         self.scatterplot.plot_widget.scene().mousePressEvent=self.on_canvas_click
         self.ui.r_image_points.toggled.connect(self.change_scatterplot_pointtype)
         # toggle the the dots to images radio button
-        self.ui.r_image_points.toggle()
+        # self.ui.r_image_points.toggle()
 
     def recalc_similarity(self):
         topk_dict = self.calculate_nearest_neighbours()
