@@ -61,11 +61,13 @@ class MainWindow(QMainWindow):
 
         # in time we have to get all features for all the data, we will start with
         # just the dummy feature
-        self.available_features = ["dummy", "texture", "dino"]
+        self.available_features = ["dummy", "dino", "texture", "emotion"]
 
         # metric option defaults
         self.dino_distance_measure = "euclidian"
         self.texture_distance_measure = "euclidian"
+        self.emotion_distance_measure = "euclidian"
+        self.emotion_opt_sim_vector_type = "full"
         self.dino_opt_sim_vector_type = "full"
 
         # set color for main ui
@@ -156,6 +158,12 @@ class MainWindow(QMainWindow):
 
         self.ui.texture_opt_filtervis.currentIndexChanged.connect(self.texture_show_fm)
         self.ui.texture_opt_show_fm.toggled.connect(self.texture_show_fm)
+
+        # SETUP EMOTION OPTIONs
+        # options for what distance measure to use.
+        self.ui.emotion_opt_cosdist.toggled.connect(self.emotion_opt_dist_cos)
+        self.ui.emotion_opt_eucdist.toggled.connect(self.emotion_opt_dist_euc)
+        self.ui.emotion_opt_eucdist.toggle()
 
         # SETUP DINO OPTIONS
 
@@ -251,6 +259,16 @@ class MainWindow(QMainWindow):
     def dino_opt_dist_euc(self):
         print('dino_opt_dist_euc')
         self.dino_distance_measure = "euclidian"
+        topk_dict = self.calculate_nearest_neighbours()
+        self.display_nearest_neighbours(topk_dict)
+
+    def emotion_opt_dist_cos(self):
+        self.emotion_distance_measure = "cosine"
+        topk_dict = self.calculate_nearest_neighbours()
+        self.display_nearest_neighbours(topk_dict)
+    
+    def emotion_opt_dist_euc(self):
+        self.emotion_distance_measure = "euclidian"
         topk_dict = self.calculate_nearest_neighbours()
         self.display_nearest_neighbours(topk_dict)
 
@@ -467,23 +485,23 @@ class MainWindow(QMainWindow):
 
             current_vector = self.left_img_features[feature_name][vector_type_key]
             distances = np.zeros((self.data_dict[feature_name][vector_type_key].shape[0]))
-            
-            # calculate distances
-            if feature_name == "dino":
-                if self.dino_distance_measure == "cosine":
-                    distances = cosine_distances(current_vector.reshape(1, -1), self.data_dict[feature_name][vector_type_key]).squeeze()
-                if self.dino_distance_measure == "euclidian":
-                    a_min_b = current_vector.reshape(-1, 1) - self.data_dict[feature_name][vector_type_key].T
-                    distances = np.sqrt(np.einsum('ij,ij->j', a_min_b, a_min_b))
-            elif feature_name == "texture":
-                if self.texture_distance_measure == "cosine":
-                    distances = cosine_distances(current_vector.reshape(1, -1), self.data_dict[feature_name][vector_type_key]).squeeze()
-                if self.texture_distance_measure == "euclidian":
-                    a_min_b = current_vector.reshape(-1, 1) - self.data_dict[feature_name][vector_type_key].T
-                    distances = np.sqrt(np.einsum('ij,ij->j', a_min_b, a_min_b))
-            else:
-                a_min_b = current_vector.reshape(-1, 1) - self.data_dict[feature_name][vector_type_key].T
-                distances = np.sqrt(np.einsum('ij,ij->j', a_min_b, a_min_b))
+
+            for i in range(self.data_dict[feature_name][vector_type_key].shape[0]):
+                target_vector = self.data_dict[feature_name][vector_type_key][i]
+                # similarity options
+                if feature_name == "dino":
+                    if self.dino_distance_measure == "cosine":
+                        distances[i] = spatial.distance.cosine(current_vector, target_vector)
+                    if self.dino_distance_measure == "euclidian":
+                        distances[i] = spatial.distance.euclidean(current_vector, target_vector)
+                elif feature_name == "texture":
+                    if self.texture_distance_measure == "cosine":
+                        distances[i] = spatial.distance.cosine(current_vector, target_vector)
+                    if self.texture_distance_measure == "euclidian":
+                        distances[i] = spatial.distance.euclidean(current_vector, target_vector)
+                # add more options later
+                else:
+                    distances[i] = spatial.distance.euclidean(current_vector, target_vector)
             
             # rescale distances so that the distances are always within the range of 0-1
             # this way we can combine them, the element with distance 0 is the image itself if it's 
