@@ -52,11 +52,13 @@ class MainWindow(QMainWindow):
 
         # in time we have to get all features for all the data, we will start with
         # just the dummy feature
-        self.available_features = ["dummy", "dino", "texture"]
+        self.available_features = ["dummy", "dino", "texture", "emotion"]
 
         # metric option defaults
         self.dino_distance_measure = "euclidian"
         self.texture_distance_measure = "euclidian"
+        self.emotion_distance_measure = "euclidian"
+        self.emotion_opt_sim_vector_type = "full"
         self.dino_opt_sim_vector_type = "full"
 
         # set color for main ui
@@ -131,6 +133,12 @@ class MainWindow(QMainWindow):
         self.ui.texture_opt_eucdist.toggled.connect(self.texture_opt_dist_euc)
         self.ui.texture_opt_eucdist.toggle()
 
+        # SETUP EMOTION OPTIONs
+        # options for what distance measure to use.
+        self.ui.emotion_opt_cosdist.toggled.connect(self.emotion_opt_dist_cos)
+        self.ui.emotion_opt_eucdist.toggled.connect(self.emotion_opt_dist_euc)
+        self.ui.emotion_opt_eucdist.toggle()
+
         # SETUP DINO OPTIONS
 
         # options for what distance measure to use.
@@ -198,6 +206,16 @@ class MainWindow(QMainWindow):
     
     def dino_opt_dist_euc(self):
         self.dino_distance_measure = "euclidian"
+        topk_dict = self.calculate_nearest_neighbours()
+        self.display_nearest_neighbours(topk_dict)
+
+    def emotion_opt_dist_cos(self):
+        self.emotion_distance_measure = "cosine"
+        topk_dict = self.calculate_nearest_neighbours()
+        self.display_nearest_neighbours(topk_dict)
+    
+    def emotion_opt_dist_euc(self):
+        self.emotion_distance_measure = "euclidian"
         topk_dict = self.calculate_nearest_neighbours()
         self.display_nearest_neighbours(topk_dict)
 
@@ -308,6 +326,11 @@ class MainWindow(QMainWindow):
                     if self.texture_distance_measure == "cosine":
                         distances[i] = spatial.distance.cosine(current_vector, target_vector)
                     if self.texture_distance_measure == "euclidian":
+                        distances[i] = spatial.distance.euclidean(current_vector, target_vector)
+                elif feature_name == "emotion":
+                    if self.emotion_distance_measure == "cosine":
+                        distances[i] = spatial.distance.cosine(current_vector, target_vector)
+                    if self.emotion_distance_measure == "euclidian":
                         distances[i] = spatial.distance.euclidean(current_vector, target_vector)
                 # add more options later
                 else:
