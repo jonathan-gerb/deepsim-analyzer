@@ -1,33 +1,39 @@
-from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QPushButton, QWidget
-from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QSize
+from PyQt6.QtWidgets import QVBoxLayout, QWidget
+from PyQt6.QtCore import pyqtSignal, QPoint
+import PyQt6.QtGui as QtGui
+
 import numpy as np
 import pyqtgraph as pg
-from PIL import Image
-from PIL.ImageQt import ImageQt
 
-from PyQt6.QtGui import QPixmap, QImage, QBrush,QTransform
-from PyQt6.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem
-import pandas as pd
-import configparser
+import matplotlib.pyplot as plt
 
-# from ..home import MainWindow
+# from PIL import Image
+# from PIL.ImageQt import ImageQt
+
+# from PyQt6.QtGui import QPixmap, QImage, QBrush,QTransform
+# from PyQt6.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem
+# import pandas as pd
+# import configparser
+
+# from ..home import DeepSimDashboard
 
 # import deepsim_analyzer as da
 
-class LinkedScatterplotWidget(QWidget):
+class ScatterplotWidget(QWidget):
     selected_idx = pyqtSignal(list)
     label = pyqtSignal(str)
 
     # Define a custom signal to emit when a point is clicked
     point_clicked = pyqtSignal(tuple)
 
-    def __init__(self, points, indices,img_paths, config):
+    def __init__(self, points, indices,img_paths, config, plot_widget):
         super().__init__()
 
         # self.window = MainWindow()
 
         self.points = points
         self.indices=indices
+        self.config=config
         self.img_paths=img_paths
         self.mean_x = np.mean(self.points[:,0])
         self.mean_y = np.mean(self.points[:,1])
@@ -42,7 +48,7 @@ class LinkedScatterplotWidget(QWidget):
         self.start_point = None
         self.end_point = None
 
-        self.plot_widget = pg.PlotWidget()
+        self.plot_widget = plot_widget
         self.plot_widget.setMouseEnabled(True, True)
         self.plot_widget.setLimits(xMin=-np.inf, xMax=np.inf, yMin=-np.inf, yMax=np.inf)
         self.plot_widget.setAspectLocked(lock=True)
@@ -57,6 +63,10 @@ class LinkedScatterplotWidget(QWidget):
         # layout.addWidget(self.clear_button)
 
         self.selected_point=None
+        self.selected_index=None
+        self.plot_index=None
+
+
         # self.selected_points = []
         self.outside_points_visible = False
 
@@ -92,71 +102,7 @@ class LinkedScatterplotWidget(QWidget):
         # pos = self.plot_widget.mapToScene(QPoint(ev.x(), ev.y()))
         pos = self.plot_widget.mapToScene(QPoint(int(ev.x()), int(ev.y())))
         self.label.emit(f"Current Mouse Position: {pos.x():.2f}, {pos.y():.2f}")
-
-   
-    # def on_canvas_click(self, ev):
-    #     pos = ev.scenePos()
-    #     print('on canvas click:', pos)
-    #     if ev.button() == Qt.MouseButton.LeftButton:
-    #         for idx, index, item in self.image_items:
-    #             if item.contains(item.mapFromScene(pos)):
-    #                 self.selected_point = int(pos.x()), int(pos.y())
-    #                 self.selected_index = index
-    #                 self.clicked_on_point()
-    #                 break
-
-    # def clicked_on_point(self):
-    #     print('point/ image clicked, load on the left')
-    #     # Get the selected point
-    #     filename= self.get_image_path(self.selected_index)
-    #     self.window.initialize_images(self.selected_point,filename)
-
-
-    def get_image_path(self, index):
-        # picks a random image from dataset as initial display
-        # load the config file 'config.ini'
-        config = configparser.ConfigParser()
-        config.read('config.ini')
-
-        data_path = config['main']['pkl_path']
-        # dataloading
-        df = pd.read_pickle(data_path)
-
-        img_paths = df['image'].iloc[index]
-        return img_paths
     
-    # def get_image_path(self, index):
-    #     # picks a random image from dataset as initial display
-    #     img_array2 = da.io.load_image("../data/raw_immutable/nighthawks.png")
-    #     return 'image_{}.jpg'.format(index)
-
-
-    def get_indices_nearest_neighbors(self, point):
-        print('point', point)
-        x, y =point
-        distances = np.sqrt(np.power(self.points[:, 0] - x, 2) + np.power(self.points[:, 1] - y, 2))
-        indices = np.argsort(distances)
-        return indices
-
-    def find_nearest_neighbors(self, point, n=3):
-        indices = self.get_indices_nearest_neighbors(point)
-        nearest_indices = indices[:n]
-        return nearest_indices
-    
-    def get_embeddings_from_nearest_neighbors(self, nearest_indices):
-        nearest_embeddings = []
-        for index in nearest_indices:
-            # Generate a random embedding for each point
-            embedding = np.random.rand(128)  # Replace 128 with the desired embedding size
-            nearest_embeddings.append(embedding)
-        return nearest_embeddings
-
-    
-    def get_image_paths(self, indices):
-        # Here, you need to provide a list of image paths corresponding to the indices
-        # For demonstration purposes, let's assume the images are named as 'image_0.jpg', 'image_1.jpg', etc.
-        image_paths = ['image_{}.jpg'.format(idx) for idx in indices]
-        return image_paths
 
     def clear_selection(self):
         self.selected_idx.emit([])
@@ -186,7 +132,7 @@ class LinkedScatterplotWidget(QWidget):
         indices = [i for i, p in enumerate(self.points) if xmin <= p[0] <= xmax and ymin <= p[1] <= ymax]
 
         self.selected_points = indices
-        self.draw_scatterplot()
+        # self.draw_scatterplot()
 
 
     def draw_scatterplot_dots(self):
@@ -202,26 +148,60 @@ class LinkedScatterplotWidget(QWidget):
         self.plot_widget.update()
         
 
+    def draw_scatterplot(self):
+        self.plot_widget.clear()
+        for idx, index, item in self.image_items:
+            self.plot_widget.scene().removeItem(item)
+
+        self.image_items = []
+        new_pos=[]
+
+        for i, point in enumerate(self.points):
+            x,y = point
+            
+            # Read in image
+            image_path = self.img_paths[i]
+            image = plt.imread(image_path)
+
+            # TODO: change resolution
+
+            w, h, _ = image.shape
+
+            # Create image item
+            image_item = pg.ImageItem()
+            image_item.setImage(image)
+
+            # Adjust image
+            scale = 0.3
+            rotation = -90
+            
+            image_item.setScale(scale / np.sqrt(w**2 + h**2))
+            image_item.setPos(x, y)
+            image_item.setRotation(rotation)
+            # new_pos.append((x,y))
+
+            # Add to plot
+            self.plot_widget.addItem(image_item)
+            
+            # Make it clickable.
+            self.image_items.append((i, self.indices[i], image_item)) 
 
 
+        # self.reset_scatterplot(np.array(new_pos))
+        self.plot_widget.update()
 
-    def is_point_in_rectangle(self, point):
-        if self.start_point[0] < self.end_point[0]:
-            x1, x2 = self.start_point[0], self.end_point[0]
-        else:
-            x1, x2 = self.end_point[0], self.start_point[0]
-        if self.start_point[1] < self.end_point[1]:
-            y1, y2 = self.start_point[1], self.end_point[1]
-        else:
-            y1, y2 = self.end_point[1], self.start_point[1]
 
-        x, y = point[0], point[1]
+    # --------------- TO BE REMOVED ---------------------
+    def get_indices_nearest_neighbors(self, point):
+        # print('point', point)
+        x, y =point
+        distances = np.sqrt(np.power(self.points[:, 0] - x, 2) + np.power(self.points[:, 1] - y, 2))
+        indices = np.argsort(distances)
+        return indices
 
-        if x1 <= x <= x2 and y1 <= y <= y2:
-            return True
-        else:
-            return False
+    def find_nearest_neighbors(self, point, n=3):
+        indices = self.get_indices_nearest_neighbors(point)
+        nearest_indices = indices[:n]
+        return nearest_indices
+    
 
-    def set_outside_points_visible(self, visible):
-        self.outside_points_visible = visible
-        self.draw_scatterplot()

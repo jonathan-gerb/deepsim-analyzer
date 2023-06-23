@@ -179,7 +179,7 @@ def calc_and_save_features(
     image_size=(480, 480),
     threshold=None,
     pretrained_model_path="",
-    save_feature_maps=False,
+    save_feature_maps=True,
     resize=True
     ):
     
@@ -201,7 +201,7 @@ def calc_and_save_features(
 
     for image_path in tqdm(image_paths, desc=f"calculating dino features", total=len(image_paths)):
         image_path = str(image_path)
-        hash = get_image_hash(image_path, is_filepath=True)
+        hash = get_image_hash(image_path)
         image = load_image(image_path, return_np=False)
 
         if resize:
@@ -264,10 +264,13 @@ def calc_and_save_features(
         feature_vector = get_att_feature_vector(attention_dict)
 
         if save_feature_maps:
-            feature_maps_image = get_feature_maps(attention_dict, resize_to=resize)
-            print(feature_maps_image[list(feature_maps_image.keys())[0]].shape)
-            feature_maps_image = np.stack(feature_maps_image.values(), axis=0)
-            save_feature(dataset_filepath, hash, feature_maps_image, 'dino_fm')
+            feature_maps_image = get_feature_maps(attention_dict, resize_to=False)
+            all_maps_array = np.zeros((12,12,480,480))
+            for layer in range(12):
+                for head in range(12):
+                    all_maps_array[layer][head] = feature_maps_image[layer][head]
+
+            save_feature(dataset_filepath, hash, all_maps_array, 'dino_fm')
 
         save_feature(dataset_filepath, hash, feature_vector, 'dino')
 
@@ -356,7 +359,7 @@ def get_features(
     # torchvision.utils.make_grid(img, normalize=True, scale_each=True)
 
     if return_feature_maps:
-        feature_maps = get_feature_maps(attention_dict, resize_to=resize)
+        feature_maps = get_feature_maps(attention_dict, resize_to=False)
 
         return feature_vector, feature_maps
     else:

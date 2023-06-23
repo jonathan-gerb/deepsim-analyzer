@@ -8,15 +8,19 @@ from PIL import Image
 import configparser
 from scipy import spatial
 from sklearn.preprocessing import minmax_scale
+from sklearn.metrics.pairwise import cosine_distances
+import os
+from tqdm import tqdm
+import cv2
 
 # qt imports
 from PyQt6 import QtWidgets
-from PyQt6.QtWidgets import QMainWindow, QFileDialog, QApplication, QVBoxLayout, QTabWidget
-from PyQt6.QtGui import QPixmap, QPainter, QColor
-from PyQt6.QtCore import QRect, Qt
+from PyQt6.QtWidgets import QMainWindow, QFileDialog, QApplication, QVBoxLayout, QTabWidget,QGraphicsView,QGraphicsScene
+from PyQt6.QtGui import QPixmap, QPainter, QColor, QMouseEvent
+from PyQt6.QtCore import QRect, Qt,QEvent,QCoreApplication
 
 # custom widgets
-from .custom_widgets import ButtonWidget, ScatterplotWidget, ImageWidget, ModelVis, TimelineView, TimelineWindow, HistoryTimelineWidget
+from .custom_widgets import  ScatterplotWidget, TimelineView, TimelineWindow
 
 # deepsim analyzer package
 import deepsim_analyzer as da
@@ -36,12 +40,17 @@ class MainWindow(QMainWindow):
         self.ui.setupUi(self)
         self.ui.b_upload.clicked.connect(self.upload_image_left)
 
+        print("setting up configs")
+
         # load the config file 'config.ini'
         self.config = configparser.ConfigParser()
         basepath = Path(__file__).parent
         config_filepath = str(basepath / "config.ini")
         self.config.read(config_filepath)
         self.datafile_path = datafile_path
+
+        # set image max allocation pretty high
+        os.environ['QT_IMAGEIO_MAXALLOC'] = "512"
 
         # save passed arguments as attributes
         self.image_key_dict = key_dict
@@ -76,11 +85,12 @@ class MainWindow(QMainWindow):
         self.set_color_element(self.ui.emotion_tab, [143, 143, 143])
 
         # ================ SETUP DATA ================
+        print("setting up internal data")
         self.metadata = {}
+
         # read metadata for all image keys that were passed
-        for key in key_dict.keys():
-            metadata_key = da.read_metadata(datafile_path, key)
-            self.metadata[key] = metadata_key
+        print("reading metadata")
+        self.metadata = da.read_metadata_batch(datafile_path, self.image_keys)
 
         # data dict should contain all the data
         self.data_dict = {}
@@ -96,14 +106,14 @@ class MainWindow(QMainWindow):
             self.data_dict[feature_name]["projection"] = np.zeros((len(self.image_keys), 2))
             self.data_dict[feature_name]["full"] = np.zeros((len(self.image_keys), test_feature.shape[0]))
 
-        for i, key in enumerate(self.image_keys):
+        for i, key in tqdm(enumerate(self.image_keys), desc="loading in feature data", total=len(self.image_keys)):
             feature_dict_key = self.get_features_from_dataset(key)
             for feature_name, value in feature_dict_key.items():
                 self.data_dict[feature_name]["projection"][i] = value['projection']
                 self.data_dict[feature_name]["full"][i] = value['full']
 
         # ================ SETUP LEFT COLUMN ================
-
+        print("-------setting up left column of dashboard")
         # ---------------- STARTING IMG ----------------
         # load an initial first image to display
         default_image_key = list(key_dict.keys())[0]
@@ -111,6 +121,7 @@ class MainWindow(QMainWindow):
         default_image_path_absolute = str(Path(images_filepath) / default_image_path)
         
         self.left_img_key = default_image_key
+        self.left_img_filename = default_image_path_absolute
 
         # display the base image
         self.display_photo_left(default_image_path_absolute)
@@ -119,19 +130,34 @@ class MainWindow(QMainWindow):
         # add additional data in box_left_low
 
         # ================ SETUP MIDDLE COLUMN ================
-
+        print("------setting up scatterplot")
+        self.ui.box_metric_tabs.setCurrentIndex(0)
         # setup scatterplot
         # TODO: setup feature projection plot with combined and individual plots!
         self.ui.box_metric_tabs.currentChanged.connect(self.setup_scatterplot)
-        self.ui.r_image_points.toggled.connect(self.change_scatterplot_pointtype)
+        # And setup up once to initialize
+        self.setup_scatterplot()
+    
         # toggle the the dots to images radio button
         self.ui.r_image_points.toggle()
+        self.ui.r_image_points.toggled.connect(self.change_scatterplot_pointtype)
 
+        print("------setting up middle metric options")
         # SETUP TEXTURE OPTIONs
         # options for what distance measure to use.
+        self.ui.texture_opt_eucdist.toggle()
         self.ui.texture_opt_cosdist.toggled.connect(self.texture_opt_dist_cos)
         self.ui.texture_opt_eucdist.toggled.connect(self.texture_opt_dist_euc)
-        self.ui.texture_opt_eucdist.toggle()
+
+        # add options for head similarity to comboboxes
+        for i in range(256):
+            self.ui.texture_opt_filtervis.addItem(f"3a {i+1}")
+
+        for i in range(480):
+            self.ui.texture_opt_filtervis.addItem(f"3b {i+1}")
+
+        self.ui.texture_opt_filtervis.currentIndexChanged.connect(self.texture_show_fm)
+        self.ui.texture_opt_show_fm.toggled.connect(self.texture_show_fm)
 
         # SETUP EMOTION OPTIONs
         # options for what distance measure to use.
@@ -142,22 +168,17 @@ class MainWindow(QMainWindow):
         # SETUP DINO OPTIONS
 
         # options for what distance measure to use.
+        self.ui.dino_opt_eucdist.toggle()
         self.ui.dino_opt_cosdist.toggled.connect(self.dino_opt_dist_cos)
         self.ui.dino_opt_eucdist.toggled.connect(self.dino_opt_dist_euc)
-        self.ui.dino_opt_eucdist.toggle()
+        
 
         # options for calculating similarity based on what vector
+        self.ui.dino_opt_fullsim.toggle()
         self.ui.dino_opt_2dsim.toggled.connect(self.dino_opt_simtype)
         self.ui.dino_opt_fullsim.toggled.connect(self.dino_opt_simtype)
         self.ui.dino_opt_headsim.toggled.connect(self.dino_opt_simtype)
-        self.ui.dino_opt_fullsim.toggle()
-
-        # dropdown options for dino head-specific similarity
-        self.ui.dino_opt_headsim_cbox.editTextChanged.connect(self.dino_opt_simtype)
-        self.ui.dino_opt_layersim_cbox.editTextChanged.connect(self.dino_opt_simtype)
-
-        # option for showing crossattention map
-        self.ui.dino_opt_showcamap.pressed.connect(self.dino_show_camap)
+        
 
         # add options for head similarity to comboboxes
         for i in range(12):
@@ -166,24 +187,54 @@ class MainWindow(QMainWindow):
             self.ui.dino_opt_headvis_cbox.addItem(f"{i+1}")
             self.ui.dino_opt_layervis_cbox.addItem(f"{i+1}")
 
-        self.ui.box_metric_tabs.setCurrentIndex(0)
+
+        self.ui.dino_opt_headvis_cbox.currentIndexChanged.connect(self.dino_show_camap)
+        self.ui.dino_opt_layervis_cbox.currentIndexChanged.connect(self.dino_show_camap)
+
+        # dropdown options for dino head-specific similarity
+        self.ui.dino_opt_headsim_cbox.editTextChanged.connect(self.dino_opt_simtype)
+        self.ui.dino_opt_layersim_cbox.editTextChanged.connect(self.dino_opt_simtype)
+
+        # option for showing crossattention map
+        self.ui.dino_opt_showcamap.toggled.connect(self.dino_show_camap)
+
+        # # add options for head similarity to comboboxes
+        # for i in range(12):
+        #     self.ui.dino_opt_headsim_cbox.addItem(f"{i+1}")
+        #     self.ui.dino_opt_layersim_cbox.addItem(f"{i+1}")
+        #     self.ui.dino_opt_headvis_cbox.addItem(f"{i+1}")
+        #     self.ui.dino_opt_layervis_cbox.addItem(f"{i+1}")
 
         # ================ SETUP RIGHT COLUMN ================
+        print("------setting up right column, calculating nearest neighbours")
         topk_dict = self.calculate_nearest_neighbours()
         self.display_nearest_neighbours(topk_dict)
         
-        self.ui.recalc_similarity.pressed.connect(self.recalc_similarity)
-
+        print("recalculating")
+        self.ui.recalc_similarity.toggled.connect(self.recalc_similarity)
+        print("dashboard setup complete!")
+      
 
     def setup_scatterplot(self):
         current_metric_type = self.ui.box_metric_tabs.tabText(self.ui.box_metric_tabs.currentIndex())
         print("changing 2d scatterplot to: ", current_metric_type)
-        self.scatterplot = ScatterplotWidget(
-            self.data_dict[current_metric_type.lower()]["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame
-        )
-        self.scatterplot.plot_widget.scene().sigMouseClicked.connect(
-            self.on_canvas_click
-        )
+        if not hasattr(self, 'scatterplot'):
+            print('a new scatterplot is created')
+            self.scatterplot = ScatterplotWidget(
+                self.data_dict[current_metric_type.lower()]["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame
+            )
+            self.scatterplot.plot_widget.scene().mousePressEvent=self.on_canvas_click
+            # print('connected sigmouseclicked')
+            # self.scatterplot.plot_widget.scene().sigMouseClicked.connect(self.on_canvas_click)
+            self.scatterplot.selected_idx.emit(0)
+        else:
+            print('only redraw scatterplot')
+            if self.scatterplot.dots_plot:
+                self.scatterplot.draw_scatterplot_dots()
+            else:
+                self.scatterplot.draw_scatterplot()
+            self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
+            
 
     def recalc_similarity(self):
         topk_dict = self.calculate_nearest_neighbours()
@@ -200,11 +251,13 @@ class MainWindow(QMainWindow):
         self.display_nearest_neighbours(topk_dict)
 
     def dino_opt_dist_cos(self):
+        print('dino_opt_dist_cos')
         self.dino_distance_measure = "cosine"
         topk_dict = self.calculate_nearest_neighbours()
         self.display_nearest_neighbours(topk_dict)
     
     def dino_opt_dist_euc(self):
+        print('dino_opt_dist_euc')
         self.dino_distance_measure = "euclidian"
         topk_dict = self.calculate_nearest_neighbours()
         self.display_nearest_neighbours(topk_dict)
@@ -220,6 +273,7 @@ class MainWindow(QMainWindow):
         self.display_nearest_neighbours(topk_dict)
 
     def dino_opt_simtype(self):
+        print('dino_opt_simtype')
         if self.ui.dino_opt_fullsim.isChecked:
             self.dino_opt_sim_vector_type = "full"
         elif self.ui.dino_opt_2dsim.isChecked:
@@ -233,8 +287,124 @@ class MainWindow(QMainWindow):
             raise ValueError("something is wrong with the dino similarity options.")
     
 
+    def texture_show_fm(self):
+        print('texture_show_fm')
+        if not self.ui.texture_opt_show_fm.isChecked():
+            self.display_photo_left(self.left_img_filename)
+            self.display_photo_right(self.right_img_filename)
+            print("not checked", self.ui.texture_opt_show_fm)
+        else:
+            # get selected head
+            (layer, index) = self.ui.texture_opt_filtervis.currentText().split(" ")
+            index = int(index) - 1
+            if layer == "3a":
+                layer_key = "texture_fm_3a"
+            else:
+                layer_key = "texture_fm_3b"
+            
+            feature_maps_left = da.io.read_feature(
+                    self.datafile_path, self.left_img_key, layer_key, read_projection=False
+                ).squeeze()[index]
+            feature_maps_right = da.io.read_feature(
+                    self.datafile_path, self.right_img_key, layer_key, read_projection=False
+                ).squeeze()[index]
+            
+            # feature_maps_right = np.moveaxis(feature_maps_right[index], 0, -1)
+            # feature_maps_left = np.moveaxis(feature_maps_left[index]
+
+                
+            original_img_left = da.io.load_image(self.left_img_filename)
+            original_img_right = da.io.load_image(self.right_img_filename)
+            l_h, l_w, l_c = original_img_left.shape
+            r_h, r_w, l_c = original_img_right.shape
+
+            print(original_img_left.shape)
+            print(original_img_right.shape)
+            print("-----------")
+            print(feature_maps_left.shape)
+            print(feature_maps_right.shape)
+
+            feature_maps_left = cv2.resize(
+                        feature_maps_left, dsize=(l_w, l_h), interpolation=cv2.INTER_NEAREST
+                    )
+            feature_maps_right = cv2.resize(
+                        feature_maps_right, dsize=(r_w, r_h), interpolation=cv2.INTER_NEAREST
+                    )
+            print(feature_maps_left.shape)
+            print(feature_maps_right.shape)
+            print("-----------")
+            
+            heatmap, minmaxed = da.similarity_methods.heatmap_utils.feature_map_to_colormap(feature_maps_left)
+            overlayed_left = da.similarity_methods.heatmap_utils.overlay_heatmap(original_img_left, heatmap, minmaxed)
+
+            heatmap, minmaxed = da.similarity_methods.heatmap_utils.feature_map_to_colormap(feature_maps_right)
+            overlayed_right = da.similarity_methods.heatmap_utils.overlay_heatmap(original_img_right, heatmap, minmaxed)
+            
+            leftname = "_tmp_overlay_left.png"
+            rightname = "_tmp_overlay_right.png"
+            left = Image.fromarray(overlayed_left)
+            left.save(leftname)
+
+            right = Image.fromarray(overlayed_right)
+            right.save(rightname)
+
+            self.display_photo_left(leftname)
+            self.display_photo_right(rightname)
+
     def dino_show_camap(self):
-        raise NotImplementedError("cannot yet show ca-maps!")
+        print('dino_show_camap')
+        
+        if not self.ui.dino_opt_showcamap.isChecked():
+            self.display_photo_left(self.left_img_filename)
+            self.display_photo_right(self.right_img_filename)
+        else:
+            # get selected head
+            h = int(self.ui.dino_opt_headvis_cbox.currentText()) - 1
+            l = int(self.ui.dino_opt_layervis_cbox.currentText()) - 1
+
+            feature_maps_left = da.io.read_feature(
+                    self.datafile_path, self.left_img_key, 'dino_fm', read_projection=False
+                )[h][l]
+            
+            feature_maps_right = da.io.read_feature(
+                    self.datafile_path, self.right_img_key, 'dino_fm', read_projection=False
+                )[h][l]
+            
+            original_img_left = da.io.load_image(self.left_img_filename)
+            original_img_right = da.io.load_image(self.right_img_filename)
+            l_h, l_w, l_c = original_img_left.shape
+            r_h, r_w, l_c = original_img_right.shape
+
+            print(original_img_left.shape)
+            print(original_img_right.shape)
+            print("-----------")
+
+            feature_maps_left = cv2.resize(
+                        feature_maps_left, dsize=(l_w, l_h), interpolation=cv2.INTER_NEAREST
+                    )
+            feature_maps_right = cv2.resize(
+                        feature_maps_right, dsize=(r_w, r_h), interpolation=cv2.INTER_NEAREST
+                    )
+            print(feature_maps_left.shape)
+            print(feature_maps_right.shape)
+            print("-----------")
+            
+            heatmap, minmaxed = da.similarity_methods.heatmap_utils.feature_map_to_colormap(feature_maps_left)
+            overlayed_left = da.similarity_methods.heatmap_utils.overlay_heatmap(original_img_left, heatmap, minmaxed)
+
+            heatmap, minmaxed = da.similarity_methods.heatmap_utils.feature_map_to_colormap(feature_maps_right)
+            overlayed_right = da.similarity_methods.heatmap_utils.overlay_heatmap(original_img_right, heatmap, minmaxed)
+            
+            leftname = "_tmp_overlay_left.png"
+            rightname = "_tmp_overlay_right.png"
+            left = Image.fromarray(overlayed_left)
+            left.save(leftname)
+
+            right = Image.fromarray(overlayed_right)
+            right.save(rightname)
+
+            self.display_photo_left(leftname)
+            self.display_photo_right(rightname)
 
     def set_color_element(self, ui_element, color):
         ui_element.setAutoFillBackground(True)
@@ -243,11 +413,16 @@ class MainWindow(QMainWindow):
         ui_element.setPalette(p)
     
     def display_nearest_neighbours(self, topk):
+        print('display_nearest_neighbours')
+
         # save for potential use in other parts of the program
         self.topk = topk
 
         distance, idx = topk['combined']["distances"][0], int(topk['combined']['ranking'][0])
         top_img_path = self.image_paths[idx]
+        self.right_img_key = self.image_keys[idx]
+        self.right_img_filename = self.image_paths[idx]
+
         self.display_photo_right(top_img_path)
         print(topk['combined']['distances'].shape)
         distance_1, idx_1 = topk['combined']['distances'][1], int(topk['combined']["ranking"][1])
@@ -294,13 +469,10 @@ class MainWindow(QMainWindow):
         topk_results = {}
         distances_dict = {}
         
-        # MANUAL OVERWRITE OF METRIC_WEIGHT_DICT
-        print("performing manual overwrite of metric reweighting")
         feature_weight_dict = self.get_metric_combo_weights()
-        print(feature_weight_dict)
+        print("weights of all metrics: ", feature_weight_dict)
         
         indices = np.arange(len(self.image_keys))
-        print(f"calculating dino using : {self.dino_distance_measure}")
         for feature_name in self.available_features:
             
             # weither to use full vector for similarity, only a specific part or the 2d reprojection
@@ -326,11 +498,6 @@ class MainWindow(QMainWindow):
                     if self.texture_distance_measure == "cosine":
                         distances[i] = spatial.distance.cosine(current_vector, target_vector)
                     if self.texture_distance_measure == "euclidian":
-                        distances[i] = spatial.distance.euclidean(current_vector, target_vector)
-                elif feature_name == "emotion":
-                    if self.emotion_distance_measure == "cosine":
-                        distances[i] = spatial.distance.cosine(current_vector, target_vector)
-                    if self.emotion_distance_measure == "euclidian":
                         distances[i] = spatial.distance.euclidean(current_vector, target_vector)
                 # add more options later
                 else:
@@ -389,12 +556,19 @@ class MainWindow(QMainWindow):
         """Use radio toggle to draw dots or images, triggered on toggle of the radio button.
         """
         # TODO: REIMPLEMENT
+        print('change_scatterplot_pointtype is called')
         if self.ui.r_image_points.isChecked():
-            self.scatterplot.draw_scatterplot()
+            #TODO: give user reset option/button. initially its FALSE
+            self.scatterplot.dots_plot=False
+            self.scatterplot.draw_scatterplot(reset=False)
+            self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
         else:
-            self.scatterplot.draw_scatterplot_dots()
+            self.scatterplot.dots_plot=True
+            self.scatterplot.draw_scatterplot_dots(reset=False)
+            self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
 
     def on_canvas_click(self, ev):
+        self.scatterplot.clear_selection()
         pos = ev.scenePos()
         print("on canvas click:", pos)
         if ev.button() == Qt.MouseButton.LeftButton:
@@ -404,15 +578,40 @@ class MainWindow(QMainWindow):
                 if item.contains(item.mapFromScene(pos)):
                     self.scatterplot.selected_point = int(pos.x()), int(pos.y())
                     self.scatterplot.selected_index = index
+                    self.scatterplot.selected_idx.emit(index)
                     self.scatterplot.plot_index = idx
+                    # TODO: rmv after all check, partial select ect
                     print('selected_index==plot_index?',index==idx)
                     self.clicked_on_point()
                     break
 
+        # self.scatterplot.plot_widget.scene().mousePressEvent
+
+
+        # QGraphicsScene.mousePressEvent(self.scatterplot.plot_widget.scene(), ev)
+        # super().mousePressEvent(ev)
+        # self.scatterplot.plot_widget.mousePressEvent(ev)
+        # QGraphicsView.mousePressEvent(self.scatterplot.plot_widget.plotItem.vb, ev)
+
+        # view = self.scatterplot.plot_widget.getViewBox()
+        # print(type(view))
+        # QGraphicsView.mousePressEvent(view.scene(), ev)
+
+        # view = self.scatterplot.plot_widget.plotItem.getViewBox()
+        # event = QMouseEvent(QEvent.MouseButtonPress, ev.localPos(), ev.screenPos(),
+        #                         ev.button(), ev.buttons(), ev.modifiers())
+        # QCoreApplication.sendEvent(view, event)
+
+        # Call the default panning behavior by invoking the mousePressEvent on the PlotWidget's view box
+        # view = self.scatterplot.plot_widget.getViewBox()
+        # view.mousePressEvent(ev)
+        
+
+    # TODO: maybe change loc of this fn, or split its a little in between scatterplot and main
     def clicked_on_point(self):
         print("point/ image clicked, load on the left")
         self.left_img_filename = self.image_paths[self.scatterplot.selected_index]
-        self.left_img_key = self.image_keys[self.scatterplot.plot_index]
+        self.left_img_key = self.image_keys[self.scatterplot.selected_index]
         # set features for left 
         self.left_img_features = self.get_features_from_dataset(self.left_img_key)
         # display the image
@@ -433,9 +632,10 @@ class MainWindow(QMainWindow):
             if len(filenames) > 0:
                 current_filepath = self.image_paths[self.key_to_idx[img_hash]]
                 
-                img_hash = da.get_image_hash(current_filepath, is_filepath=True)
+                img_hash = da.get_image_hash(current_filepath)
                 print(f"hash: {img_hash}")
                 self.left_img_key = img_hash
+                self.left_img_filename = current_filepath
 
                 self.update_leftimg_data(self.left_img_key)
                 # display the photo on the left
@@ -452,9 +652,9 @@ class MainWindow(QMainWindow):
             print(f"found metadata for image: {filepath}")
             self.update_image_info(
                 self.metadata[img_hash]['date'],
-                self.metadata[img_hash]['artist_name'],
-                self.metadata[img_hash]['style'],
-                self.metadata[img_hash]['tags'],
+                self.metadata[img_hash]['artist_name'].decode('UTF-8'),
+                self.metadata[img_hash]['style'].decode('UTF-8'),
+                self.metadata[img_hash]['tags'].decode('UTF-8'),
             )
             self.left_img_features = self.get_features_from_dataset(img_hash)
         else:
@@ -501,20 +701,6 @@ class MainWindow(QMainWindow):
         image_features = random_array
         new_point = image_features
         return new_point
-
-
-    def initialize_images(self, init_point, filepath, init_key, upload=False, left=False):
-        self.display_photo_left(filepath)
-        nearest_indices = self.scatterplot.find_nearest_neighbors(init_point, n=3)
-        print("nearest_indices", nearest_indices)
-
-        nearest_images = []
-        for near_idx in nearest_indices:
-            nearest_images.append(self.image_paths[near_idx])
-        self.display_preview_photos(nearest_images)
-
-        if left:
-            self.display_photo_left(filepath, init_key=init_key, upload=upload)
 
     def update_image_info(self, date, artist, style, tags):
         # Update the label texts
