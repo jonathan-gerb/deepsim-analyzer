@@ -16,14 +16,14 @@ import cv2
 # qt imports
 from PyQt6 import QtWidgets
 from PyQt6.QtWidgets import QMainWindow, QFileDialog, QApplication, QVBoxLayout, QTabWidget,QGraphicsView,QGraphicsScene
-from PyQt6.QtGui import QPixmap, QPainter, QColor, QMouseEvent
-from PyQt6.QtCore import QRect, Qt,QEvent,QCoreApplication
-
+from PyQt6.QtGui import QPixmap, QPainter, QColor, QMouseEvent,QTransform
+from PyQt6.QtCore import QRect, Qt,QEvent,QCoreApplication,pyqtSignal
 # custom widgets
 from .custom_widgets import  ScatterplotWidget, TimelineView, TimelineWindow
 
 # deepsim analyzer package
 import deepsim_analyzer as da
+import pyqtgraph as pg
 
 # Important:
 # You need to run the following command to generate the ui_form.py file
@@ -33,6 +33,8 @@ import deepsim_analyzer as da
 from .ui_form import Ui_MainWindow
 
 class MainWindow(QMainWindow):
+    get_Selected_stats =pyqtSignal(int)
+
     def __init__(self, key_dict, datafile_path, images_filepath):
         super().__init__()
 
@@ -109,6 +111,9 @@ class MainWindow(QMainWindow):
             for feature_name, value in feature_dict_key.items():
                 self.data_dict[feature_name]["projection"][i] = value['projection']
                 self.data_dict[feature_name]["full"][i] = value['full']
+
+        # self.get_Selected_stats.connect(self.get_selected_points_stats)
+        self.ui.pushButton.clicked.connect(self.get_selected_points_stats)
 
         # ================ SETUP LEFT COLUMN ================
         print("-------setting up left column of dashboard")
@@ -190,13 +195,6 @@ class MainWindow(QMainWindow):
         # option for showing crossattention map
         self.ui.dino_opt_showcamap.toggled.connect(self.dino_show_camap)
 
-        # # add options for head similarity to comboboxes
-        # for i in range(12):
-        #     self.ui.dino_opt_headsim_cbox.addItem(f"{i+1}")
-        #     self.ui.dino_opt_layersim_cbox.addItem(f"{i+1}")
-        #     self.ui.dino_opt_headvis_cbox.addItem(f"{i+1}")
-        #     self.ui.dino_opt_layervis_cbox.addItem(f"{i+1}")
-
         # ================ SETUP RIGHT COLUMN ================
         print("------setting up right column, calculating nearest neighbours")
         topk_dict = self.calculate_nearest_neighbours()
@@ -206,6 +204,12 @@ class MainWindow(QMainWindow):
         self.ui.recalc_similarity.toggled.connect(self.recalc_similarity)
         print("dashboard setup complete!")
       
+
+      # ========================
+
+        # Create a plot widget
+        self.bp = pg.PlotWidget()
+
 
     def setup_scatterplot(self):
         current_metric_type = self.ui.box_metric_tabs.tabText(self.ui.box_metric_tabs.currentIndex())
@@ -549,12 +553,81 @@ class MainWindow(QMainWindow):
             self.scatterplot.draw_scatterplot_dots(reset=False)
             self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
 
+    # def on_canvas_click(self, ev):
+    #     self.scatterplot.clear_selection()
+    #     pos = ev.scenePos()
+    #     print("on canvas click:", pos)
+
+    #     if ev.button() == Qt.MouseButton.LeftButton:
+    #         if self.dots_plot:
+    #             # scatterplot_items = self.plot_widget.plot().items()  # Assuming self is a PlotWidget instance
+    #             # for item in scatterplot_items:
+    #             # for item in self.plot_widget.items():
+    #             # for item in self.plot_widget.scene().items():
+    #             for item in self.scatterplot.plot_widget.plotItem.items:
+    #                 print(item)
+    #                 # if isinstance(item, pg.ScatterPlotItem):
+    #                 # print('if isinstance(item, pg.PlotDataItem)',item, isinstance(item, pg.PlotDataItem))
+    #                 if isinstance(item, pg.PlotDataItem):
+    #                     # Print bounding rectangle
+    #                     print('item_pos', item.pos())
+    #                     dot_rect = item.boundingRect()
+    #                     print('dot_rect', item, dot_rect)
+    #                     scene_rect = item.mapRectToScene(dot_rect)
+    #                     print('scene_rect', scene_rect)
+    #                     if scene_rect.contains(pos):
+                        
+    #                     # if item.contains(pos):
+    #                     # dot_rect = item.sceneBoundingRect()
+    #                     # print('dot_rect', item, dot_rect)
+    #                     # dots = item.scatter  # Assuming scatter is used to plot the dots
+    #                     # for dot in dots:
+    #                     #     dot_pos = dot.pos()
+    #                     #     if dot_pos == pos:
+
+    #                     # if dot_rect.contains(pos):
+    #                         print("Clicked on a dot!", pos)
+    #                         self.scatterplot.selected_point = int(pos.x()), int(pos.y())
+    #                         index = np.where(np.all(self.scatterplot.points == self.scatterplot.selected_point, axis=1))[0]
+    #                         print(self.scatterplot.points[0])
+    #                         print(self.scatterplot.selected_point)
+    #                         print(index)
+    #                         if len(index) > 0:
+    #                             # Point found, index[0] contains the index
+    #                             self.scatterplot.selected_index = index[0]
+    #                             print("Selected Index:", self.scatterplot.selected_index)
+    #                             self.scatterplot.selected_idx.emit(self.selected_index)
+    #                         else:
+    #                             # Point not found
+    #                             print("Selected point not found in the array.")
+    #                     # break  # Exit the loop if a dot is clicked
+                
+    #         else:
+    #             # print("self.image_items", self.image_items)
+    #             for idx, index, item in self.scatterplot.image_items:
+    #                 # mapped_pos = item.mapFromScene(pos)
+    #                 print("item.mapFromScene(pos)", pos , item.mapFromScene(pos)) #item
+    #                 if item.contains(item.mapFromScene(pos)):
+    #                     self.scatterplot.selected_point = int(pos.x()), int(pos.y())
+    #                     print(self.scatterplot.selected_point)
+    #                     self.scatterplot.selected_index = index
+    #                     self.scatterplot.selected_idx.emit(index)
+    #                     self.scatterplot.plot_index = idx
+    #                     # TODO: rmv after all check, partial select ect
+    #                     print('selected_index==plot_index?',index==idx)
+    #                     self.clicked_on_point()
+    #                     break
+
+
     def on_canvas_click(self, ev):
+        # QGraphicsScene.mousePressEvent(self.plot_widget.scene(), ev)
+        # super().mousePressEvent(ev)
+
         self.scatterplot.clear_selection()
         pos = ev.scenePos()
         print("on canvas click:", pos)
         if ev.button() == Qt.MouseButton.LeftButton:
-            # print("self.scatterplot.image_items", self.scatterplot.image_items)
+            # print("self.image_items", self.image_items)
             for idx, index, item in self.scatterplot.image_items:
                 # print("item.mapFromScene(pos)", item, item.mapFromScene(pos))
                 if item.contains(item.mapFromScene(pos)):
@@ -566,27 +639,6 @@ class MainWindow(QMainWindow):
                     print('selected_index==plot_index?',index==idx)
                     self.clicked_on_point()
                     break
-
-        # self.scatterplot.plot_widget.scene().mousePressEvent
-
-
-        # QGraphicsScene.mousePressEvent(self.scatterplot.plot_widget.scene(), ev)
-        # super().mousePressEvent(ev)
-        # self.scatterplot.plot_widget.mousePressEvent(ev)
-        # QGraphicsView.mousePressEvent(self.scatterplot.plot_widget.plotItem.vb, ev)
-
-        # view = self.scatterplot.plot_widget.getViewBox()
-        # print(type(view))
-        # QGraphicsView.mousePressEvent(view.scene(), ev)
-
-        # view = self.scatterplot.plot_widget.plotItem.getViewBox()
-        # event = QMouseEvent(QEvent.MouseButtonPress, ev.localPos(), ev.screenPos(),
-        #                         ev.button(), ev.buttons(), ev.modifiers())
-        # QCoreApplication.sendEvent(view, event)
-
-        # Call the default panning behavior by invoking the mousePressEvent on the PlotWidget's view box
-        # view = self.scatterplot.plot_widget.getViewBox()
-        # view.mousePressEvent(ev)
         
 
     # TODO: maybe change loc of this fn, or split its a little in between scatterplot and main
@@ -718,7 +770,7 @@ class MainWindow(QMainWindow):
         self.ui.box_right_img.setPixmap(pixmap.scaled(w,h,Qt.AspectRatioMode.KeepAspectRatio))
         self.ui.box_right_img.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-    #TODO: rewrite
+    #TODO: rewrite, make clickable and make currect select so left. (inspect can go...? always recommadations on right?)
     def display_preview_photos(self, filenames):
         for i, filename in enumerate(filenames):
             if i < len(self.preview_photo_labels):
@@ -742,6 +794,57 @@ class MainWindow(QMainWindow):
                 
                 # Set the square pixmap as the label's pixmap
                 label.setPixmap(square_pixmap)
+
+            
+    def get_selected_points_stats(self, int):
+        print('get_selected_points_stats')
+        # for selection_ids in self.scatterplot.selected_indices:
+        img_hashes = [self.image_keys[index] for index in self.scatterplot.selected_indices]
+        self.metadata= da.read_metadata_batch(self.datafile_path, img_hashes)
+
+
+        sel_unique_dates, sel_date_counts = np.unique([self.metadata[hash_]['date'] for hash_ in img_hashes], return_counts=True)
+        sel_unique_tags, sel_tag_counts = np.unique([self.metadata[hash_]['tags'] for hash_ in img_hashes], return_counts=True)
+        sel_unique_artist_names, sel_artist_name_counts = np.unique([self.metadata[hash_]['artist_name'] for hash_ in img_hashes], return_counts=True)
+        sel_unique_styles, sel_style_counts = np.unique([self.metadata[hash_]['style'] for hash_ in img_hashes], return_counts=True)
+
+        img_hashes = [self.image_keys[index] for index in self.scatterplot.indices]
+        self.metadata = da.read_metadata_batch(self.datafile_path, img_hashes)
+
+        unique_dates, date_counts = np.unique([self.metadata[hash_]['date'] for hash_ in img_hashes], return_counts=True)
+        unique_tags, tag_counts = np.unique([self.metadata[hash_]['tags'] for hash_ in img_hashes], return_counts=True)
+        unique_artist_names, artist_name_counts = np.unique([self.metadata[hash_]['artist_name'] for hash_ in img_hashes], return_counts=True)
+        unique_styles, style_counts = np.unique([self.metadata[hash_]['style'] for hash_ in img_hashes], return_counts=True)
+
+        count_selection = [sel_date_counts[np.where(sel_unique_dates == date)[0].tolist()[0]] if date in sel_unique_dates else 0 for date in unique_dates]
+        tag_count_selection = [sel_tag_counts[np.where(sel_unique_tags == tag)[0].tolist()[0]] if tag in sel_unique_tags else 0 for tag in unique_tags]
+        artist_count_selection = [sel_artist_name_counts[np.where(sel_unique_artist_names == artist_name)[0].tolist()[0]] if artist_name in sel_unique_artist_names else 0 for artist_name in unique_artist_names]
+        style_count_selection = [sel_style_counts[np.where(sel_unique_styles == style)[0].tolist()[0]] if style in sel_unique_styles else 0 for style in unique_styles]
+       
+
+        # Create x-axis ticks
+        x = list(range(len(unique_styles)))
+        # Create a bar graph item for count data
+        bar_graph = pg.BarGraphItem(x=x, height=style_counts, width=0.6, brush='g')
+        # Add the bar graph item to the plot widget
+        self.bp.addItem(bar_graph)
+        # Create a bar graph item for selected count data
+        selected_bar_graph = pg.BarGraphItem(x=x, height=style_count_selection, width=0.6, brush='r')
+        # Add the selected bar graph item to the plot widget
+        self.bp.addItem(selected_bar_graph)
+
+        # Set x-axis labels
+        axis = pg.AxisItem(orientation='bottom')
+        axis.setTicks([list(enumerate(unique_styles))])
+        self.bp.getPlotItem().axes['bottom']['item'] = axis
+
+        # Show the plot widget
+        self.bp.show()
+
+        
+
+
+    
 
 def start_dashboard(key_dict, dataset_filepath, images_filepath):
     app = QApplication(sys.argv)

@@ -4,6 +4,8 @@ from PyQt6.QtGui import QFont, QPainter, QPen, QPixmap
 from PyQt6.QtWidgets import QApplication,QWidget, QGraphicsScene, QGraphicsView, QGraphicsTextItem,QGraphicsPixmapItem, QLabel,QVBoxLayout
 from pathlib import Path
 
+import pandas as pd
+
 class TimelineView(QGraphicsView):
     def __init__(self, scene):
         super().__init__(scene)
