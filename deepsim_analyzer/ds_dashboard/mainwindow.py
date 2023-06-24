@@ -63,7 +63,8 @@ class MainWindow(QMainWindow):
 
         # in time we have to get all features for all the data, we will start with
         # just the dummy feature
-        self.available_features = ["dummy", "dino", "texture", "emotion"]
+        # self.available_features = ["dummy", "dino", "texture", "emotion"]
+        self.available_features = ["dummy", "dino", "texture"]
 
         # metric option defaults
         self.dino_distance_measure = "euclidian"
@@ -113,9 +114,6 @@ class MainWindow(QMainWindow):
             for feature_name, value in feature_dict_key.items():
                 self.data_dict[feature_name]["projection"][i] = value['projection']
                 self.data_dict[feature_name]["full"][i] = value['full']
-
-        # self.get_Selected_stats.connect(self.get_selected_points_stats)
-        self.ui.pushButton.clicked.connect(self.get_selected_points_stats)
 
         # ================ SETUP LEFT COLUMN ================
         print("-------setting up left column of dashboard")
@@ -217,6 +215,9 @@ class MainWindow(QMainWindow):
 
         # Create a plot widget
         self.bp = pg.PlotWidget()
+        # self.get_Selected_stats.connect(self.get_selected_points_stats)
+        self.ui.radioButton.toggled.connect(self.get_selected_points_stats)
+        self.ui.r_image_points.toggle()
 
 
     def setup_scatterplot(self):
@@ -857,12 +858,20 @@ class MainWindow(QMainWindow):
         self.bp.getPlotItem().axes['bottom']['item'] = axis
 
         # Show the plot widget
-        self.bp.show()
+        # self.bp.show()
+        # img_stats_container = self.ui.box_recom_img_stats
+        # # Create the layout for the QGroupBox and set it
+        # img_stats_layout = QVBoxLayout()
+        # img_stats_container.setLayout(img_stats_layout)
+
+        # # Add the PlotWidget to the layout of the QGroupBox
+        # img_stats_layout.addWidget(self.bp)
+        # img_stats_container.layout().addWidget(self.bp)
+
+        img_stats_container = self.ui.verticalLayoutWidget_2
+        img_stats_container.layout().addWidget(self.bp)
 
         
-
-
-    
 
 def start_dashboard(key_dict, dataset_filepath, images_filepath):
     app = QApplication(sys.argv)

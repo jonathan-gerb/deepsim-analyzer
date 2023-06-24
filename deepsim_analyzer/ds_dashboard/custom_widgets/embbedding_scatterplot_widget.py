@@ -108,11 +108,11 @@ class ScatterplotWidget(QWidget):
                 self.draw_scatterplot()
 
         # self.selected_idx.emit(self.selected_index)
-        # self.clear_selection() # ? but will also put selected_points = [] or
-        self.start_point=None
-        self.end_point=None
-        if self.rect is not None and self.rect in self.plot_widget.scene().items():
-            self.plot_widget.scene().removeItem(self.rect)
+        self.clear_selection() # ? but will also put selected_points = [] or
+        # self.start_point=None
+        # self.end_point=None
+        # if self.rect is not None and self.rect in self.plot_widget.scene().items():
+        #     self.plot_widget.scene().removeItem(self.rect)
 
         QGraphicsScene.mouseReleaseEvent(self.plot_widget.scene(), event)
         view = self.plot_widget.getViewBox()
