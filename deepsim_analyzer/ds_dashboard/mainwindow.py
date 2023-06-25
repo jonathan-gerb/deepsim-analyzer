@@ -243,9 +243,10 @@ class MainWindow(QMainWindow):
             self.scatterplot = ScatterplotWidget(
                 self.data_dict[current_metric_type.lower()]["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame
             )
-            self.scatterplot.plot_widget.scene().mousePressEvent=self.on_canvas_click
-            # print('connected sigmouseclicked')
-            # self.scatterplot.plot_widget.scene().sigMouseClicked.connect(self.on_canvas_click)
+            # self.scatterplot.plot_widget.scene().mousePressEvent=self.on_canvas_click
+            # self.scatterplot.plot_widget.sigMouseClicked.connect(self.on_canvas_click)
+            self.scatterplot.plot_widget.sigSceneMouseMoved.connect(self.on_scene_mouse_move)
+            self.scatterplot.plot_widget.sigSceneMouseClicked.connect(lambda event: self.on_canvas_click(event, 0))
             self.scatterplot.selected_idx.emit(0)
         else:
             print('only redraw scatterplot')
@@ -254,7 +255,9 @@ class MainWindow(QMainWindow):
             else:
                 self.scatterplot.draw_scatterplot()
             self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
-            
+        
+    def on_scene_mouse_move(self, event):
+        print('mouseMoveEvent2')
 
     def recalc_similarity(self):
         topk_dict = self.calculate_nearest_neighbours()
@@ -734,6 +737,8 @@ class MainWindow(QMainWindow):
                     print('selected_index==plot_index?',index==idx)
                     self.clicked_on_point()
                     break
+            
+        QGraphicsScene.mousePressEvent(self.plot_widget.scene(), ev)
         
 
     # TODO: maybe change loc of this fn, or split its a little in between scatterplot and main

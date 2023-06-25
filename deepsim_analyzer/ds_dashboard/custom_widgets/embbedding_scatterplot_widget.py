@@ -22,25 +22,6 @@ from pyqtgraph import PlotDataItem
 # from pyqtgraph.graphicsItems.ScatterPlotItem import HoverEvent
 
 
-class ScatterplotWidget(pg.PlotWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.scene().sigMouseMoved.connect(self.on_mouse_moved)
-        self.setMouseHoverEvents(True)
-
-    def on_mouse_moved(self, event):
-        pos = event[0]  # Mouse position in plot coordinates
-        points = self.plotItem.pointsAt(pos)
-        if points:
-            point = points[0]  # Assuming you want to handle the first point
-            x, y = point.pos()
-            text = f'Hover: ({x:.2f}, {y:.2f})'
-            self.hover_text.setHtml(f'<span style="color: white;">{text}</span>')
-            self.hover_text.setPos(x, y)
-            self.hover_text.show()
-        else:
-            self.hover_text.hide()
-
 
 class ScatterplotWidget(QWidget):
     # signal that emits the index of the selected points
@@ -71,10 +52,14 @@ class ScatterplotWidget(QWidget):
         self.plot_widget.setLimits(xMin=-1000000, xMax=1000000, yMin=-1000000, yMax=1000000)
         self.plot_widget.setAspectLocked(lock=True)
 
-        # self.plot_widget.scene().mouseReleaseEvent = self.on_scene_mouse_release
-        # self.plot_widget.scene().mouseMoveEvent = self.on_scene_mouse_move
-        # self.plot_widget.sigSceneMouseMoved.connect(self.on_scene_mouse_move)
+        self.plot_widget.scene().mouseReleaseEvent = self.on_scene_mouse_release
+        self.plot_widget.scene().mouseMoveEvent = self.on_scene_mouse_move
+        self.plot_widget.sigSceneMouseMoved.connect(self.on_scene_mouse_move)
+        # self.plot_widget.sigMouseClicked.connect(self.on_canvas_click)
+
         # self.plot_widget.scene().mouseDoubleClickEvent = self.on_scene_mouse_double_click
+         
+        self.plot_widget.setAcceptHoverEvents(True)
         
         self.draw_scatterplot()
 
@@ -151,6 +136,19 @@ class ScatterplotWidget(QWidget):
 
         # view = self.plot_widget.getViewBox()
         # view.mouseMoveEvent(event)
+
+        if self.dots_plot:
+            pos = event[0]  # Mouse position in plot coordinates
+            points = self.plot_widget.plotItem.pointsAt(pos)
+            if points:
+                point = points[0]  # Assuming you want to handle the first point
+                x, y = point.pos()
+                text = f'Hover: ({x:.2f}, {y:.2f})'
+                self.hover_text.setHtml(f'<span style="color: white;">{text}</span>')
+                self.hover_text.setPos(x, y)
+                self.hover_text.show()
+            else:
+                self.hover_text.hide()
 
 
     def start_selection(self, ev):
