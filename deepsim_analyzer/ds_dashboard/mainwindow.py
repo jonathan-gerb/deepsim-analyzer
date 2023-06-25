@@ -15,7 +15,7 @@ import cv2
 
 # qt imports
 from PyQt6 import QtWidgets
-from PyQt6.QtWidgets import QMainWindow, QFileDialog, QApplication, QVBoxLayout, QTabWidget,QGraphicsView,QGraphicsScene
+from PyQt6.QtWidgets import QMainWindow, QFileDialog, QApplication, QVBoxLayout, QTabWidget,QGraphicsView,QGraphicsScene,QSizePolicy
 from PyQt6.QtGui import QPixmap, QPainter, QColor, QMouseEvent,QTransform
 from PyQt6.QtCore import QRect, Qt,QEvent,QCoreApplication,pyqtSignal
 # custom widgets
@@ -164,9 +164,9 @@ class MainWindow(QMainWindow):
 
         # SETUP EMOTION OPTIONs
         # options for what distance measure to use.
+        self.ui.emotion_opt_eucdist.toggle()
         self.ui.emotion_opt_cosdist.toggled.connect(self.emotion_opt_dist_cos)
         self.ui.emotion_opt_eucdist.toggled.connect(self.emotion_opt_dist_euc)
-        self.ui.emotion_opt_eucdist.toggle()
 
         # SETUP DINO OPTIONS
 
@@ -214,10 +214,25 @@ class MainWindow(QMainWindow):
       # ========================
 
         # Create a plot widget
-        self.bp = pg.PlotWidget()
+        # self.bp = pg.PlotWidget()
+        # self.bp = BarChart(self)
+        self.bp=RangeSlider(self)
         # self.get_Selected_stats.connect(self.get_selected_points_stats)
         self.ui.radioButton.toggled.connect(self.get_selected_points_stats)
-        self.ui.r_image_points.toggle()
+        self.ui.radioButton.toggle()
+
+        # img_stats_container = self.ui.box_recom_img_stats
+        # img_stats_container = self.ui.verticalLayoutWidget_2
+        img_stats_container = self.ui.selection_stats_layout
+        img_stats_container.layout().addWidget(self.bp)
+
+        # Set the size policy for the bar plot widget
+        size_policy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.bp.setSizePolicy(size_policy)
+        
+        # Set the size policy for the layout item containing the bar plot widget
+        # layout_item = img_stats_container.layout().itemAt(0)
+        # layout_item.setSizePolicy(size_policy)
 
 
     def setup_scatterplot(self):
@@ -572,72 +587,6 @@ class MainWindow(QMainWindow):
             self.scatterplot.draw_scatterplot_dots(reset=False)
             self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
 
-    # def on_canvas_click(self, ev):
-    #     self.scatterplot.clear_selection()
-    #     pos = ev.scenePos()
-    #     print("on canvas click:", pos)
-
-    #     if ev.button() == Qt.MouseButton.LeftButton:
-    #         if self.dots_plot:
-    #             # scatterplot_items = self.plot_widget.plot().items()  # Assuming self is a PlotWidget instance
-    #             # for item in scatterplot_items:
-    #             # for item in self.plot_widget.items():
-    #             # for item in self.plot_widget.scene().items():
-    #             for item in self.scatterplot.plot_widget.plotItem.items:
-    #                 print(item)
-    #                 # if isinstance(item, pg.ScatterPlotItem):
-    #                 # print('if isinstance(item, pg.PlotDataItem)',item, isinstance(item, pg.PlotDataItem))
-    #                 if isinstance(item, pg.PlotDataItem):
-    #                     # Print bounding rectangle
-    #                     print('item_pos', item.pos())
-    #                     dot_rect = item.boundingRect()
-    #                     print('dot_rect', item, dot_rect)
-    #                     scene_rect = item.mapRectToScene(dot_rect)
-    #                     print('scene_rect', scene_rect)
-    #                     if scene_rect.contains(pos):
-                        
-    #                     # if item.contains(pos):
-    #                     # dot_rect = item.sceneBoundingRect()
-    #                     # print('dot_rect', item, dot_rect)
-    #                     # dots = item.scatter  # Assuming scatter is used to plot the dots
-    #                     # for dot in dots:
-    #                     #     dot_pos = dot.pos()
-    #                     #     if dot_pos == pos:
-
-    #                     # if dot_rect.contains(pos):
-    #                         print("Clicked on a dot!", pos)
-    #                         self.scatterplot.selected_point = int(pos.x()), int(pos.y())
-    #                         index = np.where(np.all(self.scatterplot.points == self.scatterplot.selected_point, axis=1))[0]
-    #                         print(self.scatterplot.points[0])
-    #                         print(self.scatterplot.selected_point)
-    #                         print(index)
-    #                         if len(index) > 0:
-    #                             # Point found, index[0] contains the index
-    #                             self.scatterplot.selected_index = index[0]
-    #                             print("Selected Index:", self.scatterplot.selected_index)
-    #                             self.scatterplot.selected_idx.emit(self.selected_index)
-    #                         else:
-    #                             # Point not found
-    #                             print("Selected point not found in the array.")
-    #                     # break  # Exit the loop if a dot is clicked
-                
-    #         else:
-    #             # print("self.image_items", self.image_items)
-    #             for idx, index, item in self.scatterplot.image_items:
-    #                 # mapped_pos = item.mapFromScene(pos)
-    #                 print("item.mapFromScene(pos)", pos , item.mapFromScene(pos)) #item
-    #                 if item.contains(item.mapFromScene(pos)):
-    #                     self.scatterplot.selected_point = int(pos.x()), int(pos.y())
-    #                     print(self.scatterplot.selected_point)
-    #                     self.scatterplot.selected_index = index
-    #                     self.scatterplot.selected_idx.emit(index)
-    #                     self.scatterplot.plot_index = idx
-    #                     # TODO: rmv after all check, partial select ect
-    #                     print('selected_index==plot_index?',index==idx)
-    #                     self.clicked_on_point()
-    #                     break
-
-
     def on_canvas_click(self, ev):
         # QGraphicsScene.mousePressEvent(self.plot_widget.scene(), ev)
         # super().mousePressEvent(ev)
@@ -821,7 +770,6 @@ class MainWindow(QMainWindow):
         img_hashes = [self.image_keys[index] for index in self.scatterplot.selected_indices]
         self.metadata= da.read_metadata_batch(self.datafile_path, img_hashes)
 
-
         sel_unique_dates, sel_date_counts = np.unique([self.metadata[hash_]['date'] for hash_ in img_hashes], return_counts=True)
         sel_unique_tags, sel_tag_counts = np.unique([self.metadata[hash_]['tags'] for hash_ in img_hashes], return_counts=True)
         sel_unique_artist_names, sel_artist_name_counts = np.unique([self.metadata[hash_]['artist_name'] for hash_ in img_hashes], return_counts=True)
@@ -835,43 +783,16 @@ class MainWindow(QMainWindow):
         unique_artist_names, artist_name_counts = np.unique([self.metadata[hash_]['artist_name'] for hash_ in img_hashes], return_counts=True)
         unique_styles, style_counts = np.unique([self.metadata[hash_]['style'] for hash_ in img_hashes], return_counts=True)
 
-        count_selection = [sel_date_counts[np.where(sel_unique_dates == date)[0].tolist()[0]] if date in sel_unique_dates else 0 for date in unique_dates]
-        tag_count_selection = [sel_tag_counts[np.where(sel_unique_tags == tag)[0].tolist()[0]] if tag in sel_unique_tags else 0 for tag in unique_tags]
-        artist_count_selection = [sel_artist_name_counts[np.where(sel_unique_artist_names == artist_name)[0].tolist()[0]] if artist_name in sel_unique_artist_names else 0 for artist_name in unique_artist_names]
-        style_count_selection = [sel_style_counts[np.where(sel_unique_styles == style)[0].tolist()[0]] if style in sel_unique_styles else 0 for style in unique_styles]
+        count_selection = [sel_date_counts[np.where(sel_unique_dates == date)[0].tolist()[0]] if np.isin(date , sel_unique_dates) else 0 for date in unique_dates]
+        tag_count_selection = [sel_tag_counts[np.where(sel_unique_tags == tag)[0].tolist()[0]] if np.isin(tag , sel_unique_tags) else 0 for tag in unique_tags]
+        artist_count_selection = [sel_artist_name_counts[np.where(sel_unique_artist_names == artist_name)[0].tolist()[0]] if np.isin(artist_name, sel_unique_artist_names) else 0 for artist_name in unique_artist_names]
+        style_count_selection = [sel_style_counts[np.where(sel_unique_styles == style)[0].tolist()[0]] if np.isin(style, sel_unique_styles) else 0 for style in unique_styles]
        
-
-        # Create x-axis ticks
-        x = list(range(len(unique_styles)))
-        # Create a bar graph item for count data
-        bar_graph = pg.BarGraphItem(x=x, height=style_counts, width=0.6, brush='g')
-        # Add the bar graph item to the plot widget
-        self.bp.addItem(bar_graph)
-        # Create a bar graph item for selected count data
-        selected_bar_graph = pg.BarGraphItem(x=x, height=style_count_selection, width=0.6, brush='r')
-        # Add the selected bar graph item to the plot widget
-        self.bp.addItem(selected_bar_graph)
-
-        # Set x-axis labels
-        axis = pg.AxisItem(orientation='bottom')
-        axis.setTicks([list(enumerate(unique_styles))])
-        self.bp.getPlotItem().axes['bottom']['item'] = axis
-
+        self.bp.fill_in_barplot(unique_styles,style_counts,style_count_selection)
         # Show the plot widget
-        # self.bp.show()
-        # img_stats_container = self.ui.box_recom_img_stats
-        # # Create the layout for the QGroupBox and set it
-        # img_stats_layout = QVBoxLayout()
-        # img_stats_container.setLayout(img_stats_layout)
-
-        # # Add the PlotWidget to the layout of the QGroupBox
-        # img_stats_layout.addWidget(self.bp)
-        # img_stats_container.layout().addWidget(self.bp)
-
-        img_stats_container = self.ui.verticalLayoutWidget_2
-        img_stats_container.layout().addWidget(self.bp)
-
-        
+        self.bp.show()
+        print('show')
+        # self.bp.repaint()
 
 def start_dashboard(key_dict, dataset_filepath, images_filepath):
     app = QApplication(sys.argv)
@@ -900,3 +821,138 @@ if __name__ == "__main__":
     widget = MainWindow(key_dict, datafile_path, images_filepath)
     widget.show()
     sys.exit(app.exec())
+
+
+
+
+from PyQt6.QtCore import QRect
+from PyQt6.QtWidgets import (
+    QWidget,
+    QGridLayout,
+    QSlider,
+    QLabel,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLineEdit,
+    QRadioButton,
+    QToolTip,
+)
+from PyQt6.QtGui import QPalette, QColor
+# from PyQt6.QtCharts import QChart
+from PyQt6 import QtCharts
+
+class RangeSlider(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.domain = [0, 100]
+        self.values = [0, 100]
+        self.update = [0, 100]
+        self.inputValues = [0, 100]
+        self.color = QColor(0, 0, 255)  # Example color
+        self.typeNumber = "int"  # Example type
+        self.step = 1  # Example step
+        self.hover_index = 0  # Example hover index
+        self.isToggleOn = False
+        self.initUI()
+
+    def initUI(self):
+        layout = QGridLayout(self)
+        # BarChart Widget
+        self.bar_chart = BarChart(self)  # Replace BarChart with your own widget
+        # self.bar_chart.setFixedHeight(40)
+        # self.bar_chart.setFixedWidth(70)
+        # self.bar_chart.autoFillBackground(True)
+        # bar_chart.setColor(self.color)
+        # Add other necessary configuration for the BarChart widget
+        layout.addWidget(self.bar_chart, 0, 0, 1, 3)
+       
+        # Double Range Slider Widget
+        range_slider = QSlider()
+        range_slider.setOrientation(Qt.Orientation.Horizontal)
+        # range_slider.setRange(self.domain[0], self.domain[1])
+        # range_slider.setValues(self.values[0], self.values[1])
+        range_slider.setMinimum(self.domain[0])
+        range_slider.setMaximum(self.domain[1])
+        range_slider.setValue(self.values[0])
+        range_slider.setTickPosition(QSlider.TickPosition.TicksBothSides)
+        range_slider.setTickInterval(1)
+        range_slider.setSingleStep(1)
+        range_slider.sliderMoved.connect(self.changeSlider)
+        layout.addWidget(range_slider, 1, 0, 1, 3)
+
+        # Set size policies for the widgets
+        size_policy_chart = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        size_policy_slider = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+
+        self.bar_chart.setSizePolicy(size_policy_chart)
+        range_slider.setSizePolicy(size_policy_slider)
+
+        # Set stretch factors for the widgets
+        # layout.setColumnStretch(0, 1)
+        # layout.setColumnStretch(1, 1)
+        # layout.setColumnStretch(2, 1)
+
+        self.setLayout(layout)
+
+        # Additional styling if required
+        # self.setStyleSheet("...")
+
+    def changeSlider(self, values):
+        # Function to handle slider value changes
+        pass
+
+    def fill_in_barplot(self, unique_styles, style_counts, style_count_selection):
+        # Set the bar data
+        self.bar_chart.setBarData(unique_styles, style_counts, style_count_selection)
+        # Add the BarChart widget to the layout or parent widget
+        # self.layout.addWidget(bar_chart)
+        self.bar_chart.repaint()
+
+
+class BarChart(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.series = QtCharts.QBarSeries()
+        self.chart = QtCharts.QChart()
+        self.chart.addSeries(self.series)
+        self.axisX = QtCharts.QBarCategoryAxis()
+        self.axisY = QtCharts.QValueAxis()
+        self.chart.addAxis(self.axisX, Qt.AlignmentFlag.AlignBottom)
+        self.chart.addAxis(self.axisY, Qt.AlignmentFlag.AlignLeft)
+        self.chart.legend().setVisible(False)
+        self.chartView = QtCharts.QChartView(self.chart)
+        self.chartView.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.chartView)
+
+        self.setMinimumSize(200, 200)
+
+    def setColor(self, color):
+        # Set color for the bar chart
+        palette = self.chartView.palette()
+        palette.setColor(QPalette.ColorRole.Window, color)
+        self.chartView.setPalette(palette)
+
+    def setBarData(self, unique_styles, style_counts, style_count_selection):
+        self.series.clear()
+        categories = [str(style) for style in unique_styles]
+        self.axisX.clear()
+        self.axisX.append(categories)
+
+        bar_set = QtCharts.QBarSet("Bar")
+        for count in style_counts:
+            bar_set.append(count)
+        # bar_set.setColor(QColor(0, 0, 255)) 
+        self.series.append(bar_set)
+
+        selected_bar_set = QtCharts.QBarSet("Selected Bar")
+        for count in style_count_selection:
+            selected_bar_set.append(count)
+        # selected_bar_set.setColor(QColor(255, 0, 0))
+        self.series.append(selected_bar_set)
+
+        self.chart.removeSeries(self.series)
+        self.chart.addSeries(self.series)
+        self.series.attachAxis(self.axisX)
+        self.series.attachAxis(self.axisY)

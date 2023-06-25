@@ -18,6 +18,30 @@ import matplotlib.pyplot as plt
 from pyqtgraph.Point import Point
 from pyqtgraph import functions as fn
 
+from pyqtgraph import PlotDataItem
+# from pyqtgraph.graphicsItems.ScatterPlotItem import HoverEvent
+
+
+class ScatterplotWidget(pg.PlotWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.scene().sigMouseMoved.connect(self.on_mouse_moved)
+        self.setMouseHoverEvents(True)
+
+    def on_mouse_moved(self, event):
+        pos = event[0]  # Mouse position in plot coordinates
+        points = self.plotItem.pointsAt(pos)
+        if points:
+            point = points[0]  # Assuming you want to handle the first point
+            x, y = point.pos()
+            text = f'Hover: ({x:.2f}, {y:.2f})'
+            self.hover_text.setHtml(f'<span style="color: white;">{text}</span>')
+            self.hover_text.setPos(x, y)
+            self.hover_text.show()
+        else:
+            self.hover_text.hide()
+
+
 class ScatterplotWidget(QWidget):
     # signal that emits the index of the selected points
     selected_idx = pyqtSignal(int)
@@ -261,7 +285,7 @@ class ScatterplotWidget(QWidget):
         # self.plot_widget.scene().clear()
         # for idx, index, item in self.image_items:
         #     self.plot_widget.scene().removeItem(item)
-
+        
         if self.selected_points!=[]:
             print('draw selected points')
             print(self.selected_points)
@@ -280,6 +304,79 @@ class ScatterplotWidget(QWidget):
         if reset:
             self.reset_scatterplot(points)
         self.plot_widget.update()
+
+
+    # def draw_scatterplot_dots(self, reset=True):
+    #     print('draw_scatterplot_dots')
+    #     self.plot_widget.clear()
+    #     self.plot_widget.setMouseHoverEventsEnabled(True)
+    #     self.plot_widget.hoverEvent = self.handle_hover_event  # Set hover event handler
+
+    #     if self.selected_points != []:
+    #         print('draw selected points')
+    #         print(self.selected_points)
+    #         points = self.selected_points
+    #     else:
+    #         points = self.points
+
+    #     # Plot the scatterplot dots
+    #     scatter = self.plot_widget.plot(points[:, 0], points[:, 1], pen=None, symbolBrush=self.points_color, symbolSize=self.points_size)
+
+    #     # Store the image items for later use
+    #     self.image_items = []
+
+    #     for i, point in enumerate(points):
+    #         x, y = point
+    #         # Read in image
+    #         image_path = self.img_paths[i]
+    #         image = plt.imread(image_path)
+    #         # TODO: change resolution
+    #         w, h, _ = image.shape
+    #         # Create image item
+    #         image_item = pg.ImageItem()
+    #         image_item.setImage(image)
+    #         # Adjust image
+    #         scale = 0.3
+    #         rotation = -90
+    #         image_item.setScale(scale / np.sqrt(w**2 + h**2))
+    #         image_item.setPos(x, y)
+    #         image_item.setRotation(rotation)
+
+    #         # Add hover event to the scatterplot dot
+    #         data_item = scatter.scatter.data[i]
+    #         data_item.hoverEvent = HoverEvent(item=image_item)  # Associate the image item with the hover event
+    #         data_item.mouseHoverEvent = self.handle_hover_event  # Set hover event handler
+
+    #         # Store the image item
+    #         self.image_items.append((i, self.indices[i], image_item))
+
+
+    #     print(len(points))
+
+    #     also_show_not_selected = False
+    #     if also_show_not_selected:
+    #         for point in self.points:
+    #             self.plot_widget.plot([point[0]], [point[1]], pen=None, symbolBrush=self.selection_color, symbolSize=self.selection_points_size)
+
+    #     if reset:
+    #         self.reset_scatterplot(points)
+    #     self.plot_widget.update()
+
+    # def handle_hover_event(self, event):
+    #     if event.isExit():
+    #         # Handle hover exit event
+    #         print("Hover exited")
+    #         image_item = event.item
+    #         self.remove_hover_image(image_item)
+    #     else:
+    #         # Handle hover enter event
+    #         print("Hover entered")
+    #         image_item = event.item
+    #         self.plot_widget.addItem(image_item)
+
+    # def remove_hover_image(self,item):
+    #     self.plot_widget.scene().removeItem(item)
+
 
     def highlight_selected_point(self, id):
         print('draw border, id:', id)

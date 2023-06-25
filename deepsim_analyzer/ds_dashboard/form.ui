@@ -219,11 +219,33 @@
       <attribute name="title">
        <string>Selection statistics</string>
       </attribute>
+      <widget class="QWidget" name="verticalLayoutWidget_3">
+       <property name="geometry">
+        <rect>
+         <x>-1</x>
+         <y>9</y>
+         <width>451</width>
+         <height>141</height>
+        </rect>
+       </property>
+       <layout class="QVBoxLayout" name="selection_stats_layout"/>
+      </widget>
      </widget>
      <widget class="QWidget" name="other_stats">
       <attribute name="title">
        <string>Other statistics</string>
       </attribute>
+      <widget class="QWidget" name="verticalLayoutWidget_4">
+       <property name="geometry">
+        <rect>
+         <x>-1</x>
+         <y>9</y>
+         <width>451</width>
+         <height>141</height>
+        </rect>
+       </property>
+       <layout class="QVBoxLayout" name="other_stats_layout"/>
+      </widget>
      </widget>
     </widget>
     <widget class="QGroupBox" name="box_recom_img_stats">
@@ -236,7 +258,7 @@
       </rect>
      </property>
      <property name="title">
-      <string>Top recommended image statistics</string>
+      <string>Similarity aspects stats</string>
      </property>
      <widget class="QWidget" name="verticalLayoutWidget_2">
       <property name="geometry">
@@ -350,21 +372,21 @@
      <item>
       <widget class="QPushButton" name="b_recalculate">
        <property name="text">
-        <string>metric specific</string>
+        <string>Metric specific</string>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QPushButton" name="b_combined">
        <property name="text">
-        <string>combined</string>
+        <string>Weighted projection</string>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QPushButton" name="b_metric">
        <property name="text">
-        <string>recalculate projection</string>
+        <string>Recalculate projection</string>
        </property>
       </widget>
      </item>
@@ -879,7 +901,7 @@
      </rect>
     </property>
     <property name="title">
-     <string>GroupBox</string>
+     <string>Similar Images</string>
     </property>
     <widget class="QLabel" name="box_right_img">
      <property name="geometry">
@@ -900,53 +922,47 @@
       <string/>
      </property>
     </widget>
-    <widget class="QLabel" name="n1">
+    <widget class="QWidget" name="horizontalLayoutWidget_2">
      <property name="geometry">
       <rect>
-       <x>20</x>
-       <y>300</y>
-       <width>131</width>
-       <height>91</height>
+       <x>9</x>
+       <y>290</y>
+       <width>451</width>
+       <height>111</height>
       </rect>
      </property>
-     <property name="autoFillBackground">
-      <bool>true</bool>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-    </widget>
-    <widget class="QLabel" name="n2">
-     <property name="geometry">
-      <rect>
-       <x>170</x>
-       <y>300</y>
-       <width>131</width>
-       <height>91</height>
-      </rect>
-     </property>
-     <property name="autoFillBackground">
-      <bool>true</bool>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-    </widget>
-    <widget class="QLabel" name="n3">
-     <property name="geometry">
-      <rect>
-       <x>320</x>
-       <y>300</y>
-       <width>131</width>
-       <height>91</height>
-      </rect>
-     </property>
-     <property name="autoFillBackground">
-      <bool>true</bool>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
+     <layout class="QHBoxLayout" name="preview_layout">
+      <item>
+       <widget class="QLabel" name="n3">
+        <property name="autoFillBackground">
+         <bool>true</bool>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="n2">
+        <property name="autoFillBackground">
+         <bool>true</bool>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="n1">
+        <property name="autoFillBackground">
+         <bool>true</bool>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </widget>
    </widget>
   </widget>
