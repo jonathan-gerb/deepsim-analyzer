@@ -222,10 +222,10 @@
       <widget class="QWidget" name="verticalLayoutWidget_3">
        <property name="geometry">
         <rect>
-         <x>-1</x>
+         <x>9</x>
          <y>9</y>
-         <width>451</width>
-         <height>141</height>
+         <width>431</width>
+         <height>131</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="selection_stats_layout"/>
@@ -896,7 +896,7 @@
      <rect>
       <x>1060</x>
       <y>10</y>
-      <width>471</width>
+      <width>461</width>
       <height>401</height>
      </rect>
     </property>
@@ -908,8 +908,8 @@
       <rect>
        <x>10</x>
        <y>20</y>
-       <width>451</width>
-       <height>261</height>
+       <width>441</width>
+       <height>271</height>
       </rect>
      </property>
      <property name="autoFillBackground">
@@ -922,47 +922,53 @@
       <string/>
      </property>
     </widget>
-    <widget class="QWidget" name="horizontalLayoutWidget_2">
+    <widget class="QLabel" name="n2">
      <property name="geometry">
       <rect>
-       <x>9</x>
-       <y>290</y>
-       <width>451</width>
-       <height>111</height>
+       <x>160</x>
+       <y>300</y>
+       <width>141</width>
+       <height>99</height>
       </rect>
      </property>
-     <layout class="QHBoxLayout" name="preview_layout">
-      <item>
-       <widget class="QLabel" name="n3">
-        <property name="autoFillBackground">
-         <bool>true</bool>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="n2">
-        <property name="autoFillBackground">
-         <bool>true</bool>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="n1">
-        <property name="autoFillBackground">
-         <bool>true</bool>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-       </widget>
-      </item>
-     </layout>
+     <property name="autoFillBackground">
+      <bool>true</bool>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QLabel" name="n3">
+     <property name="geometry">
+      <rect>
+       <x>310</x>
+       <y>300</y>
+       <width>141</width>
+       <height>99</height>
+      </rect>
+     </property>
+     <property name="autoFillBackground">
+      <bool>true</bool>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QLabel" name="n1">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>300</y>
+       <width>141</width>
+       <height>99</height>
+      </rect>
+     </property>
+     <property name="autoFillBackground">
+      <bool>true</bool>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
     </widget>
    </widget>
   </widget>

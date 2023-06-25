@@ -71,10 +71,10 @@ class ScatterplotWidget(QWidget):
         self.plot_widget.setLimits(xMin=-1000000, xMax=1000000, yMin=-1000000, yMax=1000000)
         self.plot_widget.setAspectLocked(lock=True)
 
-        self.plot_widget.scene().mouseReleaseEvent = self.on_scene_mouse_release
-        self.plot_widget.scene().mouseMoveEvent = self.on_scene_mouse_move
+        # self.plot_widget.scene().mouseReleaseEvent = self.on_scene_mouse_release
+        # self.plot_widget.scene().mouseMoveEvent = self.on_scene_mouse_move
         # self.plot_widget.sigSceneMouseMoved.connect(self.on_scene_mouse_move)
-        self.plot_widget.scene().mouseDoubleClickEvent = self.on_scene_mouse_double_click
+        # self.plot_widget.scene().mouseDoubleClickEvent = self.on_scene_mouse_double_click
         
         self.draw_scatterplot()
 
@@ -132,11 +132,11 @@ class ScatterplotWidget(QWidget):
                 self.draw_scatterplot()
 
         # self.selected_idx.emit(self.selected_index)
-        self.clear_selection() # ? but will also put selected_points = [] or
-        # self.start_point=None
-        # self.end_point=None
-        # if self.rect is not None and self.rect in self.plot_widget.scene().items():
-        #     self.plot_widget.scene().removeItem(self.rect)
+        # self.clear_selection() # ? but will also put selected_points = [] or
+        self.start_point=None
+        self.end_point=None
+        if self.rect is not None and self.rect in self.plot_widget.scene().items():
+            self.plot_widget.scene().removeItem(self.rect)
 
         QGraphicsScene.mouseReleaseEvent(self.plot_widget.scene(), event)
         view = self.plot_widget.getViewBox()

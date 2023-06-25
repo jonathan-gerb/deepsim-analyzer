@@ -215,8 +215,8 @@ class MainWindow(QMainWindow):
 
         # Create a plot widget
         # self.bp = pg.PlotWidget()
-        # self.bp = BarChart(self)
-        self.bp=RangeSlider(self)
+        self.bp = BarChart(self)
+        # self.bp=RangeSlider(self)
         # self.get_Selected_stats.connect(self.get_selected_points_stats)
         self.ui.radioButton.toggled.connect(self.get_selected_points_stats)
         self.ui.radioButton.toggle()
@@ -227,8 +227,8 @@ class MainWindow(QMainWindow):
         img_stats_container.layout().addWidget(self.bp)
 
         # Set the size policy for the bar plot widget
-        size_policy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.bp.setSizePolicy(size_policy)
+        # size_policy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        # self.bp.setSizePolicy(size_policy)
         
         # Set the size policy for the layout item containing the bar plot widget
         # layout_item = img_stats_container.layout().itemAt(0)
@@ -306,7 +306,6 @@ class MainWindow(QMainWindow):
         else:
             raise ValueError("something is wrong with the dino similarity options.")
     
-
     def texture_show_fm(self):
         print('texture_show_fm')
         if not self.ui.texture_opt_show_fm.isChecked():
@@ -431,47 +430,6 @@ class MainWindow(QMainWindow):
         p = ui_element.palette()
         p.setColor(ui_element.backgroundRole(), QColor(*color))
         ui_element.setPalette(p)
-    
-    def display_nearest_neighbours(self, topk):
-        print('display_nearest_neighbours')
-
-        # save for potential use in other parts of the program
-        self.topk = topk
-
-        distance, idx = topk['combined']["distances"][0], int(topk['combined']['ranking'][0])
-        top_img_path = self.image_paths[idx]
-        self.right_img_key = self.image_keys[idx]
-        self.right_img_filename = self.image_paths[idx]
-
-        self.display_photo_right(top_img_path)
-        print(topk['combined']['distances'].shape)
-        distance_1, idx_1 = topk['combined']['distances'][1], int(topk['combined']["ranking"][1])
-        distance_2, idx_2 = topk['combined']['distances'][2], int(topk['combined']["ranking"][2])
-        distance_3, idx_3 = topk['combined']['distances'][3], int(topk['combined']["ranking"][3])
-
-        indices_nn_preview = [idx_1, idx_2, idx_3]
-        print(f"{indices_nn_preview=}")
-        print(f"{distance_1=}")
-        print(f"{distance_2=}")
-        print(f"{distance_3=}")
-        fp_nn_preview = [self.image_paths[int(index)] for index in indices_nn_preview]
-        print(f"{fp_nn_preview=}")
-
-        self.display_preview_nns(fp_nn_preview)
-        
-
-    def display_preview_nns(self, filenames):
-        for i, filename in enumerate(filenames[:3]):
-            ui_element = getattr(self.ui, f"n{i+1}")
-            ui_element.setAutoFillBackground(True)
-            p = ui_element.palette()
-            p.setColor(ui_element.backgroundRole(), QColor(0, 0, 0))
-            ui_element.setPalette(p)
-
-            w, h = ui_element.width(), ui_element.height()
-            pixmap = QPixmap(filename)
-            ui_element.setPixmap(pixmap.scaled(w,h,Qt.AspectRatioMode.KeepAspectRatio))
-            ui_element.setAlignment(Qt.AlignmentFlag.AlignCenter)
             
     def get_metric_combo_weights(self):
         dummy = self.ui.combo_dummy_slider.value()
@@ -571,6 +529,175 @@ class MainWindow(QMainWindow):
 
         return topk_results
 
+    def upload_image_left(self):
+        file_dialog = QFileDialog()
+        file_dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
+        file_dialog.setNameFilter("Images (*.png *.xpm *.jpg *.jpeg)")
+
+        if file_dialog.exec() == QFileDialog.DialogCode.Accepted:
+            filenames = file_dialog.selectedFiles()
+            if len(filenames) > 0:
+                current_filepath = self.image_paths[self.key_to_idx[img_hash]]
+                
+                img_hash = da.get_image_hash(current_filepath)
+                print(f"hash: {img_hash}")
+                self.left_img_key = img_hash
+                self.left_img_filename = current_filepath
+
+                self.update_leftimg_data(self.left_img_key)
+                # display the photo on the left
+                self.display_photo_left(current_filepath)
+
+                topk_dict = self.calculate_nearest_neighbours()
+                self.display_nearest_neighbours(topk_dict)
+
+    def update_leftimg_data(self, img_hash):
+        # update image metdata if available
+        if img_hash in self.metadata:
+            filepath = self.image_paths[self.key_to_idx[img_hash]]
+            print(f"found metadata for image: {filepath}")
+            self.update_image_info(
+                self.metadata[img_hash]['date'],
+                self.metadata[img_hash]['artist_name'].decode('UTF-8'),
+                self.metadata[img_hash]['style'].decode('UTF-8'),
+                self.metadata[img_hash]['tags'].decode('UTF-8'),
+            )
+            self.left_img_features = self.get_features_from_dataset(img_hash)
+        else:
+            # get feature_vectors for new image 
+            self.left_img_features = self.get_point_new_img(filepath)
+
+            print(f"no metadata available for image: {filepath}")
+            self.update_image_info("unknown date", "unknown artist", "unknown style", "unknown tags")
+
+    def get_features_from_dataset(self, img_hash):
+        feature_dict = {}
+        for feature_name in self.available_features:
+            # get feature for default image
+            test_feature = da.io.read_feature(
+                self.datafile_path, img_hash, feature_name, read_projection=False
+            )
+            test_feature_p = da.io.read_feature(
+                self.datafile_path, img_hash, feature_name, read_projection=True
+            )
+
+            # left image data is always saved seperately 
+            feature_dict[feature_name] = {
+                    "full": test_feature,
+                    "projection": test_feature_p
+                }
+        return feature_dict
+
+    def get_point_new_img(self, filename):
+        print(f"given filename: {filename}, ignoring file for now and returning feature_vector")
+        feature_dict = {}
+        for feature_name in self.data_dict.keys():
+            vector_size =  self.data_dict[feature_name]["projection"].shape[1]
+            random_array = np.random.uniform(low=-10.0, high=10.0, size=(vector_size,))
+            random_array_p = np.random.uniform(low=-10.0, high=10.0, size=(2,))
+
+            feature_dict[feature_name] = {}
+            feature_dict[feature_name]["projection"] = random_array_p
+            feature_dict[feature_name]["full"] = random_array
+
+        print('random_array', random_array)
+        image_features = random_array
+        new_point = image_features
+        return new_point
+
+    def update_image_info(self, date, artist, style, tags):
+        # Update the label texts
+        self.ui.t_date.setText(f"Date: {int(date)}")
+        self.ui.t_artist.setText(f"Artist: {artist}")
+        self.ui.t_style.setText(f"Style: {style}")
+        self.ui.t_tags.setText(f"Tags: {tags}")
+        
+    def display_photo_left(self, filename):
+        img_container = self.ui.box_left_img
+        img_container.setAutoFillBackground(True)
+        p = img_container.palette()
+        p.setColor(img_container.backgroundRole(), QColor(0, 0, 0))
+        img_container.setPalette(p)
+
+        w, h = img_container.width(), img_container.height()
+        print('displaying photo:', filename)
+        pixmap = QPixmap(filename)
+        self.ui.box_left_img.setPixmap(pixmap.scaled(w,h,Qt.AspectRatioMode.KeepAspectRatio))
+        self.ui.box_left_img.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+    def display_photo_right(self, filename):
+        img_container = self.ui.box_right_img
+        img_container.setAutoFillBackground(True)
+        p = img_container.palette()
+        p.setColor(img_container.backgroundRole(), QColor(0, 0, 0))
+        img_container.setPalette(p)
+
+        w, h = img_container.width(), img_container.height()
+        print('displaying photo on right:', filename)
+        self.top_pixmap = QPixmap(filename)
+        self.top_filename= filename
+        self.ui.box_right_img.setPixmap(self.top_pixmap.scaled(w,h,Qt.AspectRatioMode.KeepAspectRatio))
+        self.ui.box_right_img.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+    def display_nearest_neighbours(self, topk):
+        print('display_nearest_neighbours')
+
+        # save for potential use in other parts of the program
+        self.topk = topk
+
+        distance, idx = topk['combined']["distances"][0], int(topk['combined']['ranking'][0])
+        top_img_path = self.image_paths[idx]
+        self.right_img_key = self.image_keys[idx]
+        self.right_img_filename = self.image_paths[idx]
+
+        self.display_photo_right(top_img_path)
+        print(topk['combined']['distances'].shape)
+        distance_1, idx_1 = topk['combined']['distances'][1], int(topk['combined']["ranking"][1])
+        distance_2, idx_2 = topk['combined']['distances'][2], int(topk['combined']["ranking"][2])
+        distance_3, idx_3 = topk['combined']['distances'][3], int(topk['combined']["ranking"][3])
+
+        indices_nn_preview = [idx_1, idx_2, idx_3]
+        print(f"{indices_nn_preview=}")
+        print(f"{distance_1=}")
+        print(f"{distance_2=}")
+        print(f"{distance_3=}")
+        fp_nn_preview = [self.image_paths[int(index)] for index in indices_nn_preview]
+        print(f"{fp_nn_preview=}")
+
+        self.display_preview_nns(fp_nn_preview)
+        
+
+    def display_preview_nns(self, filenames,idx=[0,1,2]):
+        print('display_preview_nns')
+
+        for i, filename in enumerate(filenames[:3]):
+            id= idx[i]
+            print(len(filenames), id+1)
+            filename= filenames[i]
+            ui_element = getattr(self.ui, f"n{id+1}")
+            ui_element.setMouseTracking(True)
+            # ui_element.mousePressEvent=self.switch_top_and_preview(i, filename)
+            ui_element.mousePressEvent = lambda event, i=i, filename=filename: self.switch_top_and_preview(i, filename)
+
+            ui_element.setAutoFillBackground(True)
+            p = ui_element.palette()
+            p.setColor(ui_element.backgroundRole(), QColor(0, 0, 0))
+            ui_element.setPalette(p)
+
+            w, h = ui_element.width(), ui_element.height()
+            pixmap = QPixmap(filename)
+            ui_element.setPixmap(pixmap.scaled(w,h,Qt.AspectRatioMode.KeepAspectRatio))
+            ui_element.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+
+    def switch_top_and_preview(self, i, filename):
+        print('switch_top_and_preview')
+        print(self.top_filename)
+        print(filename )
+        self.display_preview_nns([self.top_filename], idx=[i])
+        self.display_photo_right(filename)
+
+
 
     def change_scatterplot_pointtype(self):
         """Use radio toggle to draw dots or images, triggered on toggle of the radio button.
@@ -624,148 +751,9 @@ class MainWindow(QMainWindow):
         self.display_nearest_neighbours(topk_dict)
 
 
-    def upload_image_left(self):
-        file_dialog = QFileDialog()
-        file_dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
-        file_dialog.setNameFilter("Images (*.png *.xpm *.jpg *.jpeg)")
-
-        if file_dialog.exec() == QFileDialog.DialogCode.Accepted:
-            filenames = file_dialog.selectedFiles()
-            if len(filenames) > 0:
-                current_filepath = self.image_paths[self.key_to_idx[img_hash]]
-                
-                img_hash = da.get_image_hash(current_filepath)
-                print(f"hash: {img_hash}")
-                self.left_img_key = img_hash
-                self.left_img_filename = current_filepath
-
-                self.update_leftimg_data(self.left_img_key)
-                # display the photo on the left
-                self.display_photo_left(current_filepath)
-
-                topk_dict = self.calculate_nearest_neighbours()
-                self.display_nearest_neighbours(topk_dict)
-
-
-    def update_leftimg_data(self, img_hash):
-        # update image metdata if available
-        if img_hash in self.metadata:
-            filepath = self.image_paths[self.key_to_idx[img_hash]]
-            print(f"found metadata for image: {filepath}")
-            self.update_image_info(
-                self.metadata[img_hash]['date'],
-                self.metadata[img_hash]['artist_name'].decode('UTF-8'),
-                self.metadata[img_hash]['style'].decode('UTF-8'),
-                self.metadata[img_hash]['tags'].decode('UTF-8'),
-            )
-            self.left_img_features = self.get_features_from_dataset(img_hash)
-        else:
-            # get feature_vectors for new image 
-            self.left_img_features = self.get_point_new_img(filepath)
-
-            print(f"no metadata available for image: {filepath}")
-            self.update_image_info("unknown date", "unknown artist", "unknown style", "unknown tags")
-
-
-
-    def get_features_from_dataset(self, img_hash):
-        feature_dict = {}
-        for feature_name in self.available_features:
-            # get feature for default image
-            test_feature = da.io.read_feature(
-                self.datafile_path, img_hash, feature_name, read_projection=False
-            )
-            test_feature_p = da.io.read_feature(
-                self.datafile_path, img_hash, feature_name, read_projection=True
-            )
-
-            # left image data is always saved seperately 
-            feature_dict[feature_name] = {
-                    "full": test_feature,
-                    "projection": test_feature_p
-                }
-
-        return feature_dict
-
-    def get_point_new_img(self, filename):
-        print(f"given filename: {filename}, ignoring file for now and returning feature_vector")
-        feature_dict = {}
-        for feature_name in self.data_dict.keys():
-            vector_size =  self.data_dict[feature_name]["projection"].shape[1]
-            random_array = np.random.uniform(low=-10.0, high=10.0, size=(vector_size,))
-            random_array_p = np.random.uniform(low=-10.0, high=10.0, size=(2,))
-
-            feature_dict[feature_name] = {}
-            feature_dict[feature_name]["projection"] = random_array_p
-            feature_dict[feature_name]["full"] = random_array
-
-        print('random_array', random_array)
-        image_features = random_array
-        new_point = image_features
-        return new_point
-
-    def update_image_info(self, date, artist, style, tags):
-        # Update the label texts
-        self.ui.t_date.setText(f"Date: {int(date)}")
-        self.ui.t_artist.setText(f"Artist: {artist}")
-        self.ui.t_style.setText(f"Style: {style}")
-        self.ui.t_tags.setText(f"Tags: {tags}")
-        
-
-    def display_photo_left(self, filename):
-        img_container = self.ui.box_left_img
-        img_container.setAutoFillBackground(True)
-        p = img_container.palette()
-        p.setColor(img_container.backgroundRole(), QColor(0, 0, 0))
-        img_container.setPalette(p)
-
-        w, h = img_container.width(), img_container.height()
-        print('displaying photo:', filename)
-        pixmap = QPixmap(filename)
-        self.ui.box_left_img.setPixmap(pixmap.scaled(w,h,Qt.AspectRatioMode.KeepAspectRatio))
-        self.ui.box_left_img.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-    def display_photo_right(self, filename):
-        img_container = self.ui.box_right_img
-        img_container.setAutoFillBackground(True)
-        p = img_container.palette()
-        p.setColor(img_container.backgroundRole(), QColor(0, 0, 0))
-        img_container.setPalette(p)
-
-        w, h = img_container.width(), img_container.height()
-        print('displaying photo on right:', filename)
-        pixmap = QPixmap(filename)
-        self.ui.box_right_img.setPixmap(pixmap.scaled(w,h,Qt.AspectRatioMode.KeepAspectRatio))
-        self.ui.box_right_img.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-    #TODO: rewrite, make clickable and make currect select so left. (inspect can go...? always recommadations on right?)
-    def display_preview_photos(self, filenames):
-        for i, filename in enumerate(filenames):
-            if i < len(self.preview_photo_labels):
-                label = self.preview_photo_labels[i]
-                pixmap = QPixmap(filename)
-                # Scale the pixmap to fit the width while maintaining aspect ratio
-                scaled_pixmap = pixmap.scaled(150, 150, Qt.AspectRatioMode.KeepAspectRatioByExpanding, Qt.TransformationMode.SmoothTransformation)
-            
-                # Create a square pixmap with a white background
-                square_pixmap = QPixmap(150, 150)
-                square_pixmap.fill(QColor(Qt.GlobalColor.white))
-                
-                # Calculate the position to center the scaled pixmap
-                x = (square_pixmap.width() - scaled_pixmap.width()) // 2
-                y = (square_pixmap.height() - scaled_pixmap.height()) // 2
-            
-                # Draw the scaled pixmap onto the square pixmap
-                painter = QPainter(square_pixmap)
-                painter.drawPixmap(x, y, scaled_pixmap)
-                painter.end()
-                
-                # Set the square pixmap as the label's pixmap
-                label.setPixmap(square_pixmap)
-
-            
     def get_selected_points_stats(self, int):
         print('get_selected_points_stats')
+        print(len(self.scatterplot.selected_indices), len(self.scatterplot.indices))
         # for selection_ids in self.scatterplot.selected_indices:
         img_hashes = [self.image_keys[index] for index in self.scatterplot.selected_indices]
         self.metadata= da.read_metadata_batch(self.datafile_path, img_hashes)
@@ -789,10 +777,7 @@ class MainWindow(QMainWindow):
         style_count_selection = [sel_style_counts[np.where(sel_unique_styles == style)[0].tolist()[0]] if np.isin(style, sel_unique_styles) else 0 for style in unique_styles]
        
         self.bp.fill_in_barplot(unique_styles,style_counts,style_count_selection)
-        # Show the plot widget
-        self.bp.show()
-        print('show')
-        # self.bp.repaint()
+        
 
 def start_dashboard(key_dict, dataset_filepath, images_filepath):
     app = QApplication(sys.argv)
@@ -881,11 +866,11 @@ class RangeSlider(QWidget):
         layout.addWidget(range_slider, 1, 0, 1, 3)
 
         # Set size policies for the widgets
-        size_policy_chart = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        size_policy_slider = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        # size_policy_chart = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        # size_policy_slider = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
-        self.bar_chart.setSizePolicy(size_policy_chart)
-        range_slider.setSizePolicy(size_policy_slider)
+        # self.bar_chart.setSizePolicy(size_policy_chart)
+        # range_slider.setSizePolicy(size_policy_slider)
 
         # Set stretch factors for the widgets
         # layout.setColumnStretch(0, 1)
@@ -900,13 +885,6 @@ class RangeSlider(QWidget):
     def changeSlider(self, values):
         # Function to handle slider value changes
         pass
-
-    def fill_in_barplot(self, unique_styles, style_counts, style_count_selection):
-        # Set the bar data
-        self.bar_chart.setBarData(unique_styles, style_counts, style_count_selection)
-        # Add the BarChart widget to the layout or parent widget
-        # self.layout.addWidget(bar_chart)
-        self.bar_chart.repaint()
 
 
 class BarChart(QWidget):
@@ -956,3 +934,7 @@ class BarChart(QWidget):
         self.chart.addSeries(self.series)
         self.series.attachAxis(self.axisX)
         self.series.attachAxis(self.axisY)
+
+    def fill_in_barplot(self, unique_styles, style_counts, style_count_selection):
+        self.setBarData(unique_styles, style_counts, style_count_selection)
+        self.repaint()
