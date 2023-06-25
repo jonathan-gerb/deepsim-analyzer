@@ -126,6 +126,14 @@ class MainWindow(QMainWindow):
         self.left_img_key = default_image_key
         self.left_img_filename = default_image_path_absolute
 
+        print('default_image_path',default_image_path)
+        # load in timeline
+        self.timeline= TimelineWindow(default_image_path)
+        self.timeline.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
+        self.ui.box_timeline_layout.addWidget(self.timeline)
+        self.no_timeline_label = QLabel('No data for timeline of new uploaded image')
+        self.ui.box_timeline_layout.addWidget(self.no_timeline_label)
+
         # display the base image
         self.display_photo_left(default_image_path_absolute)
         # data for left img feature, can come  from dataset or be calculated on the fly
@@ -227,8 +235,8 @@ class MainWindow(QMainWindow):
         img_stats_container.layout().addWidget(self.bp)
 
         # Set the size policy for the bar plot widget
-        # size_policy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        # self.bp.setSizePolicy(size_policy)
+        size_policy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.bp.setSizePolicy(size_policy)
         
         # Set the size policy for the layout item containing the bar plot widget
         # layout_item = img_stats_container.layout().itemAt(0)
@@ -243,10 +251,25 @@ class MainWindow(QMainWindow):
             self.scatterplot = ScatterplotWidget(
                 self.data_dict[current_metric_type.lower()]["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame
             )
-            # self.scatterplot.plot_widget.scene().mousePressEvent=self.on_canvas_click
-            # self.scatterplot.plot_widget.sigMouseClicked.connect(self.on_canvas_click)
-            self.scatterplot.plot_widget.sigSceneMouseMoved.connect(self.on_scene_mouse_move)
-            self.scatterplot.plot_widget.sigSceneMouseClicked.connect(lambda event: self.on_canvas_click(event, 0))
+            self.scatterplot.plot_widget.scene().mousePressEvent=self.on_canvas_click
+            
+            # self.scatterplot.plot_widget.scene().mousePressEvent.connect(lambda event: self.on_scene_mouse_move(event))
+            
+            # self.scatterplot.plot_widget.sigSceneMouseMoved.connect(self.on_scene_mouse_move)
+            # self.scatterplot.plot_widget.sigSceneMouseClicked.connect(lambda event: self.on_canvas_click(event, 0))
+
+            # self.scatterplot.plot_widget.scene().sigMouseMoved.connect(lambda event: self.on_scene_mouse_move(event))
+            # self.scatterplot.plot_widget.scene().sigMouseMoved.connect(lambda event: self.scatterplot.on_scene_mouse_move(event))
+
+            # self.scatterplot.plot_widget.scene().sigMouseClicked.connect(lambda event: self.on_canvas_click(event,0))
+            # self.scatterplot.plot_widget.scene().sigMouseClicked.connect(lambda event: self.on_canvas_click(event))
+            # self.scatterplot.plot_widget.scene().sigMouseClicked.connect(lambda event: self.scatterplot.on_canvas_click(event))
+            # self.scatterplot.plot_widget.scene().sigMouseClicked.connect(lambda event: self.scatterplot.on_canvas_click(event,0))
+            # self.scatterplot.plot_widget.scene().sceneEvent.connect(lambda event: self.on_canvas_click(event))
+
+            # Install event filter on the scene to handle mouse press events
+            # self.scatterplot.plot_widget.scene().installEventFilter(self)
+
             self.scatterplot.selected_idx.emit(0)
         else:
             print('only redraw scatterplot')
@@ -255,9 +278,19 @@ class MainWindow(QMainWindow):
             else:
                 self.scatterplot.draw_scatterplot()
             self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
+
+
+
+    # def eventFilter(self, source, event):
+    #     if event.type() == QEvent.GraphicsSceneMousePress:
+    #         if source == self.scatterplot.plot_widget.scene():
+    #             # Handle the mouse press event
+    #             self.on_canvas_click(event)
+    #             return True
+    #     return super().eventFilter(source, event)
         
     def on_scene_mouse_move(self, event):
-        print('mouseMoveEvent2')
+        print('----mouseMoveEvent2')
 
     def recalc_similarity(self):
         topk_dict = self.calculate_nearest_neighbours()
@@ -566,12 +599,21 @@ class MainWindow(QMainWindow):
                 self.metadata[img_hash]['tags'].decode('UTF-8'),
             )
             self.left_img_features = self.get_features_from_dataset(img_hash)
+
+            # load in timeline
+            base_filename = os.path.basename(filepath)
+            self.timeline.draw_timeline(base_filename)
+            self.no_timeline_label.hide()
+            self.timeline.show()
         else:
             # get feature_vectors for new image 
             self.left_img_features = self.get_point_new_img(filepath)
 
             print(f"no metadata available for image: {filepath}")
             self.update_image_info("unknown date", "unknown artist", "unknown style", "unknown tags")
+            self.timeline.hide()
+            self.no_timeline_label.show()
+
 
     def get_features_from_dataset(self, img_hash):
         feature_dict = {}
@@ -636,7 +678,7 @@ class MainWindow(QMainWindow):
         img_container.setPalette(p)
 
         w, h = img_container.width(), img_container.height()
-        print('displaying photo on right:', filename)
+        print('displaying photo on right:', os.path.basename(filename))
         self.top_pixmap = QPixmap(filename)
         self.top_filename= filename
         self.ui.box_right_img.setPixmap(self.top_pixmap.scaled(w,h,Qt.AspectRatioMode.KeepAspectRatio))
@@ -672,15 +714,17 @@ class MainWindow(QMainWindow):
 
     def display_preview_nns(self, filenames,idx=[0,1,2]):
         print('display_preview_nns')
+        if len(filenames)>3:
+            filenames=filenames[:3]
 
-        for i, filename in enumerate(filenames[:3]):
+        for i, filename in enumerate(filenames):
             id= idx[i]
-            print(len(filenames), id+1)
             filename= filenames[i]
             ui_element = getattr(self.ui, f"n{id+1}")
             ui_element.setMouseTracking(True)
             # ui_element.mousePressEvent=self.switch_top_and_preview(i, filename)
-            ui_element.mousePressEvent = lambda event, i=i, filename=filename: self.switch_top_and_preview(i, filename)
+            ui_element.mousePressEvent = lambda event, id=id, filename=filename: self.switch_top_and_preview(id, filename)
+            print('id',id+1,'filename', os.path.basename(filename))
 
             ui_element.setAutoFillBackground(True)
             p = ui_element.palette()
@@ -695,8 +739,7 @@ class MainWindow(QMainWindow):
 
     def switch_top_and_preview(self, i, filename):
         print('switch_top_and_preview')
-        print(self.top_filename)
-        print(filename )
+        print('self.top_filename', os.path.basename(self.top_filename))
         self.display_preview_nns([self.top_filename], idx=[i])
         self.display_photo_right(filename)
 
@@ -738,7 +781,7 @@ class MainWindow(QMainWindow):
                     self.clicked_on_point()
                     break
             
-        QGraphicsScene.mousePressEvent(self.plot_widget.scene(), ev)
+        QGraphicsScene.mousePressEvent(self.scatterplot.plot_widget.scene(), ev)
         
 
     # TODO: maybe change loc of this fn, or split its a little in between scatterplot and main

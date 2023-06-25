@@ -71,7 +71,7 @@ class TimelineWindow(QWidget):
         images = [{"image_path":name, 'year':year} for name, year in zip(image_names, image_years)]
         return images
 
-    def get_images_paths_years(data, most_sim_img:str):
+    def get_images_paths_years(self,data, most_sim_img:str):
         # define attrites for before and after 
         attributes_before = ['prior_10_inside_style',
                              'prior_20_inside_style',
@@ -84,6 +84,10 @@ class TimelineWindow(QWidget):
                             'subsequent_100_inside_style'
                             ]
         
+        print(data['image'])
+        print(most_sim_img)
+        print('len', len(data[data['image']==most_sim_img]==False))
+        print(data[data['image']==most_sim_img][attributes_before])
         # retrieves ids of images created before and after the input image
         ids_before = data[data['image']==most_sim_img][attributes_before].values[0]
         ids_after = data[data['image']==most_sim_img][attributes_after].values[0]
@@ -110,7 +114,9 @@ class TimelineWindow(QWidget):
 
     ## add images to the timeline
     def create_timeline_item(self,images, image_path, year):
-        pixmap=QPixmap(image_path).scaled(30,30)
+        basepath = Path(__file__)
+        imgs_filepath = basepath.parent.parent.parent.parent / 'data/raw_immutable/test_images'
+        pixmap=QPixmap(str(imgs_filepath/ image_path)).scaled(30,30)
         item = QGraphicsPixmapItem(pixmap)
         item.setFlag(QGraphicsPixmapItem.GraphicsItemFlag.ItemIsMovable)
         item.setFlag(QGraphicsPixmapItem.GraphicsItemFlag.ItemSendsGeometryChanges)

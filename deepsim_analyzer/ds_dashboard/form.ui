@@ -94,18 +94,16 @@
       <string>Timeline for above image</string>
      </property>
     </widget>
-    <widget class="QWidget" name="box_timeline" native="true">
+    <widget class="QWidget" name="verticalLayoutWidget_5">
      <property name="geometry">
       <rect>
-       <x>10</x>
-       <y>200</y>
-       <width>439</width>
-       <height>81</height>
+       <x>9</x>
+       <y>199</y>
+       <width>441</width>
+       <height>101</height>
       </rect>
      </property>
-     <property name="autoFillBackground">
-      <bool>true</bool>
-     </property>
+     <layout class="QVBoxLayout" name="box_timeline_layout"/>
     </widget>
    </widget>
    <widget class="QWidget" name="box_right_low" native="true">

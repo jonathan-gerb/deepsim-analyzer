@@ -52,15 +52,18 @@ class ScatterplotWidget(QWidget):
         self.plot_widget.setLimits(xMin=-1000000, xMax=1000000, yMin=-1000000, yMax=1000000)
         self.plot_widget.setAspectLocked(lock=True)
 
+        self.plot_widget.scene().mouseDoubleClickEvent = self.on_scene_mouse_double_click
         self.plot_widget.scene().mouseReleaseEvent = self.on_scene_mouse_release
         self.plot_widget.scene().mouseMoveEvent = self.on_scene_mouse_move
-        self.plot_widget.sigSceneMouseMoved.connect(self.on_scene_mouse_move)
-        # self.plot_widget.sigMouseClicked.connect(self.on_canvas_click)
-
-        # self.plot_widget.scene().mouseDoubleClickEvent = self.on_scene_mouse_double_click
+        
+        # self.plot_widget.scene().sigMouseMoved.connect(lambda event: self.on_scene_mouse_move(event))
+        # self.plot_widget.scene().sigMouseMoved.connect(self.on_scene_mouse_move)
+        # self.plot_widget.scene().sigMouseClicked.connect(lambda event: self.on_canvas_click(event))
          
         self.plot_widget.setAcceptHoverEvents(True)
-        
+        self.hover_img=pg.ImageItem()
+        self.plot_widget.addItem(self.hover_img)
+
         self.draw_scatterplot()
 
     def initialize(self, points, indices,img_paths, config):
@@ -101,6 +104,8 @@ class ScatterplotWidget(QWidget):
 
         self.plot_widget.setRange(xRange=x_range, yRange=y_range)
 
+    def on_canvas_click(self, ev):
+        print("-----on canvas click:")
 
     def on_scene_mouse_double_click(self, event):
         print("mouseDBPressEvent")
@@ -108,7 +113,7 @@ class ScatterplotWidget(QWidget):
             self.start_selection(event)
         
     def on_scene_mouse_release(self, event):
-        print("mouseReleaseEvent")
+        print("*mouseReleaseEvent")
         if event.button() == Qt.MouseButton.LeftButton and self.start_point is not None and self.end_point is not None:
             self.get_selection_in_rectangle()
             if self.dots_plot:
@@ -127,28 +132,53 @@ class ScatterplotWidget(QWidget):
         view = self.plot_widget.getViewBox()
         view.mouseReleaseEvent(event)
 
+    # def on_scene_mouse_move(self, event):
+    #     print('mouseMoveEvent')
+
     def on_scene_mouse_move(self, event):
         # print('mouseMoveEvent')
         if self.start_point is not None:
             self.end_selection(event)
-        QGraphicsScene.mouseMoveEvent(self.plot_widget.scene(), event)
+        # QGraphicsScene.mouseMoveEvent(self.plot_widget.scene(), event)
         # QGraphicsView.mouseMoveEvent(self.plot_widget.view(), event)
 
         # view = self.plot_widget.getViewBox()
         # view.mouseMoveEvent(event)
 
         if self.dots_plot:
-            pos = event[0]  # Mouse position in plot coordinates
-            points = self.plot_widget.plotItem.pointsAt(pos)
+            pos = event
+            points = []
+            range_radius = 0.1  # Adjust the range radius as needed
+
+            # Find the points within the range around the mouse position
+            plot_data_item = self.plot_widget.plotItem
+            if isinstance(plot_data_item, pg.PlotDataItem):
+                x_data, y_data = plot_data_item.getData()
+                for x, y in zip(x_data, y_data):
+                    if abs(x - pos.x()) <= range_radius and abs(y - pos.y()) <= range_radius:
+                        points.append((x, y))
+
             if points:
+                print('show hover')
+                # Handle the found points
                 point = points[0]  # Assuming you want to handle the first point
-                x, y = point.pos()
-                text = f'Hover: ({x:.2f}, {y:.2f})'
-                self.hover_text.setHtml(f'<span style="color: white;">{text}</span>')
-                self.hover_text.setPos(x, y)
-                self.hover_text.show()
+                x, y = point
+                
+                print(self.points[:5], point)
+                i =np.where((self.points[:, 0] == x) & (self.points[:, 1] == y))[0][0]
+                image_path = self.img_paths[i]
+                image = plt.imread(image_path)
+                w, h, _ = image.shape
+                self.hover_img.setImage(image)
+                # Adjust image
+                scale = 0.3
+                rotation = -90
+                self.hover_img.setScale(scale / np.sqrt(w**2 + h**2))
+                self.hover_img.setPos(x, y)
+                self.hover_img.setRotation(rotation)
+                self.hover_img.show()
             else:
-                self.hover_text.hide()
+                self.hover_img.hide()
 
 
     def start_selection(self, ev):
