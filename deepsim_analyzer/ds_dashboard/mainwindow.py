@@ -33,7 +33,6 @@ import pyqtgraph as pg
 from .ui_form import Ui_MainWindow
 
 class MainWindow(QMainWindow):
-    get_Selected_stats =pyqtSignal(int)
 
     def __init__(self, key_dict, datafile_path, images_filepath):
         super().__init__()
@@ -115,6 +114,10 @@ class MainWindow(QMainWindow):
                 self.data_dict[feature_name]["projection"][i] = value['projection']
                 self.data_dict[feature_name]["full"][i] = value['full']
 
+
+
+
+
         # ================ SETUP LEFT COLUMN ================
         print("-------setting up left column of dashboard")
         # ---------------- STARTING IMG ----------------
@@ -129,7 +132,7 @@ class MainWindow(QMainWindow):
         print('default_image_path',default_image_path)
         # load in timeline
         self.timeline= TimelineWindow(default_image_path)
-        self.timeline.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
+        # self.timeline.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
         self.ui.box_timeline_layout.addWidget(self.timeline)
         self.no_timeline_label = QLabel('No data for timeline of new uploaded image')
         self.ui.box_timeline_layout.addWidget(self.no_timeline_label)
@@ -141,6 +144,7 @@ class MainWindow(QMainWindow):
         # add additional data in box_left_low
 
         # ================ SETUP MIDDLE COLUMN ================
+        
         print("------setting up scatterplot")
         self.ui.box_metric_tabs.setCurrentIndex(0)
         # setup scatterplot
@@ -217,16 +221,13 @@ class MainWindow(QMainWindow):
         print("recalculating")
         self.ui.recalc_similarity.toggled.connect(self.recalc_similarity)
         print("dashboard setup complete!")
-      
 
-      # ========================
-
-        # Create a plot widget
+        print('--------setting up barplot')
         # self.bp = pg.PlotWidget()
         self.bp = BarChart(self)
         # self.bp=RangeSlider(self)
-        self.get_Selected_stats.connect(self.get_selected_points_stats)
-        self.get_Selected_stats.emit(0) # barplot shows once in beginning because of this
+        self.scatterplot.get_Selected_stats.connect(self.get_selected_points_stats)
+        self.scatterplot.get_Selected_stats.emit(0) # once for initialization, after in scatterplot.get_selection
 
         # img_stats_container = self.ui.box_recom_img_stats
         # img_stats_container = self.ui.verticalLayoutWidget_2
@@ -234,12 +235,11 @@ class MainWindow(QMainWindow):
         img_stats_container.layout().addWidget(self.bp)
 
         # Set the size policy for the bar plot widget
-        size_policy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        size_policy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.bp.setSizePolicy(size_policy)
-        
-        # Set the size policy for the layout item containing the bar plot widget
-        # layout_item = img_stats_container.layout().itemAt(0)
-        # layout_item.setSizePolicy(size_policy)
+      
+
+      # ========================
 
 
     def setup_scatterplot(self):
@@ -251,20 +251,29 @@ class MainWindow(QMainWindow):
                 self.data_dict[current_metric_type.lower()]["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame
             )
             self.scatterplot.plot_widget.scene().mousePressEvent=self.on_canvas_click
+
             # self.scatterplot.plot_widget.scene().sigMouseClicked.connect(self.on_canvas_click)
-            # self.scatterplot.remove_highlight_selected_point(0)
-            self.scatterplot.selected_idx.emit(0)
+            # self.scatterplot.plot_widget.scene().sigMouseClicked.connect(self.scatterplot.on_scene_mouse_click)
+            # self.scatterplot.plot_widget.scene().sigMouseClicked.emit(0)
+
+            # self.scatterplot.plot_widget.scene().sigMouseClicked.connect(lambda event: self.on_canvas_click(event))
+            # self.scatterplot.plot_widget.scene().sigMouseClicked.emit(0)
+
+            
+            # self.scatterplot.plot_widget.scene().sigMousePressEvent.connect(lambda event: self.on_canvas_click(event))
+            # self.scatterplot.plot_widget.scene().sigMousePressEvent.emit(0)
+            # self.scatterplot.plot_widget.scene().mousePressEvent=self.scatterplot.mousePressEvent
+
+            # self.scatterplot.highlight_selected_point(0)
         else:
             print('only redraw scatterplot')
             if self.scatterplot.dots_plot:
                 self.scatterplot.draw_scatterplot_dots()
             else:
                 self.scatterplot.draw_scatterplot()
-            self.scatterplot.remove_highlight_selected_point(self.scatterplot.selected_index)
-            self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
-            # werkt niet cause only called one for setup
-        print('here to emit stats')
-        self.get_Selected_stats.emit(0) # doesnt work 
+            # self.scatterplot.remove_highlight_selected_point(self.scatterplot.selected_index)
+            # self.scatterplot.highlight_selected_point(self.scatterplot.selected_index)
+
 
     def recalc_similarity(self):
         topk_dict = self.calculate_nearest_neighbours()
@@ -728,14 +737,13 @@ class MainWindow(QMainWindow):
             #TODO: give user reset option/button. initially its FALSE
             self.scatterplot.dots_plot=False
             self.scatterplot.draw_scatterplot(reset=False)
-            self.scatterplot.remove_highlight_selected_point(self.scatterplot.selected_index)
-
-            self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
+            # self.scatterplot.remove_highlight_selected_point(self.scatterplot.selected_index)
+            # self.scatterplot.highlight_selected_point(self.scatterplot.selected_index)
         else:
             self.scatterplot.dots_plot=True
             self.scatterplot.draw_scatterplot_dots(reset=False)
-            self.scatterplot.remove_highlight_selected_point(self.scatterplot.selected_index)
-            self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
+            # self.scatterplot.remove_highlight_selected_point(self.scatterplot.selected_index)
+            # self.scatterplot.highlight_selected_point(self.scatterplot.selected_index)
 
     def on_canvas_click(self, ev):
         # super().mousePressEvent(ev)
@@ -746,7 +754,7 @@ class MainWindow(QMainWindow):
         if ev.button() == Qt.MouseButton.LeftButton:
             if self.scatterplot.dots_plot:
                 range_radius = 0.1
-                for index, plot_data_item in self.scatterplot.plot_data_items:
+                for i, index,plot_data_item in self.scatterplot.plot_data_items:
                     item_pos = plot_data_item.mapFromScene(pos)
                     parent_pos = plot_data_item.mapToParent(item_pos)
                     x_data, y_data = plot_data_item.getData()
@@ -759,27 +767,28 @@ class MainWindow(QMainWindow):
                             print('self.scatterplot.selected_point',self.scatterplot.selected_point)
                             self.scatterplot.remove_highlight_selected_point(self.scatterplot.selected_index)
                             self.scatterplot.selected_index = index
-                            self.scatterplot.selected_idx.emit(index)
+                            self.scatterplot.highlight_selected_point(index)
                             self.clicked_on_point()
                             break
 
             else:
                 # print("self.image_items", self.image_items)
-                for idx, index, item in self.scatterplot.image_items:
+                for i, index, item in self.scatterplot.image_items:
                     # print("item.mapFromScene(pos)", item, item.mapFromScene(pos))
                     item_pos=item.mapFromScene(pos)
                     if item.contains(item_pos):
+                        print('selected_index==plot_index?',index==i)
                         self.scatterplot.selected_point = item_pos.x(), item_pos.y()
                         self.scatterplot.remove_highlight_selected_point(self.scatterplot.selected_index)
                         self.scatterplot.selected_index = index
-                        self.scatterplot.selected_idx.emit(index)
-                        self.scatterplot.plot_index = idx
+                        self.scatterplot.highlight_selected_point(index)
+                        # self.scatterplot.plot_index = idx
                         # TODO: rmv after all check, partial select ect
-                        print('selected_index==plot_index?',index==idx)
                         self.clicked_on_point()
                         break
                 
-        QGraphicsScene.mousePressEvent(self.scatterplot.plot_widget.scene(), ev)
+        # QGraphicsScene.mousePressEvent(self.scatterplot.plot_widget.scene(), ev)
+        # super(self.scatterplot, self).mousePressEvent(ev)
 
 
 
@@ -951,7 +960,7 @@ class BarChart(QWidget):
         layout = QVBoxLayout(self)
         layout.addWidget(self.chartView)
 
-        self.setMinimumSize(200, 200)
+        # self.setMinimumSize(200, 200)
 
     def setColor(self, color):
         # Set color for the bar chart
@@ -983,5 +992,6 @@ class BarChart(QWidget):
         self.series.attachAxis(self.axisY)
 
     def fill_in_barplot(self, unique_styles, style_counts, style_count_selection):
+        print('fill_in_barplot')
         self.setBarData(unique_styles, style_counts, style_count_selection)
         self.repaint()
