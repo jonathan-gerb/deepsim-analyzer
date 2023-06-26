@@ -1,31 +1,31 @@
 # This Python file uses the following encoding: utf-8
+import configparser
+import os
 import sys
-
+from copy import deepcopy
 # normal imports
 from pathlib import Path
-import numpy as np
-from PIL import Image
-import configparser
-from scipy import spatial
-from sklearn.preprocessing import minmax_scale
-from sklearn.metrics.pairwise import cosine_distances
-import os
-from tqdm import tqdm
+
 import cv2
-from copy import deepcopy
-
-# qt imports
-from PyQt6 import QtWidgets
-from PyQt6.QtWidgets import QMainWindow, QFileDialog, QApplication, QVBoxLayout, QTabWidget,QGraphicsView,QGraphicsScene
-from PyQt6.QtGui import QPixmap, QPainter, QColor, QMouseEvent
-from PyQt6.QtCore import QRect, Qt,QEvent,QCoreApplication, QDate
-
-# custom widgets
-from .custom_widgets import  ScatterplotWidget, TimelineView, TimelineWindow
-
 # deepsim analyzer package
 import deepsim_analyzer as da
+import numpy as np
+import pyqtgraph as pg
+from PIL import Image
+# qt imports
+from PyQt6 import QtWidgets
+from PyQt6.QtCore import QCoreApplication, QDate, QEvent, QRect, Qt, pyqtSignal
+from PyQt6.QtGui import QColor, QMouseEvent, QPainter, QPixmap, QTransform
+from PyQt6.QtWidgets import (QApplication, QFileDialog, QGraphicsScene,
+                             QGraphicsView, QMainWindow, QSizePolicy,
+                             QTabWidget, QVBoxLayout)
+from scipy import spatial
+from sklearn.metrics.pairwise import cosine_distances
+from sklearn.preprocessing import minmax_scale
+from tqdm import tqdm
 
+# custom widgets
+from .custom_widgets import ScatterplotWidget, TimelineView, TimelineWindow
 # Important:
 # You need to run the following command to generate the ui_form.py file
 #     pyside6-uic form.ui -o ui_form.py, or
@@ -33,7 +33,10 @@ import deepsim_analyzer as da
 # additionally run python fix_ui_script.py, which replaces the not working ui stuff.
 from .ui_form import Ui_MainWindow
 
+
 class MainWindow(QMainWindow):
+    get_Selected_stats =pyqtSignal(int)
+
     def __init__(self, key_dict, datafile_path, images_filepath):
         super().__init__()
 
@@ -129,6 +132,14 @@ class MainWindow(QMainWindow):
         self.left_img_key = default_image_key
         self.left_img_filename = default_image_path_absolute
 
+        print('default_image_path',default_image_path)
+        # load in timeline
+        self.timeline= TimelineWindow(default_image_path)
+        self.timeline.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
+        self.ui.box_timeline_layout.addWidget(self.timeline)
+        self.no_timeline_label = QLabel('No data for timeline of new uploaded image')
+        self.ui.box_timeline_layout.addWidget(self.no_timeline_label)
+
         # display the base image
         self.display_photo_left(default_image_path_absolute)
         # data for left img feature, can come  from dataset or be calculated on the fly
@@ -170,9 +181,9 @@ class MainWindow(QMainWindow):
 
         # SETUP EMOTION OPTIONs
         # options for what distance measure to use.
+        self.ui.emotion_opt_eucdist.toggle()
         self.ui.emotion_opt_cosdist.toggled.connect(self.emotion_opt_dist_cos)
         self.ui.emotion_opt_eucdist.toggled.connect(self.emotion_opt_dist_euc)
-        self.ui.emotion_opt_eucdist.toggle()
 
         # SETUP DINO OPTIONS
 
@@ -206,13 +217,6 @@ class MainWindow(QMainWindow):
 
         # option for showing crossattention map
         self.ui.dino_opt_showcamap.toggled.connect(self.dino_show_camap)
-
-        # # add options for head similarity to comboboxes
-        # for i in range(12):
-        #     self.ui.dino_opt_headsim_cbox.addItem(f"{i+1}")
-        #     self.ui.dino_opt_layersim_cbox.addItem(f"{i+1}")
-        #     self.ui.dino_opt_headvis_cbox.addItem(f"{i+1}")
-        #     self.ui.dino_opt_layervis_cbox.addItem(f"{i+1}")
 
         # ================ SETUP RIGHT COLUMN ================
         print("------setting up right column, calculating nearest neighbours")
@@ -310,6 +314,29 @@ class MainWindow(QMainWindow):
         self.data_dict = deepcopy(self.original_data_dict)
 
 
+      # ========================
+
+        # Create a plot widget
+        # self.bp = pg.PlotWidget()
+        self.bp = BarChart(self)
+        # self.bp=RangeSlider(self)
+        self.get_Selected_stats.connect(self.get_selected_points_stats)
+        self.get_Selected_stats.emit(0) # barplot shows once in beginning because of this
+
+        # img_stats_container = self.ui.box_recom_img_stats
+        # img_stats_container = self.ui.verticalLayoutWidget_2
+        img_stats_container = self.ui.artisits_stats_layout
+        img_stats_container.layout().addWidget(self.bp)
+
+        # Set the size policy for the bar plot widget
+        size_policy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.bp.setSizePolicy(size_policy)
+        
+        # Set the size policy for the layout item containing the bar plot widget
+        # layout_item = img_stats_container.layout().itemAt(0)
+        # layout_item.setSizePolicy(size_policy)
+
+
     def setup_scatterplot(self):
         current_metric_type = self.ui.box_metric_tabs.tabText(self.ui.box_metric_tabs.currentIndex())
         print("changing 2d scatterplot to: ", current_metric_type)
@@ -322,8 +349,8 @@ class MainWindow(QMainWindow):
                 self.data_dict[current_metric_type.lower()]["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame
             )
             self.scatterplot.plot_widget.scene().mousePressEvent=self.on_canvas_click
-            # print('connected sigmouseclicked')
             # self.scatterplot.plot_widget.scene().sigMouseClicked.connect(self.on_canvas_click)
+
             self.scatterplot.selected_idx.emit(0)
         else:
             print('only redraw scatterplot')
@@ -333,7 +360,9 @@ class MainWindow(QMainWindow):
             else:
                 self.scatterplot.draw_scatterplot()
             self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
-            
+            # werkt niet cause only called one for setup
+        print('here to emit stats')
+        self.get_Selected_stats.emit(0) # doesnt work 
 
     def recalc_similarity(self):
         print('recalculating similarity')
@@ -386,7 +415,6 @@ class MainWindow(QMainWindow):
         else:
             raise ValueError("something is wrong with the dino similarity options.")
     
-
     def texture_show_fm(self):
         print('texture_show_fm')
         if not self.ui.texture_opt_show_fm.isChecked():
@@ -506,6 +534,8 @@ class MainWindow(QMainWindow):
             self.display_photo_left(leftname)
             self.display_photo_right(rightname)
 
+            self.ui.reset_filters.pressed.connect(self.setup_filters)
+
     def set_color_element(self, ui_element, color):
         ui_element.setAutoFillBackground(True)
         p = ui_element.palette()
@@ -585,7 +615,7 @@ class MainWindow(QMainWindow):
             "semantic": semantic / 100,
         }
         return feature_weight_dict
-
+    
     def calculate_nearest_neighbours(self, topk=5):
         # get features for current image
         topk_results = {}
@@ -607,23 +637,23 @@ class MainWindow(QMainWindow):
 
             current_vector = self.left_img_features[feature_name][vector_type_key]
             distances = np.zeros((self.data_dict[feature_name][vector_type_key].shape[0]))
-
-            for i in range(self.data_dict[feature_name][vector_type_key].shape[0]):
-                target_vector = self.data_dict[feature_name][vector_type_key][i]
-                # similarity options
-                if feature_name == "dino":
-                    if self.dino_distance_measure == "cosine":
-                        distances[i] = spatial.distance.cosine(current_vector, target_vector)
-                    if self.dino_distance_measure == "euclidian":
-                        distances[i] = spatial.distance.euclidean(current_vector, target_vector)
-                elif feature_name == "texture":
-                    if self.texture_distance_measure == "cosine":
-                        distances[i] = spatial.distance.cosine(current_vector, target_vector)
-                    if self.texture_distance_measure == "euclidian":
-                        distances[i] = spatial.distance.euclidean(current_vector, target_vector)
-                # add more options later
-                else:
-                    distances[i] = spatial.distance.euclidean(current_vector, target_vector)
+            
+            # calculate distances
+            if feature_name == "dino":
+                if self.dino_distance_measure == "cosine":
+                    distances = cosine_distances(current_vector.reshape(1, -1), self.data_dict[feature_name][vector_type_key]).squeeze()
+                if self.dino_distance_measure == "euclidian":
+                    a_min_b = current_vector.reshape(-1, 1) - self.data_dict[feature_name][vector_type_key].T
+                    distances = np.sqrt(np.einsum('ij,ij->j', a_min_b, a_min_b))
+            elif feature_name == "texture":
+                if self.texture_distance_measure == "cosine":
+                    distances = cosine_distances(current_vector.reshape(1, -1), self.data_dict[feature_name][vector_type_key]).squeeze()
+                if self.texture_distance_measure == "euclidian":
+                    a_min_b = current_vector.reshape(-1, 1) - self.data_dict[feature_name][vector_type_key].T
+                    distances = np.sqrt(np.einsum('ij,ij->j', a_min_b, a_min_b))
+            else:
+                a_min_b = current_vector.reshape(-1, 1) - self.data_dict[feature_name][vector_type_key].T
+                distances = np.sqrt(np.einsum('ij,ij->j', a_min_b, a_min_b))
             
             # rescale distances so that the distances are always within the range of 0-1
             # this way we can combine them, the element with distance 0 is the image itself if it's 
@@ -674,76 +704,6 @@ class MainWindow(QMainWindow):
         return topk_results
 
 
-    def change_scatterplot_pointtype(self):
-        """Use radio toggle to draw dots or images, triggered on toggle of the radio button.
-        """
-        # TODO: REIMPLEMENT
-        print('change_scatterplot_pointtype is called')
-        if self.ui.r_image_points.isChecked():
-            #TODO: give user reset option/button. initially its FALSE
-            self.scatterplot.dots_plot=False
-            self.scatterplot.draw_scatterplot(reset=False)
-            self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
-        else:
-            self.scatterplot.dots_plot=True
-            self.scatterplot.draw_scatterplot_dots(reset=False)
-            self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
-
-    def on_canvas_click(self, ev):
-        self.scatterplot.clear_selection()
-        pos = ev.scenePos()
-        print("on canvas click:", pos)
-        if ev.button() == Qt.MouseButton.LeftButton:
-            # print("self.scatterplot.image_items", self.scatterplot.image_items)
-            for idx, index, item in self.scatterplot.image_items:
-                # print("item.mapFromScene(pos)", item, item.mapFromScene(pos))
-                if item.contains(item.mapFromScene(pos)):
-                    self.scatterplot.selected_point = int(pos.x()), int(pos.y())
-                    self.scatterplot.selected_index = index
-                    self.scatterplot.selected_idx.emit(index)
-                    self.scatterplot.plot_index = idx
-                    # TODO: rmv after all check, partial select ect
-                    print('selected_index==plot_index?',index==idx)
-                    self.clicked_on_point()
-                    break
-
-        # self.scatterplot.plot_widget.scene().mousePressEvent
-
-
-        # QGraphicsScene.mousePressEvent(self.scatterplot.plot_widget.scene(), ev)
-        # super().mousePressEvent(ev)
-        # self.scatterplot.plot_widget.mousePressEvent(ev)
-        # QGraphicsView.mousePressEvent(self.scatterplot.plot_widget.plotItem.vb, ev)
-
-        # view = self.scatterplot.plot_widget.getViewBox()
-        # print(type(view))
-        # QGraphicsView.mousePressEvent(view.scene(), ev)
-
-        # view = self.scatterplot.plot_widget.plotItem.getViewBox()
-        # event = QMouseEvent(QEvent.MouseButtonPress, ev.localPos(), ev.screenPos(),
-        #                         ev.button(), ev.buttons(), ev.modifiers())
-        # QCoreApplication.sendEvent(view, event)
-
-        # Call the default panning behavior by invoking the mousePressEvent on the PlotWidget's view box
-        # view = self.scatterplot.plot_widget.getViewBox()
-        # view.mousePressEvent(ev)
-        
-
-    # TODO: maybe change loc of this fn, or split its a little in between scatterplot and main
-    def clicked_on_point(self):
-        print("point/ image clicked, load on the left")
-        self.left_img_filename = self.image_paths[self.scatterplot.selected_index]
-        self.left_img_key = self.image_keys[self.scatterplot.selected_index]
-        # set features for left 
-        self.left_img_features = self.get_features_from_dataset(self.left_img_key)
-        # display the image
-        self.display_photo_left(self.left_img_filename)
-        self.update_leftimg_data(self.left_img_key)
-
-        topk_dict = self.calculate_nearest_neighbours()
-        self.display_nearest_neighbours(topk_dict)
-
-
     def upload_image_left(self):
         file_dialog = QFileDialog()
         file_dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
@@ -766,7 +726,6 @@ class MainWindow(QMainWindow):
                 topk_dict = self.calculate_nearest_neighbours()
                 self.display_nearest_neighbours(topk_dict)
 
-
     def update_leftimg_data(self, img_hash):
         # update image metdata if available
         if img_hash in self.metadata:
@@ -779,13 +738,20 @@ class MainWindow(QMainWindow):
                 self.metadata[img_hash]['tags'],
             )
             self.left_img_features = self.get_features_from_dataset(img_hash)
+
+            # load in timeline
+            base_filename = os.path.basename(filepath)
+            self.timeline.draw_timeline(base_filename)
+            self.no_timeline_label.hide()
+            self.timeline.show()
         else:
             # get feature_vectors for new image 
             self.left_img_features = self.get_point_new_img(filepath)
 
             print(f"no metadata available for image: {filepath}")
             self.update_image_info("unknown date", "unknown artist", "unknown style", "unknown tags")
-
+            self.timeline.hide()
+            self.no_timeline_label.show()
 
 
     def get_features_from_dataset(self, img_hash):
@@ -804,7 +770,6 @@ class MainWindow(QMainWindow):
                     "full": test_feature,
                     "projection": test_feature_p
                 }
-
         return feature_dict
 
     def get_point_new_img(self, filename):
@@ -831,7 +796,6 @@ class MainWindow(QMainWindow):
         self.ui.t_style.setText(f"Style: {style}")
         self.ui.t_tags.setText(f"Tags: {tags}")
         
-
     def display_photo_left(self, filename):
         img_container = self.ui.box_left_img
         img_container.setAutoFillBackground(True)
@@ -853,35 +817,191 @@ class MainWindow(QMainWindow):
         img_container.setPalette(p)
 
         w, h = img_container.width(), img_container.height()
-        print('displaying photo on right:', filename)
-        pixmap = QPixmap(filename)
-        self.ui.box_right_img.setPixmap(pixmap.scaled(w,h,Qt.AspectRatioMode.KeepAspectRatio))
+        print('displaying photo on right:', os.path.basename(filename))
+        self.top_pixmap = QPixmap(filename)
+        self.top_filename= filename
+        self.ui.box_right_img.setPixmap(self.top_pixmap.scaled(w,h,Qt.AspectRatioMode.KeepAspectRatio))
         self.ui.box_right_img.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-    #TODO: rewrite
-    def display_preview_photos(self, filenames):
+    def display_nearest_neighbours(self, topk):
+        print('display_nearest_neighbours')
+
+        # save for potential use in other parts of the program
+        self.topk = topk
+        try:
+            distance, idx = topk['combined']["distances"][0], int(topk['combined']['ranking'][0])
+                
+            top_img_path = self.image_paths[idx]
+            self.right_img_key = self.image_keys[idx]
+            self.right_img_filename = self.image_paths[idx]
+        # in case there is only 1 image and so no nearest neighbour
+        except IndexError:
+            top_img_path = self.left_img_filename
+
+        self.display_photo_right(top_img_path)
+        print(topk['combined']['distances'].shape)
+        # if we cannot find nearest neighbours, we just display the original image again, edgecase handling
+        try:
+            distance_1, idx_1 = topk['combined']['distances'][1], int(topk['combined']["ranking"][1])
+        except IndexError:
+            idx_1 = self.key_to_idx[self.left_img_key]
+            distance_1 = 0
+        try:
+            distance_2, idx_2 = topk['combined']['distances'][2], int(topk['combined']["ranking"][2])
+        except IndexError:
+            idx_2 = self.key_to_idx[self.left_img_key]
+            distance_2 = 0
+        try:
+            distance_3, idx_3 = topk['combined']['distances'][3], int(topk['combined']["ranking"][3])
+        except IndexError:
+            idx_3 = self.key_to_idx[self.left_img_key]
+            distance_3 = 0
+
+        indices_nn_preview = [idx_1, idx_2, idx_3]
+        print(f"{indices_nn_preview=}")
+        print(f"{distance_1=}")
+        print(f"{distance_2=}")
+        print(f"{distance_3=}")
+        fp_nn_preview = [self.image_paths[int(index)] for index in indices_nn_preview]
+        print(f"{fp_nn_preview=}")
+
+        self.display_preview_nns(fp_nn_preview)
+        
+
+    def display_preview_nns(self, filenames,idx=[0,1,2]):
+        print('display_preview_nns')
+        if len(filenames)>3:
+            filenames=filenames[:3]
+
         for i, filename in enumerate(filenames):
-            if i < len(self.preview_photo_labels):
-                label = self.preview_photo_labels[i]
-                pixmap = QPixmap(filename)
-                # Scale the pixmap to fit the width while maintaining aspect ratio
-                scaled_pixmap = pixmap.scaled(150, 150, Qt.AspectRatioMode.KeepAspectRatioByExpanding, Qt.TransformationMode.SmoothTransformation)
-            
-                # Create a square pixmap with a white background
-                square_pixmap = QPixmap(150, 150)
-                square_pixmap.fill(QColor(Qt.GlobalColor.white))
+            id= idx[i]
+            filename= filenames[i]
+            ui_element = getattr(self.ui, f"n{id+1}")
+            ui_element.setMouseTracking(True)
+            # ui_element.mousePressEvent=self.switch_top_and_preview(i, filename)
+            ui_element.mousePressEvent = lambda event, id=id, filename=filename: self.switch_top_and_preview(id, filename)
+            print('id',id+1,'filename', os.path.basename(filename))
+
+            ui_element.setAutoFillBackground(True)
+            p = ui_element.palette()
+            p.setColor(ui_element.backgroundRole(), QColor(0, 0, 0))
+            ui_element.setPalette(p)
+
+            w, h = ui_element.width(), ui_element.height()
+            pixmap = QPixmap(filename)
+            ui_element.setPixmap(pixmap.scaled(w,h,Qt.AspectRatioMode.KeepAspectRatio))
+            ui_element.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+
+    def switch_top_and_preview(self, i, filename):
+        print('switch_top_and_preview')
+        print('self.top_filename', os.path.basename(self.top_filename))
+        self.display_preview_nns([self.top_filename], idx=[i])
+        self.display_photo_right(filename)
+
+
+
+    def change_scatterplot_pointtype(self):
+        """Use radio toggle to draw dots or images, triggered on toggle of the radio button.
+        """
+        # TODO: REIMPLEMENT
+        print('change_scatterplot_pointtype is called')
+        if self.ui.r_image_points.isChecked():
+            #TODO: give user reset option/button. initially its FALSE
+            self.scatterplot.dots_plot=False
+            self.scatterplot.draw_scatterplot(reset=False)
+            self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
+        else:
+            self.scatterplot.dots_plot=True
+            self.scatterplot.draw_scatterplot_dots(reset=False)
+            self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
+
+    def on_canvas_click(self, ev):
+        # super().mousePressEvent(ev)
+
+        self.scatterplot.clear_selection()
+        pos = ev.scenePos()
+        print("on canvas click:", pos)
+        if ev.button() == Qt.MouseButton.LeftButton:
+            if self.scatterplot.dots_plot:
+                range_radius = 0.1
+                for index, plot_data_item in self.scatterplot.plot_data_items:
+                    item_pos = plot_data_item.mapFromScene(pos)
+                    parent_pos = plot_data_item.mapToParent(item_pos)
+                    x_data, y_data = plot_data_item.getData()
+                    # print('------x_data, y_data = plot_data_item.getData()', x_data, y_data)
+                    # print('pos:', pos, 'item_pos:', item_pos, 'parent_pos:', parent_pos)
+                    # if plot_data_item.contains(item_pos):
+                    for x, y in zip(x_data, y_data):
+                        if abs(x - item_pos.x()) <= range_radius and abs(y - item_pos.y()) <= range_radius:
+                            self.scatterplot.selected_point = item_pos.x(), item_pos.y()
+                            print('self.scatterplot.selected_point',self.scatterplot.selected_point)
+                            self.scatterplot.selected_index = index
+                            self.scatterplot.selected_idx.emit(index)
+                            self.clicked_on_point()
+                            break
+
+            else:
+                # print("self.image_items", self.image_items)
+                for idx, index, item in self.scatterplot.image_items:
+                    # print("item.mapFromScene(pos)", item, item.mapFromScene(pos))
+                    item_pos=item.mapFromScene(pos)
+                    if item.contains(item_pos):
+                        self.scatterplot.selected_point = item_pos.x(), item_pos.y()
+                        self.scatterplot.selected_index = index
+                        self.scatterplot.selected_idx.emit(index)
+                        self.scatterplot.plot_index = idx
+                        # TODO: rmv after all check, partial select ect
+                        print('selected_index==plot_index?',index==idx)
+                        self.clicked_on_point()
+                        break
                 
-                # Calculate the position to center the scaled pixmap
-                x = (square_pixmap.width() - scaled_pixmap.width()) // 2
-                y = (square_pixmap.height() - scaled_pixmap.height()) // 2
-            
-                # Draw the scaled pixmap onto the square pixmap
-                painter = QPainter(square_pixmap)
-                painter.drawPixmap(x, y, scaled_pixmap)
-                painter.end()
-                
-                # Set the square pixmap as the label's pixmap
-                label.setPixmap(square_pixmap)
+        QGraphicsScene.mousePressEvent(self.scatterplot.plot_widget.scene(), ev)
+
+
+
+    # TODO: maybe change loc of this fn, or split its a little in between scatterplot and main
+    def clicked_on_point(self):
+        print("point/ image clicked, load on the left")
+        self.left_img_filename = self.image_paths[self.scatterplot.selected_index]
+        self.left_img_key = self.image_keys[self.scatterplot.selected_index]
+        # set features for left 
+        self.left_img_features = self.get_features_from_dataset(self.left_img_key)
+        # display the image
+        self.display_photo_left(self.left_img_filename)
+        self.update_leftimg_data(self.left_img_key)
+
+        topk_dict = self.calculate_nearest_neighbours()
+        self.display_nearest_neighbours(topk_dict)
+
+
+    def get_selected_points_stats(self, int):
+        print('get_selected_points_stats')
+        print(len(self.scatterplot.selected_indices), len(self.scatterplot.indices))
+        # for selection_ids in self.scatterplot.selected_indices:
+        img_hashes = [self.image_keys[index] for index in self.scatterplot.selected_indices]
+        self.metadata= da.read_metadata_batch(self.datafile_path, img_hashes)
+
+        sel_unique_dates, sel_date_counts = np.unique([self.metadata[hash_]['date'] for hash_ in img_hashes], return_counts=True)
+        sel_unique_tags, sel_tag_counts = np.unique([self.metadata[hash_]['tags'] for hash_ in img_hashes], return_counts=True)
+        sel_unique_artist_names, sel_artist_name_counts = np.unique([self.metadata[hash_]['artist_name'] for hash_ in img_hashes], return_counts=True)
+        sel_unique_styles, sel_style_counts = np.unique([self.metadata[hash_]['style'] for hash_ in img_hashes], return_counts=True)
+
+        img_hashes = [self.image_keys[index] for index in self.scatterplot.indices]
+        self.metadata = da.read_metadata_batch(self.datafile_path, img_hashes)
+
+        unique_dates, date_counts = np.unique([self.metadata[hash_]['date'] for hash_ in img_hashes], return_counts=True)
+        unique_tags, tag_counts = np.unique([self.metadata[hash_]['tags'] for hash_ in img_hashes], return_counts=True)
+        unique_artist_names, artist_name_counts = np.unique([self.metadata[hash_]['artist_name'] for hash_ in img_hashes], return_counts=True)
+        unique_styles, style_counts = np.unique([self.metadata[hash_]['style'] for hash_ in img_hashes], return_counts=True)
+
+        count_selection = [sel_date_counts[np.where(sel_unique_dates == date)[0].tolist()[0]] if np.isin(date , sel_unique_dates) else 0 for date in unique_dates]
+        tag_count_selection = [sel_tag_counts[np.where(sel_unique_tags == tag)[0].tolist()[0]] if np.isin(tag , sel_unique_tags) else 0 for tag in unique_tags]
+        artist_count_selection = [sel_artist_name_counts[np.where(sel_unique_artist_names == artist_name)[0].tolist()[0]] if np.isin(artist_name, sel_unique_artist_names) else 0 for artist_name in unique_artist_names]
+        style_count_selection = [sel_style_counts[np.where(sel_unique_styles == style)[0].tolist()[0]] if np.isin(style, sel_unique_styles) else 0 for style in unique_styles]
+       
+        self.bp.fill_in_barplot(unique_styles,style_counts,style_count_selection)
+        
 
 def start_dashboard(key_dict, dataset_filepath, images_filepath):
     app = QApplication(sys.argv)
@@ -910,3 +1030,128 @@ if __name__ == "__main__":
     widget = MainWindow(key_dict, datafile_path, images_filepath)
     widget.show()
     sys.exit(app.exec())
+
+
+# TODO: i will put it in a seperate py file when it's done
+
+from PyQt6.QtCharts import QChart
+# from PyQt6 import QtCharts
+from PyQt6.QtCore import QRect
+from PyQt6.QtGui import QColor, QPalette
+from PyQt6.QtWidgets import (QGridLayout, QHBoxLayout, QLabel, QLineEdit,
+                             QRadioButton, QSlider, QToolTip, QVBoxLayout,
+                             QWidget)
+
+
+class RangeSlider(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.domain = [0, 100]
+        self.values = [0, 100]
+        self.update = [0, 100]
+        self.inputValues = [0, 100]
+        self.color = QColor(0, 0, 255)  # Example color
+        self.typeNumber = "int"  # Example type
+        self.step = 1  # Example step
+        self.hover_index = 0  # Example hover index
+        self.isToggleOn = False
+        self.initUI()
+
+    def initUI(self):
+        layout = QGridLayout(self)
+        # BarChart Widget
+        self.bar_chart = BarChart(self)  # Replace BarChart with your own widget
+        # self.bar_chart.setFixedHeight(40)
+        # self.bar_chart.setFixedWidth(70)
+        # self.bar_chart.autoFillBackground(True)
+        # bar_chart.setColor(self.color)
+        # Add other necessary configuration for the BarChart widget
+        layout.addWidget(self.bar_chart, 0, 0, 1, 3)
+       
+        # Double Range Slider Widget
+        range_slider = QSlider()
+        range_slider.setOrientation(Qt.Orientation.Horizontal)
+        # range_slider.setRange(self.domain[0], self.domain[1])
+        # range_slider.setValues(self.values[0], self.values[1])
+        range_slider.setMinimum(self.domain[0])
+        range_slider.setMaximum(self.domain[1])
+        range_slider.setValue(self.values[0])
+        range_slider.setTickPosition(QSlider.TickPosition.TicksBothSides)
+        range_slider.setTickInterval(1)
+        range_slider.setSingleStep(1)
+        range_slider.sliderMoved.connect(self.changeSlider)
+        layout.addWidget(range_slider, 1, 0, 1, 3)
+
+        # Set size policies for the widgets
+        # size_policy_chart = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        # size_policy_slider = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+
+        # self.bar_chart.setSizePolicy(size_policy_chart)
+        # range_slider.setSizePolicy(size_policy_slider)
+
+        # Set stretch factors for the widgets
+        # layout.setColumnStretch(0, 1)
+        # layout.setColumnStretch(1, 1)
+        # layout.setColumnStretch(2, 1)
+
+        self.setLayout(layout)
+
+        # Additional styling if required
+        # self.setStyleSheet("...")
+
+    def changeSlider(self, values):
+        # Function to handle slider value changes
+        pass
+
+
+class BarChart(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.series = QtCharts.QBarSeries()
+        self.chart = QtCharts.QChart()
+        self.chart.addSeries(self.series)
+        self.axisX = QtCharts.QBarCategoryAxis()
+        self.axisY = QtCharts.QValueAxis()
+        self.chart.addAxis(self.axisX, Qt.AlignmentFlag.AlignBottom)
+        self.chart.addAxis(self.axisY, Qt.AlignmentFlag.AlignLeft)
+        self.chart.legend().setVisible(False)
+        self.chartView = QtCharts.QChartView(self.chart)
+        self.chartView.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.chartView)
+
+        self.setMinimumSize(200, 200)
+
+    def setColor(self, color):
+        # Set color for the bar chart
+        palette = self.chartView.palette()
+        palette.setColor(QPalette.ColorRole.Window, color)
+        self.chartView.setPalette(palette)
+
+    def setBarData(self, unique_styles, style_counts, style_count_selection):
+        self.series.clear()
+        categories = [str(style) for style in unique_styles]
+        self.axisX.clear()
+        self.axisX.append(categories)
+
+        bar_set = QtCharts.QBarSet("Bar")
+        for count in style_counts:
+            bar_set.append(count)
+        # bar_set.setColor(QColor(0, 0, 255)) 
+        self.series.append(bar_set)
+
+        selected_bar_set = QtCharts.QBarSet("Selected Bar")
+        for count in style_count_selection:
+            selected_bar_set.append(count)
+        # selected_bar_set.setColor(QColor(255, 0, 0))
+        self.series.append(selected_bar_set)
+
+        self.chart.removeSeries(self.series)
+        self.chart.addSeries(self.series)
+        self.series.attachAxis(self.axisX)
+        self.series.attachAxis(self.axisY)
+
+    def fill_in_barplot(self, unique_styles, style_counts, style_count_selection):
+        self.setBarData(unique_styles, style_counts, style_count_selection)
+        self.repaint()

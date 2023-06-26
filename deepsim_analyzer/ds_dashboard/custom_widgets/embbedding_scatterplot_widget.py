@@ -7,16 +7,20 @@ from PIL import Image
 from PIL.ImageQt import ImageQt
 from tqdm import tqdm
 
-from PyQt6.QtCore import QPoint, QSize, Qt, pyqtSignal
-from PyQt6.QtGui import QBrush, QImage, QPixmap, QTransform,QPen,QColor
+from PyQt6.QtCore import QPoint, QSize, Qt, pyqtSignal,QEvent,QPointF
+from PyQt6.QtGui import QBrush, QImage, QPixmap, QTransform,QPen,QColor,QMouseEvent
 from PyQt6.QtWidgets import (QApplication, QDialog, QGraphicsEllipseItem,
                                QGraphicsPixmapItem, QMainWindow, QPushButton,
-                               QVBoxLayout, QWidget,QGraphicsRectItem,QGraphicsScene,QGraphicsView)
+                               QVBoxLayout, QWidget,QGraphicsRectItem,QGraphicsScene,QGraphicsView,QGraphicsSceneMouseEvent)
 
 import matplotlib.pyplot as plt
 
 from pyqtgraph.Point import Point
 from pyqtgraph import functions as fn
+
+from pyqtgraph import PlotDataItem
+# from pyqtgraph.graphicsItems.ScatterPlotItem import HoverEvent
+
 
 
 class ScatterplotWidget(QWidget):
@@ -48,11 +52,23 @@ class ScatterplotWidget(QWidget):
         self.plot_widget.setLimits(xMin=-1000000, xMax=1000000, yMin=-1000000, yMax=1000000)
         self.plot_widget.setAspectLocked(lock=True)
 
-        self.plot_widget.scene().mouseReleaseEvent = self.on_scene_mouse_release
-        self.plot_widget.scene().mouseMoveEvent = self.on_scene_mouse_move
-        # self.plot_widget.sigSceneMouseMoved.connect(self.on_scene_mouse_move)
         self.plot_widget.scene().mouseDoubleClickEvent = self.on_scene_mouse_double_click
+        self.plot_widget.scene().mouseReleaseEvent = self.on_scene_mouse_release
+        # self.plot_widget.scene().mouseMoveEvent = self.on_scene_mouse_move
         
+        # self.plot_widget.scene().sigMouseMoved.connect(lambda event: self.on_scene_mouse_move(QMouseEvent(event)))
+        # self.plot_widget.scene().sigMouseMoved.connect(lambda event: self.on_scene_mouse_move(event))
+        # self.plot_widget.scene().sigMouseMoved.connect(lambda pos: self.on_scene_mouse_move(QGraphicsSceneMouseEvent(QEvent.Type.GraphicsSceneMouseMove, pos)))
+        # self.plot_widget.scene().sigMouseMoved.connect(lambda pos: self.on_scene_mouse_move(QMouseEvent(QMouseEvent.Type.MouseMove, pos, QPointF(), QPointF(), Qt.MouseButton.NoButton, Qt.MouseButton(), Qt.KeyboardModifier(), None)))
+        # self.plot_widget.scene().sigMouseMoved.connect(lambda event: self.on_scene_mouse_move(QMouseEvent(QMouseEvent.Type.MouseMove, event.pos(), QPointF(), Qt.MouseButton.NoButton, Qt.MouseButtons(), Qt.KeyboardModifiers())))
+
+        self.plot_widget.scene().sigMouseMoved.connect(self.on_scene_mouse_move_with_QPointF)
+        # self.plot_widget.scene().sigMouseClicked.connect(lambda event: self.on_canvas_click(event))
+         
+        self.plot_widget.setAcceptHoverEvents(True)
+        self.hover_img=pg.ImageItem()
+        self.plot_widget.addItem(self.hover_img)
+
         self.draw_scatterplot()
 
     def initialize(self, points, indices,img_paths, config):
@@ -66,11 +82,12 @@ class ScatterplotWidget(QWidget):
         self.start_point = None
         self.end_point = None
         self.image_items = []
-        self.selected_index=None
-        # self.selected_point=self.points[0]
+        self.selected_index=0
+        self.selected_point=self.points[0]
         self.selected_idx.connect(self.highlight_selected_point)
         self.plot_inex=None
         self.selected_points = []
+        self.selected_indices=[]
         self.outside_points_visible = False
 
         # We now toggle in setup to insure images are plotted first
@@ -92,112 +109,122 @@ class ScatterplotWidget(QWidget):
 
         self.plot_widget.setRange(xRange=x_range, yRange=y_range)
 
-
     def on_scene_mouse_double_click(self, event):
         print("mouseDBPressEvent")
         if event.button() == Qt.MouseButton.LeftButton:
             self.start_selection(event)
         
     def on_scene_mouse_release(self, event):
-        print("mouseReleaseEvent")
-        if event.button() == Qt.MouseButton.LeftButton and self.start_point is not None:
+        print("*mouseReleaseEvent")
+        if event.button() == Qt.MouseButton.LeftButton and self.start_point is not None and self.end_point is not None:
             self.get_selection_in_rectangle()
             if self.dots_plot:
                 self.draw_scatterplot_dots()
             else:
                 self.draw_scatterplot()
-            self.selected_idx.emit(self.selected_index)
 
-        self.clear_selection() # ? but will also put selected_points = [] or
-        # self.start_point=None
-        # self.end_point=None
-        # if self.rect is not None and self.rect in self.plot_widget.scene().items():
-        #     self.plot_widget.scene().removeItem(self.rect)
+        # self.selected_idx.emit(self.selected_index)
+        # self.clear_selection() # ? but will also put selected_points = [] or
+        self.start_point=None
+        self.end_point=None
+        if self.rect is not None and self.rect in self.plot_widget.scene().items():
+            self.plot_widget.scene().removeItem(self.rect)
 
         QGraphicsScene.mouseReleaseEvent(self.plot_widget.scene(), event)
         view = self.plot_widget.getViewBox()
         view.mouseReleaseEvent(event)
 
+    def on_scene_mouse_move_with_QPointF(self, event):
+        # print('mouseMoveEvent')
+        if self.start_point is not None:
+            pos =event
+            self.end_selection(pos)
+        # QGraphicsScene.mouseMoveEvent(self.plot_widget.scene(), event)
+
+        if self.dots_plot:
+            pos = event
+            points = []
+            range_radius = 0.1  # Adjust the range radius as needed
+
+            # Find the points within the range around the mouse position
+            for i, plot_data_item in self.plot_data_items:
+                item_pos = plot_data_item.mapFromScene(pos)
+                # print('pos', pos, 'item_pos', item_pos)
+                x_data, y_data = plot_data_item.getData()
+                # print(plot_data_item, x_data, y_data)
+                for x, y in zip(x_data, y_data):
+                    if abs(x - item_pos.x()) <= range_radius and abs(y - item_pos.y()) <= range_radius:
+                        points.append((x, y))
+            
+            if points:
+                print('show hover and points = ', points)
+                # Handle the found points
+                point = points[0]  # Assuming you want to handle the first point
+                x, y = point
+                
+                print(self.points[:5], point)
+                i =np.where((self.points[:, 0] == x) & (self.points[:, 1] == y))[0][0]
+                image_path = self.img_paths[i]
+                image = plt.imread(image_path)
+                w, h, _ = image.shape
+                self.hover_img.setImage(image)
+                # Adjust image
+                scale = 0.3
+                rotation = -90
+                self.hover_img.setScale(scale / np.sqrt(w**2 + h**2))
+                self.hover_img.setPos(x, y)
+                self.hover_img.setRotation(rotation)
+                self.hover_img.show()
+            else:
+                self.hover_img.hide()
+
+    
     def on_scene_mouse_move(self, event):
         # print('mouseMoveEvent')
         if self.start_point is not None:
-            self.end_selection(event)
-        QGraphicsScene.mouseMoveEvent(self.plot_widget.scene(), event)
+            print("end_selection", event)
+            pos = event.scenePos()
+            self.end_selection(pos)
+        # QGraphicsScene.mouseMoveEvent(self.plot_widget.scene(), event)
         # QGraphicsView.mouseMoveEvent(self.plot_widget.view(), event)
 
         # view = self.plot_widget.getViewBox()
         # view.mouseMoveEvent(event)
 
-    
-    # def on_scene_mouse_move(self, ev):
-    #     print('mouseMoveEvent')
-    #     if self.start_point is not None:
-    #         self.end_selection(ev)
-    #     view = self.plot_widget.getViewBox()
-    #     # view.mouseMoveEvent=self.mouse_move_view
-    #     self.mouse_move_view(ev)
+        if self.dots_plot:
+            pos = event
+            points = []
+            range_radius = 0.1  # Adjust the range radius as needed
 
-    # default panning fn
-    # def mouse_move_view(self, ev):
-    #     print('please pan')
-    #     lpos = ev.position() if hasattr(ev, 'position') else ev.localPos()
-    #     if self.lastMousePos is None:
-    #         self.lastMousePos = lpos
-    #     delta = Point(lpos - self.lastMousePos)
-    #     self.lastMousePos = lpos
+            # Find the points within the range around the mouse position
+            for i, plot_data_item in self.plot_data_items:
+                print(plot_data_item)
+                x_data, y_data = plot_data_item.getData()
+                for x, y in zip(x_data, y_data):
+                    if abs(x - pos.x()) <= range_radius and abs(y - pos.y()) <= range_radius:
+                        points.append((x, y))
 
-    #     view = self.plot_widget.getViewBox()
-    #     view.mouseMoveEvent(ev)  
-
-    #     # super().mouseMoveEvent(ev)
-    #     if not self.mouseEnabled:
-    #         return
-    #     self.sigSceneMouseMoved.emit(self.mapToScene(lpos))
-            
-    #     if self.clickAccepted:  ## Ignore event if an item in the scene has already claimed it.
-    #         return
-        
-    #     if ev.buttons() == Qt.MouseButton.RightButton:
-    #         delta = Point(fn.clip_scalar(delta[0], -50, 50), fn.clip_scalar(-delta[1], -50, 50))
-    #         scale = 1.01 ** delta
-    #         self.scale(scale[0], scale[1], center=self.mapToScene(self.mousePressPos))
-    #         self.sigDeviceRangeChanged.emit(self, self.range)
-
-    #     elif ev.buttons() in [Qt.MouseButton.MiddleButton, Qt.MouseButton.LeftButton]:  ## Allow panning by left or mid button.
-    #         px = self.pixelSize()
-    #         tr = -delta * px
-            
-    #         self.translate(tr[0], tr[1])
-    #         self.sigDeviceRangeChanged.emit(self, self.range)
-
-
-    # def mouse_move_view(self, ev):
-    #     lpos = ev.pos() if hasattr(ev, 'pos') else ev.scenePos()
-    #     if self.lastMousePos is None:
-    #         self.lastMousePos = lpos
-    #     delta = Point(lpos - self.lastMousePos)
-    #     self.lastMousePos = lpos
-
-    #     super().mouseMoveEvent(ev)
-    #     if not self.mouseEnabled:
-    #         return
-    #     self.sigSceneMouseMoved.emit(self.mapToScene(lpos))
-
-    #     if self.clickAccepted:  ## Ignore event if an item in the scene has already claimed it.
-    #         return
-
-    #     if ev.buttons() == Qt.MouseButton.RightButton:
-    #         delta = Point(fn.clip_scalar(delta[0], -50, 50), fn.clip_scalar(-delta[1], -50, 50))
-    #         scale = 1.01 ** delta
-    #         self.scale(scale[0], scale[1], center=self.mapToScene(self.mousePressPos))
-    #         self.sigDeviceRangeChanged.emit(self, self.range)
-
-    #     elif ev.buttons() in [Qt.MouseButton.MiddleButton, Qt.MouseButton.LeftButton]:  ## Allow panning by left or mid button.
-    #         px = self.pixelSize()
-    #         tr = -delta * px
-
-    #         self.translate(tr[0], tr[1])
-    #         self.sigDeviceRangeChanged.emit(self, self.range)
+            if points:
+                print('show hover')
+                # Handle the found points
+                point = points[0]  # Assuming you want to handle the first point
+                x, y = point
+                
+                # print(self.points[:5], point)
+                i =np.where((self.points[:, 0] == x) & (self.points[:, 1] == y))[0][0]
+                image_path = self.img_paths[i]
+                image = plt.imread(image_path)
+                w, h, _ = image.shape
+                self.hover_img.setImage(image)
+                # Adjust image
+                scale = 0.3
+                rotation = -90
+                self.hover_img.setScale(scale / np.sqrt(w**2 + h**2))
+                self.hover_img.setPos(x, y)
+                self.hover_img.setRotation(rotation)
+                self.hover_img.show()
+            else:
+                self.hover_img.hide()
 
 
     def start_selection(self, ev):
@@ -207,10 +234,11 @@ class ScatterplotWidget(QWidget):
             view_coords = self.plot_widget.mapToView(pos)
             self.start_point = (view_coords.x(), view_coords.y())
 
-    def end_selection(self, ev):
+    # def end_selection(self, ev):
+    def end_selection(self, pos):
         # if ev.button() == Qt.MouseButton.LeftButton and self.start_point is not None:
-        # print("end_selection" )
-        pos = ev.scenePos()
+        # print("end_selection", ev)
+        # pos = ev.scenePos()
         view_coords = self.plot_widget.mapToView(pos)
         self.end_point = (view_coords.x(), view_coords.y())
         if self.start_point!= self.end_point and self.end_point is not None and self.start_point is not None:
@@ -234,6 +262,7 @@ class ScatterplotWidget(QWidget):
     def clear_selection(self):
         print('clear selection')
         self.selected_points = []
+        self.selected_indices=[]
         if self.rect is not None and self.rect in self.plot_widget.scene().items():
             self.plot_widget.scene().removeItem(self.rect)
         self.start_point=None
@@ -284,6 +313,7 @@ class ScatterplotWidget(QWidget):
         # for i, p in enumerate(self.points):
         #     print( xmin , p[0], xmax,  ymin , p[1] ,ymax)
         self.selected_points = np.array([p for p in self.points if xmin <= p[0] <= xmax and ymin <= p[1] <= ymax])
+        self.selected_indices = np.array([i for i, p in enumerate(self.points) if xmin <= p[0] <= xmax and ymin <= p[1] <= ymax])
         # print('self.selected_points', len(self.selected_points))
         
 
@@ -330,22 +360,43 @@ class ScatterplotWidget(QWidget):
         # self.plot_widget.scene().clear()
         # for idx, index, item in self.image_items:
         #     self.plot_widget.scene().removeItem(item)
-        if self.selected_points!=[]:
-            print('draw selected points')
-            points= self.selected_points
-        else:
-            points=self.points
 
-        self.plot_widget.plot(points[:, 0], points[:, 1], pen=None, symbolBrush=self.points_color, symbolSize=self.points_size)
-        print(len(points))
-        also_show_not_selected=True
+        # self.plot_data_items= self.plot_widget.plot(points[:, 0], points[:, 1], pen=None, symbolBrush=self.points_color, symbolSize=self.points_size)
+
+        also_show_not_selected=False
         if also_show_not_selected:
-            for point in self.points:
-                self.plot_widget.plot([point[0]], [point[1]], pen=None, symbolBrush=self.selection_color, symbolSize=self.selection_points_size)
+            self.plot_data_items = []
+            self.plot_data_items_not_selected = []
+            for i, point in self.points:
+                if point in self.selected_indices:
+                    print('point in selection', point)
+                    plot_data_item= self.plot_widget.plot([point[0]], [point[1]], pen=None, symbolBrush=self.selection_color, symbolSize=self.selection_points_size)
+                    # plot_data_item.setPos(point[0], point[1])
+                    self.plot_data_items.append((i,plot_data_item))
+                else:
+                    plot_data_item= self.plot_widget.plot([point[0]], [point[1]], pen=None, symbolBrush=self.points_color, symbolSize=self.points_size)
+                    # plot_data_item.setPos(point[0], point[1])
+                    self.plot_data_items_not_selected.append((i,plot_data_item))
+        else:
+            if self.selected_points!=[]:
+                print('draw selected points')
+                # print(self.selected_points)
+                points= self.selected_points
+            else:
+                points=self.points
+
+            print(len(points),points[0] )
+            self.plot_data_items = []
+            for i, point in enumerate(points):
+                plot_data_item= self.plot_widget.plot([point[0]], [point[1]], pen=None, symbolBrush=self.selection_color, symbolSize=self.selection_points_size)
+                # plot_data_item.setPos(point[0], point[1])
+                self.plot_data_items.append((i, plot_data_item))
 
         if reset:
             self.reset_scatterplot(points)
         self.plot_widget.update()
+
+
 
     def highlight_selected_point(self, id):
         print('draw border, id:', id)
@@ -359,8 +410,12 @@ class ScatterplotWidget(QWidget):
                 if i == id:
                     border_color = pg.mkPen(color='r', width=4)
                     self.plot_widget.plot([point[0]], [point[1]], pen=None, symbolBrush=self.points_color, symbolSize=self.points_size, symbolPen=border_color)
-                else:
-                    self.plot_widget.plot([point[0]], [point[1]], pen=None, symbolBrush=self.selection_color, symbolSize=self.selection_points_size)
+                # else:
+                #     # Check if the point has a red border and remove it
+                # #     if self.plot_widget.items(i).opts['symbolPen'] is not None and self.plot_widget.items(i).opts['symbolPen'].color().name() == 'r':
+                #     if self.plot_widget.itemAtIndex(i).opts['symbolPen'] is not None and self.plot_widget.itemAtIndex(i).opts['symbolPen'].color().name() == 'r':
+                #         self.plot_widget.items(i).setSymbolPen(None)
+                    
         else:
             print('image_items', len(self.image_items))
             for _, _, image_item in self.image_items:
@@ -370,6 +425,9 @@ class ScatterplotWidget(QWidget):
             _,_,image_item=self.image_items[id]
             border_color = pg.mkPen(color='r', width=4)
             image_item.setBorder(border_color)
+
+        
+
         
     # default panning fn
     # def mouseMoveEvent(self, ev):

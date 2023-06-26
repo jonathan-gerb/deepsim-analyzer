@@ -4,6 +4,8 @@ from PyQt6.QtGui import QFont, QPainter, QPen, QPixmap
 from PyQt6.QtWidgets import QApplication,QWidget, QGraphicsScene, QGraphicsView, QGraphicsTextItem,QGraphicsPixmapItem, QLabel,QVBoxLayout
 from pathlib import Path
 
+import pandas as pd
+
 class TimelineView(QGraphicsView):
     def __init__(self, scene):
         super().__init__(scene)
@@ -29,8 +31,8 @@ class TimelineWindow(QWidget):
         view = TimelineView(self.scene)
         # view.setAlignment(Qt.AlignmentFlag.AlignTop)
         view.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        view.setFixedWidth(300)
-        view.setFixedHeight(100)
+        # view.setFixedWidth(300)
+        # view.setFixedHeight(100)
         self.setLayout(QVBoxLayout())
         self.layout().addWidget(view)
 
@@ -43,9 +45,9 @@ class TimelineWindow(QWidget):
         for year in years:
             x_pos = (year-min(years)) * 20
             self.create_timeline_point(str(year), x_pos)
-
+        
         for image_data in images:
-            print(image_data["image_path"])
+            print('image_data["image_path"]', image_data["image_path"])
             item = self.create_timeline_item(images, image_data["image_path"], image_data["year"])
             self.scene.addItem(item)
         
@@ -56,7 +58,7 @@ class TimelineWindow(QWidget):
         data_info_path = basepath.parent.parent.parent.parent / 'data/artistic_visual_storytelling.csv'
         data_info_df = pd.read_csv(data_info_path)
         images_years_before_after = self.get_images_paths_years(data_info_df, 'images/'+main_photo)
-        imgs_filepath = basepath.parent.parent.parent.parent / 'data/raw_immutable/test_images'
+        # imgs_filepath = basepath.parent.parent.parent.parent / 'data/raw_immutable/test_images'
         image_names = images_years_before_after[0]+images_years_before_after[2]
         image_years = images_years_before_after[1]+images_years_before_after[3]
         # imag_name="vincent-van-gogh_still-life-with-a-basket-of-apples-and-two-pumpkins-1885.jpg"
@@ -69,7 +71,7 @@ class TimelineWindow(QWidget):
         images = [{"image_path":name, 'year':year} for name, year in zip(image_names, image_years)]
         return images
 
-    def get_images_paths_years(data, most_sim_img:str):
+    def get_images_paths_years(self,data, most_sim_img:str):
         # define attrites for before and after 
         attributes_before = ['prior_10_inside_style',
                              'prior_20_inside_style',
@@ -82,6 +84,10 @@ class TimelineWindow(QWidget):
                             'subsequent_100_inside_style'
                             ]
         
+        print('data[image]', data['image'])
+        print('most_sim_img', most_sim_img)
+        print('len', len(data[data['image']==most_sim_img]==False))
+        print('after len', data[data['image']==most_sim_img][attributes_before])
         # retrieves ids of images created before and after the input image
         ids_before = data[data['image']==most_sim_img][attributes_before].values[0]
         ids_after = data[data['image']==most_sim_img][attributes_after].values[0]
@@ -108,7 +114,9 @@ class TimelineWindow(QWidget):
 
     ## add images to the timeline
     def create_timeline_item(self,images, image_path, year):
-        pixmap=QPixmap(image_path).scaled(30,30)
+        basepath = Path(__file__)
+        imgs_filepath = basepath.parent.parent.parent.parent / 'data/raw_immutable/test_images'
+        pixmap=QPixmap(str(imgs_filepath/ image_path)).scaled(30,30)
         item = QGraphicsPixmapItem(pixmap)
         item.setFlag(QGraphicsPixmapItem.GraphicsItemFlag.ItemIsMovable)
         item.setFlag(QGraphicsPixmapItem.GraphicsItemFlag.ItemSendsGeometryChanges)
