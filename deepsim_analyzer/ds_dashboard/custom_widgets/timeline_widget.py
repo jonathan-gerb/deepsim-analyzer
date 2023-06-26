@@ -84,7 +84,7 @@ class TimelineWindow(QWidget):
                             'subsequent_100_inside_style'
                             ]
         
-        print('data[image]', data['image'])
+        # print('data[image]', data['image'])
         print('most_sim_img', most_sim_img)
         print('len', len(data[data['image']==most_sim_img]==False))
         print('after len', data[data['image']==most_sim_img][attributes_before])

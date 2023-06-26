@@ -252,7 +252,7 @@ class MainWindow(QMainWindow):
             )
             self.scatterplot.plot_widget.scene().mousePressEvent=self.on_canvas_click
             # self.scatterplot.plot_widget.scene().sigMouseClicked.connect(self.on_canvas_click)
-
+            # self.scatterplot.remove_highlight_selected_point(0)
             self.scatterplot.selected_idx.emit(0)
         else:
             print('only redraw scatterplot')
@@ -260,6 +260,7 @@ class MainWindow(QMainWindow):
                 self.scatterplot.draw_scatterplot_dots()
             else:
                 self.scatterplot.draw_scatterplot()
+            self.scatterplot.remove_highlight_selected_point(self.scatterplot.selected_index)
             self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
             # werkt niet cause only called one for setup
         print('here to emit stats')
@@ -575,7 +576,7 @@ class MainWindow(QMainWindow):
 
             # load in timeline
             base_filename = os.path.basename(filepath)
-            self.timeline.draw_timeline(base_filename)
+            # self.timeline.draw_timeline(base_filename)
             self.no_timeline_label.hide()
             self.timeline.show()
         else:
@@ -727,10 +728,13 @@ class MainWindow(QMainWindow):
             #TODO: give user reset option/button. initially its FALSE
             self.scatterplot.dots_plot=False
             self.scatterplot.draw_scatterplot(reset=False)
+            self.scatterplot.remove_highlight_selected_point(self.scatterplot.selected_index)
+
             self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
         else:
             self.scatterplot.dots_plot=True
             self.scatterplot.draw_scatterplot_dots(reset=False)
+            self.scatterplot.remove_highlight_selected_point(self.scatterplot.selected_index)
             self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
 
     def on_canvas_click(self, ev):
@@ -753,6 +757,7 @@ class MainWindow(QMainWindow):
                         if abs(x - item_pos.x()) <= range_radius and abs(y - item_pos.y()) <= range_radius:
                             self.scatterplot.selected_point = item_pos.x(), item_pos.y()
                             print('self.scatterplot.selected_point',self.scatterplot.selected_point)
+                            self.scatterplot.remove_highlight_selected_point(self.scatterplot.selected_index)
                             self.scatterplot.selected_index = index
                             self.scatterplot.selected_idx.emit(index)
                             self.clicked_on_point()
@@ -765,6 +770,7 @@ class MainWindow(QMainWindow):
                     item_pos=item.mapFromScene(pos)
                     if item.contains(item_pos):
                         self.scatterplot.selected_point = item_pos.x(), item_pos.y()
+                        self.scatterplot.remove_highlight_selected_point(self.scatterplot.selected_index)
                         self.scatterplot.selected_index = index
                         self.scatterplot.selected_idx.emit(index)
                         self.scatterplot.plot_index = idx
