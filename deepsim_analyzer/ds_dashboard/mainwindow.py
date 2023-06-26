@@ -1,36 +1,38 @@
 # This Python file uses the following encoding: utf-8
+import configparser
+import os
 import sys
-
+from copy import deepcopy
 # normal imports
 from pathlib import Path
-import numpy as np
-from PIL import Image
-import configparser
-from scipy import spatial
-from sklearn.preprocessing import minmax_scale
-from sklearn.metrics.pairwise import cosine_distances
-import os
-from tqdm import tqdm
+
 import cv2
-
-# qt imports
-from PyQt6 import QtWidgets
-from PyQt6.QtWidgets import QMainWindow, QFileDialog, QApplication, QVBoxLayout, QTabWidget,QGraphicsView,QGraphicsScene,QSizePolicy
-from PyQt6.QtGui import QPixmap, QPainter, QColor, QMouseEvent,QTransform
-from PyQt6.QtCore import QRect, Qt,QEvent,QCoreApplication,pyqtSignal
-# custom widgets
-from .custom_widgets import  ScatterplotWidget, TimelineView, TimelineWindow
-
 # deepsim analyzer package
 import deepsim_analyzer as da
+import numpy as np
 import pyqtgraph as pg
+from PIL import Image
+# qt imports
+from PyQt6 import QtWidgets
+from PyQt6.QtCore import QCoreApplication, QDate, QEvent, QRect, Qt, pyqtSignal
+from PyQt6.QtGui import QColor, QMouseEvent, QPainter, QPixmap, QTransform
+from PyQt6.QtWidgets import (QApplication, QFileDialog, QGraphicsScene,
+                             QGraphicsView, QMainWindow, QSizePolicy,
+                             QTabWidget, QVBoxLayout,QLabel)
+from scipy import spatial
+from sklearn.metrics.pairwise import cosine_distances
+from sklearn.preprocessing import minmax_scale
+from tqdm import tqdm
 
+# custom widgets
+from .custom_widgets import ScatterplotWidget, TimelineView, TimelineWindow,RangeSlider,BarChart
 # Important:
 # You need to run the following command to generate the ui_form.py file
 #     pyside6-uic form.ui -o ui_form.py, or
 #     pyside2-uic form.ui -o ui_form.py
 # additionally run python fix_ui_script.py, which replaces the not working ui stuff.
 from .ui_form import Ui_MainWindow
+
 
 class MainWindow(QMainWindow):
 
@@ -57,13 +59,15 @@ class MainWindow(QMainWindow):
         self.image_key_dict = key_dict
         self.image_keys = [key for key in key_dict.keys()] # hashes
         self.key_to_idx = {key:i for i, key in enumerate(key_dict.keys())} # hashes
-        self.image_indices = [i for i in range(len(key_dict))]
+        self.image_indices = list(self.key_to_idx.values())
         self.image_paths = [str(Path(images_filepath) / image_name) for image_name in key_dict.values()]
+
+        self.dataset_mask = np.ones(len(self.image_keys))
 
         # in time we have to get all features for all the data, we will start with
         # just the dummy feature
-        # self.available_features = ["dummy", "dino", "texture", "emotion"]
-        self.available_features = ["dummy", "dino", "texture"]
+        # self.available_features = ["dino", "semantic", "dummy", "texture", "emotion"]
+        self.available_features = ["dino", "dummy", "texture"]
 
         # metric option defaults
         self.dino_distance_measure = "euclidian"
@@ -85,6 +89,7 @@ class MainWindow(QMainWindow):
         self.set_color_element(self.ui.dino_tab, [143, 143, 143])
         self.set_color_element(self.ui.texture_tab, [143, 143, 143])
         self.set_color_element(self.ui.emotion_tab, [143, 143, 143])
+        self.set_color_element(self.ui.semantic_tab, [143, 143, 143])
 
         # ================ SETUP DATA ================
         print("setting up internal data")
@@ -113,6 +118,8 @@ class MainWindow(QMainWindow):
             for feature_name, value in feature_dict_key.items():
                 self.data_dict[feature_name]["projection"][i] = value['projection']
                 self.data_dict[feature_name]["full"][i] = value['full']
+                
+        self.original_data_dict = deepcopy(self.data_dict)
 
 
 
@@ -142,6 +149,9 @@ class MainWindow(QMainWindow):
         # data for left img feature, can come  from dataset or be calculated on the fly
         self.update_leftimg_data(self.left_img_key)
         # add additional data in box_left_low
+
+        self.setup_filters()
+        self.ui.apply_filters.pressed.connect(self.apply_filters)
 
         # ================ SETUP MIDDLE COLUMN ================
         
@@ -215,12 +225,12 @@ class MainWindow(QMainWindow):
 
         # ================ SETUP RIGHT COLUMN ================
         print("------setting up right column, calculating nearest neighbours")
-        topk_dict = self.calculate_nearest_neighbours()
-        self.display_nearest_neighbours(topk_dict)
+        self.recalc_similarity()
         
         print("recalculating")
-        self.ui.recalc_similarity.toggled.connect(self.recalc_similarity)
+        self.ui.recalc_similarity.pressed.connect(self.recalc_similarity)
         print("dashboard setup complete!")
+
 
         print('--------setting up barplot')
         # self.bp = pg.PlotWidget()
@@ -238,15 +248,102 @@ class MainWindow(QMainWindow):
         size_policy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.bp.setSizePolicy(size_policy)
       
-
       # ========================
 
+    def setup_filters(self):
+        nationalities = []
+        artist_names = []
+        media = []
+        dates = []
+        for value in self.metadata.values():
+            ns = value['artist_nationality'].split(",")
+            for n in ns:
+                nationalities.append(n.strip())
+
+            ms = value['media'].split(",")
+            for m in ms:
+                media.append(m.strip())
+
+            dates.append(int(value['date']))
+            artist_names.append(str(value['artist_name']))
+
+        nationalities = list(set(nationalities))
+        media = list(set(media))
+
+        self.ui.dataset_filtering_nationality_cbox.clear()
+        self.ui.dataset_filtering_media_cbox.clear()
+
+        self.ui.dataset_filtering_nationality_cbox.addItems(nationalities)
+        self.ui.dataset_filtering_media_cbox.addItems(media)
+
+        self.ui.dataset_filtering_nationality_cbox.addItem("all")
+        self.ui.dataset_filtering_media_cbox.addItem("all")
+
+        self.ui.dataset_filtering_nationality_cbox.setCurrentText("all")
+        self.ui.dataset_filtering_media_cbox.setCurrentText("all")
+
+        self.ui.dataset_filtering_from_date.setText(str(min(dates)))
+        self.ui.dataset_filtering_to_date.setText(str(max(dates)+1))
+
+        self.ui.filtered_dataset_size.setText(f"{str(self.data_dict['dummy']['projection'].shape[0])}/{self.original_data_dict['dummy']['projection'].shape[0]}")
+        
+
+    def apply_filters(self):
+        filter_media = self.ui.dataset_filtering_media_cbox.currentText()
+        filter_nationality = self.ui.dataset_filtering_nationality_cbox.currentText()
+        try:
+            filter_date_from = int(self.ui.dataset_filtering_from_date.text())
+        except:
+            print(f"could not convert date_from to int: {self.ui.dataset_filtering_from_date.text()}, using year 0 as default")
+            filter_date_from = 0
+        try:
+            filter_date_to = int(self.ui.dataset_filtering_to_date.text())
+        except:
+            print(f"could not convert date_from to int: {self.ui.dataset_filtering_to_date.text()}, using year 3000 as default")
+            filter_date_to = 3000
+
+        keys_to_keep = []
+        for key, value in self.metadata.items():
+            # if any of the nationalities match we consider it valid
+            nationalities = value['artist_nationality'].split(",")
+            nationalities = [n.strip() for n in nationalities]
+            
+            media = value['media'].split(",")
+            media = [m.strip() for m in media]
+            
+            passed_nationality_filter = filter_nationality in nationalities or filter_nationality == "all"
+            passed_media_filter = filter_media in media or filter_media == "all"
+            passed_date_filter = int(value['date']) >= filter_date_from and int(value['date']) < filter_date_to
+
+            if passed_nationality_filter and passed_media_filter and passed_date_filter:
+                keys_to_keep.append(key)
+
+        print(f"keeping {len(keys_to_keep)} indices after applying nationality: {filter_nationality} and media: {filter_media} and date: {filter_date_from}-{filter_date_to}")
+
+        self.ui.filtered_dataset_size.setText(f"{len(keys_to_keep)}/{self.original_data_dict['dummy']['projection'].shape[0]}")        
+
+        self.filter_datadict_by_key(keys_to_keep)
+        self.recalc_similarity()
+        self.setup_scatterplot()
+
+    def filter_datadict_by_key(self, keys_to_keep):
+        indices_to_keep = np.array([self.key_to_idx[img_hash] for img_hash in keys_to_keep])
+        for feature_name in self.original_data_dict.keys():
+            self.data_dict[feature_name]['full'] = deepcopy(self.original_data_dict[feature_name]['full'][indices_to_keep])
+            self.data_dict[feature_name]['projection'] = deepcopy(self.original_data_dict[feature_name]['projection'][indices_to_keep])
+
+
+    def reset_data_dict(self):
+        self.data_dict = deepcopy(self.original_data_dict)
 
     def setup_scatterplot(self):
         current_metric_type = self.ui.box_metric_tabs.tabText(self.ui.box_metric_tabs.currentIndex())
         print("changing 2d scatterplot to: ", current_metric_type)
+        # if current_metric_type == "Dino":
+        #     current_metric_type = "texture"
+        # current_metric_type = "emo"
         if not hasattr(self, 'scatterplot'):
-            print('a new scatterplot is created')
+            print(f'a new scatterplot is created for {current_metric_type.lower()}')
             self.scatterplot = ScatterplotWidget(
                 self.data_dict[current_metric_type.lower()]["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame
             )
@@ -267,6 +364,7 @@ class MainWindow(QMainWindow):
             # self.scatterplot.highlight_selected_point(0)
         else:
             print('only redraw scatterplot')
+            self.scatterplot.points = self.data_dict[current_metric_type.lower()]["projection"]
             if self.scatterplot.dots_plot:
                 self.scatterplot.draw_scatterplot_dots()
             else:
@@ -276,6 +374,7 @@ class MainWindow(QMainWindow):
 
 
     def recalc_similarity(self):
+        print('recalculating similarity')
         topk_dict = self.calculate_nearest_neighbours()
         self.display_nearest_neighbours(topk_dict)
         
@@ -444,23 +543,88 @@ class MainWindow(QMainWindow):
             self.display_photo_left(leftname)
             self.display_photo_right(rightname)
 
+            self.ui.reset_filters.pressed.connect(self.setup_filters)
+
     def set_color_element(self, ui_element, color):
         ui_element.setAutoFillBackground(True)
         p = ui_element.palette()
         p.setColor(ui_element.backgroundRole(), QColor(*color))
         ui_element.setPalette(p)
+    
+    def display_nearest_neighbours(self, topk):
+        print('display_nearest_neighbours')
+
+        # save for potential use in other parts of the program
+        self.topk = topk
+        try:
+            distance, idx = topk['combined']["distances"][0], int(topk['combined']['ranking'][0])
+                
+            top_img_path = self.image_paths[idx]
+            self.right_img_key = self.image_keys[idx]
+            self.right_img_filename = self.image_paths[idx]
+        # in case there is only 1 image and so no nearest neighbour
+        except IndexError:
+            top_img_path = self.left_img_filename
+
+        self.display_photo_right(top_img_path)
+        print(topk['combined']['distances'].shape)
+        # if we cannot find nearest neighbours, we just display the original image again, edgecase handling
+        try:
+            distance_1, idx_1 = topk['combined']['distances'][1], int(topk['combined']["ranking"][1])
+        except IndexError:
+            idx_1 = self.key_to_idx[self.left_img_key]
+            distance_1 = 0
+        try:
+            distance_2, idx_2 = topk['combined']['distances'][2], int(topk['combined']["ranking"][2])
+        except IndexError:
+            idx_2 = self.key_to_idx[self.left_img_key]
+            distance_2 = 0
+        try:
+            distance_3, idx_3 = topk['combined']['distances'][3], int(topk['combined']["ranking"][3])
+        except IndexError:
+            idx_3 = self.key_to_idx[self.left_img_key]
+            distance_3 = 0
+
+        indices_nn_preview = [idx_1, idx_2, idx_3]
+        print(f"{indices_nn_preview=}")
+        print(f"{distance_1=}")
+        print(f"{distance_2=}")
+        print(f"{distance_3=}")
+        fp_nn_preview = [self.image_paths[int(index)] for index in indices_nn_preview]
+        print(f"{fp_nn_preview=}")
+
+        self.display_preview_nns(fp_nn_preview)
+        
+
+    def display_preview_nns(self, filenames):
+        for i, filename in enumerate(filenames[:3]):
+            ui_element = getattr(self.ui, f"n{i+1}")
+            ui_element.setAutoFillBackground(True)
+            p = ui_element.palette()
+            p.setColor(ui_element.backgroundRole(), QColor(0, 0, 0))
+            ui_element.setPalette(p)
+
+            w, h = ui_element.width(), ui_element.height()
+            pixmap = QPixmap(filename)
+            ui_element.setPixmap(pixmap.scaled(w,h,Qt.AspectRatioMode.KeepAspectRatio))
+            ui_element.setAlignment(Qt.AlignmentFlag.AlignCenter)
             
     def get_metric_combo_weights(self):
         dummy = self.ui.combo_dummy_slider.value()
         dino = self.ui.combo_dino_slider.value()
         texture = self.ui.combo_texture_slider.value()
+        emotion = self.ui.combo_emotion_slider.value()
+        semantic = self.ui.combo_semantic_slider.value()
+        # TODO: add sliders for the other metrics
         feature_weight_dict = {
             "dummy": dummy / 100,
             "dino": dino / 100,
-            "texture": texture / 100
+            "texture": texture / 100,
+            "emotion": emotion / 100,
+            "semantic": semantic / 100,
         }
         return feature_weight_dict
-
+    
     def calculate_nearest_neighbours(self, topk=5):
         # get features for current image
         topk_results = {}
@@ -482,23 +646,23 @@ class MainWindow(QMainWindow):
 
             current_vector = self.left_img_features[feature_name][vector_type_key]
             distances = np.zeros((self.data_dict[feature_name][vector_type_key].shape[0]))
-
-            for i in range(self.data_dict[feature_name][vector_type_key].shape[0]):
-                target_vector = self.data_dict[feature_name][vector_type_key][i]
-                # similarity options
-                if feature_name == "dino":
-                    if self.dino_distance_measure == "cosine":
-                        distances[i] = spatial.distance.cosine(current_vector, target_vector)
-                    if self.dino_distance_measure == "euclidian":
-                        distances[i] = spatial.distance.euclidean(current_vector, target_vector)
-                elif feature_name == "texture":
-                    if self.texture_distance_measure == "cosine":
-                        distances[i] = spatial.distance.cosine(current_vector, target_vector)
-                    if self.texture_distance_measure == "euclidian":
-                        distances[i] = spatial.distance.euclidean(current_vector, target_vector)
-                # add more options later
-                else:
-                    distances[i] = spatial.distance.euclidean(current_vector, target_vector)
+            
+            # calculate distances
+            if feature_name == "dino":
+                if self.dino_distance_measure == "cosine":
+                    distances = cosine_distances(current_vector.reshape(1, -1), self.data_dict[feature_name][vector_type_key]).squeeze()
+                if self.dino_distance_measure == "euclidian":
+                    a_min_b = current_vector.reshape(-1, 1) - self.data_dict[feature_name][vector_type_key].T
+                    distances = np.sqrt(np.einsum('ij,ij->j', a_min_b, a_min_b))
+            elif feature_name == "texture":
+                if self.texture_distance_measure == "cosine":
+                    distances = cosine_distances(current_vector.reshape(1, -1), self.data_dict[feature_name][vector_type_key]).squeeze()
+                if self.texture_distance_measure == "euclidian":
+                    a_min_b = current_vector.reshape(-1, 1) - self.data_dict[feature_name][vector_type_key].T
+                    distances = np.sqrt(np.einsum('ij,ij->j', a_min_b, a_min_b))
+            else:
+                a_min_b = current_vector.reshape(-1, 1) - self.data_dict[feature_name][vector_type_key].T
+                distances = np.sqrt(np.einsum('ij,ij->j', a_min_b, a_min_b))
             
             # rescale distances so that the distances are always within the range of 0-1
             # this way we can combine them, the element with distance 0 is the image itself if it's 
@@ -548,6 +712,7 @@ class MainWindow(QMainWindow):
 
         return topk_results
 
+
     def upload_image_left(self):
         file_dialog = QFileDialog()
         file_dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
@@ -577,15 +742,15 @@ class MainWindow(QMainWindow):
             print(f"found metadata for image: {filepath}")
             self.update_image_info(
                 self.metadata[img_hash]['date'],
-                self.metadata[img_hash]['artist_name'].decode('UTF-8'),
-                self.metadata[img_hash]['style'].decode('UTF-8'),
-                self.metadata[img_hash]['tags'].decode('UTF-8'),
+                self.metadata[img_hash]['artist_name'],
+                self.metadata[img_hash]['style'],
+                self.metadata[img_hash]['tags'],
             )
             self.left_img_features = self.get_features_from_dataset(img_hash)
 
             # load in timeline
             base_filename = os.path.basename(filepath)
-            # self.timeline.draw_timeline(base_filename)
+            self.timeline.draw_timeline(base_filename)
             self.no_timeline_label.hide()
             self.timeline.show()
         else:
@@ -672,17 +837,34 @@ class MainWindow(QMainWindow):
 
         # save for potential use in other parts of the program
         self.topk = topk
-
-        distance, idx = topk['combined']["distances"][0], int(topk['combined']['ranking'][0])
-        top_img_path = self.image_paths[idx]
-        self.right_img_key = self.image_keys[idx]
-        self.right_img_filename = self.image_paths[idx]
+        try:
+            distance, idx = topk['combined']["distances"][0], int(topk['combined']['ranking'][0])
+                
+            top_img_path = self.image_paths[idx]
+            self.right_img_key = self.image_keys[idx]
+            self.right_img_filename = self.image_paths[idx]
+        # in case there is only 1 image and so no nearest neighbour
+        except IndexError:
+            top_img_path = self.left_img_filename
 
         self.display_photo_right(top_img_path)
         print(topk['combined']['distances'].shape)
-        distance_1, idx_1 = topk['combined']['distances'][1], int(topk['combined']["ranking"][1])
-        distance_2, idx_2 = topk['combined']['distances'][2], int(topk['combined']["ranking"][2])
-        distance_3, idx_3 = topk['combined']['distances'][3], int(topk['combined']["ranking"][3])
+        # if we cannot find nearest neighbours, we just display the original image again, edgecase handling
+        try:
+            distance_1, idx_1 = topk['combined']['distances'][1], int(topk['combined']["ranking"][1])
+        except IndexError:
+            idx_1 = self.key_to_idx[self.left_img_key]
+            distance_1 = 0
+        try:
+            distance_2, idx_2 = topk['combined']['distances'][2], int(topk['combined']["ranking"][2])
+        except IndexError:
+            idx_2 = self.key_to_idx[self.left_img_key]
+            distance_2 = 0
+        try:
+            distance_3, idx_3 = topk['combined']['distances'][3], int(topk['combined']["ranking"][3])
+        except IndexError:
+            idx_3 = self.key_to_idx[self.left_img_key]
+            distance_3 = 0
 
         indices_nn_preview = [idx_1, idx_2, idx_3]
         print(f"{indices_nn_preview=}")
@@ -863,135 +1045,3 @@ if __name__ == "__main__":
     widget.show()
     sys.exit(app.exec())
 
-
-# TODO: i will put it in a seperate py file when it's done
-
-from PyQt6.QtCore import QRect
-from PyQt6.QtWidgets import (
-    QWidget,
-    QGridLayout,
-    QSlider,
-    QLabel,
-    QVBoxLayout,
-    QHBoxLayout,
-    QLineEdit,
-    QRadioButton,
-    QToolTip,
-)
-from PyQt6.QtGui import QPalette, QColor
-# from PyQt6.QtCharts import QChart
-from PyQt6 import QtCharts
-
-class RangeSlider(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.domain = [0, 100]
-        self.values = [0, 100]
-        self.update = [0, 100]
-        self.inputValues = [0, 100]
-        self.color = QColor(0, 0, 255)  # Example color
-        self.typeNumber = "int"  # Example type
-        self.step = 1  # Example step
-        self.hover_index = 0  # Example hover index
-        self.isToggleOn = False
-        self.initUI()
-
-    def initUI(self):
-        layout = QGridLayout(self)
-        # BarChart Widget
-        self.bar_chart = BarChart(self)  # Replace BarChart with your own widget
-        # self.bar_chart.setFixedHeight(40)
-        # self.bar_chart.setFixedWidth(70)
-        # self.bar_chart.autoFillBackground(True)
-        # bar_chart.setColor(self.color)
-        # Add other necessary configuration for the BarChart widget
-        layout.addWidget(self.bar_chart, 0, 0, 1, 3)
-       
-        # Double Range Slider Widget
-        range_slider = QSlider()
-        range_slider.setOrientation(Qt.Orientation.Horizontal)
-        # range_slider.setRange(self.domain[0], self.domain[1])
-        # range_slider.setValues(self.values[0], self.values[1])
-        range_slider.setMinimum(self.domain[0])
-        range_slider.setMaximum(self.domain[1])
-        range_slider.setValue(self.values[0])
-        range_slider.setTickPosition(QSlider.TickPosition.TicksBothSides)
-        range_slider.setTickInterval(1)
-        range_slider.setSingleStep(1)
-        range_slider.sliderMoved.connect(self.changeSlider)
-        layout.addWidget(range_slider, 1, 0, 1, 3)
-
-        # Set size policies for the widgets
-        # size_policy_chart = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        # size_policy_slider = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-
-        # self.bar_chart.setSizePolicy(size_policy_chart)
-        # range_slider.setSizePolicy(size_policy_slider)
-
-        # Set stretch factors for the widgets
-        # layout.setColumnStretch(0, 1)
-        # layout.setColumnStretch(1, 1)
-        # layout.setColumnStretch(2, 1)
-
-        self.setLayout(layout)
-
-        # Additional styling if required
-        # self.setStyleSheet("...")
-
-    def changeSlider(self, values):
-        # Function to handle slider value changes
-        pass
-
-
-class BarChart(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.series = QtCharts.QBarSeries()
-        self.chart = QtCharts.QChart()
-        self.chart.addSeries(self.series)
-        self.axisX = QtCharts.QBarCategoryAxis()
-        self.axisY = QtCharts.QValueAxis()
-        self.chart.addAxis(self.axisX, Qt.AlignmentFlag.AlignBottom)
-        self.chart.addAxis(self.axisY, Qt.AlignmentFlag.AlignLeft)
-        self.chart.legend().setVisible(False)
-        self.chartView = QtCharts.QChartView(self.chart)
-        self.chartView.setRenderHint(QPainter.RenderHint.Antialiasing)
-
-        layout = QVBoxLayout(self)
-        layout.addWidget(self.chartView)
-
-        # self.setMinimumSize(200, 200)
-
-    def setColor(self, color):
-        # Set color for the bar chart
-        palette = self.chartView.palette()
-        palette.setColor(QPalette.ColorRole.Window, color)
-        self.chartView.setPalette(palette)
-
-    def setBarData(self, unique_styles, style_counts, style_count_selection):
-        self.series.clear()
-        categories = [str(style) for style in unique_styles]
-        self.axisX.clear()
-        self.axisX.append(categories)
-
-        bar_set = QtCharts.QBarSet("Bar")
-        for count in style_counts:
-            bar_set.append(count)
-        # bar_set.setColor(QColor(0, 0, 255)) 
-        self.series.append(bar_set)
-
-        selected_bar_set = QtCharts.QBarSet("Selected Bar")
-        for count in style_count_selection:
-            selected_bar_set.append(count)
-        # selected_bar_set.setColor(QColor(255, 0, 0))
-        self.series.append(selected_bar_set)
-
-        self.chart.removeSeries(self.series)
-        self.chart.addSeries(self.series)
-        self.series.attachAxis(self.axisX)
-        self.series.attachAxis(self.axisY)
-
-    def fill_in_barplot(self, unique_styles, style_counts, style_count_selection):
-        print('fill_in_barplot')
-        self.setBarData(unique_styles, style_counts, style_count_selection)
-        self.repaint()
