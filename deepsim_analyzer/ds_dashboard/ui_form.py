@@ -16,9 +16,10 @@ from PyQt6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PyQt6.QtWidgets import (QApplication, QComboBox, QFormLayout, QFrame,
-    QGroupBox, QHBoxLayout, QLabel, QMainWindow,
-    QPlainTextEdit, QPushButton, QRadioButton, QSizePolicy,
-    QSlider, QTabWidget, QVBoxLayout, QWidget)
+    QGroupBox, QHBoxLayout, QLabel, QLineEdit,
+    QMainWindow, QPlainTextEdit, QPushButton, QRadioButton,
+    QSizePolicy, QSlider, QTabWidget, QVBoxLayout,
+    QWidget)
 
 from pyqtgraph import PlotWidget
 
@@ -49,13 +50,99 @@ class Ui_MainWindow(object):
         self.box_timeline_layout = QVBoxLayout(self.verticalLayoutWidget_5)
         self.box_timeline_layout.setObjectName(u"box_timeline_layout")
         self.box_timeline_layout.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayoutWidget_6 = QWidget(self.box_left_low)
+        self.verticalLayoutWidget_6.setObjectName(u"verticalLayoutWidget_6")
+        self.verticalLayoutWidget_6.setGeometry(QRect(10, 10, 441, 141))
+        self.verticalLayout_2 = QVBoxLayout(self.verticalLayoutWidget_6)
+        self.verticalLayout_2.setObjectName(u"verticalLayout_2")
+        self.verticalLayout_2.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_3 = QHBoxLayout()
+        self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
+        self.label_5 = QLabel(self.verticalLayoutWidget_6)
+        self.label_5.setObjectName(u"label_5")
+
+        self.horizontalLayout_3.addWidget(self.label_5)
+
+        self.dataset_filtering_nationality_cbox = QComboBox(self.verticalLayoutWidget_6)
+        self.dataset_filtering_nationality_cbox.setObjectName(u"dataset_filtering_nationality_cbox")
+
+        self.horizontalLayout_3.addWidget(self.dataset_filtering_nationality_cbox)
+
+
+        self.verticalLayout_2.addLayout(self.horizontalLayout_3)
+
+        self.horizontalLayout_4 = QHBoxLayout()
+        self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
+        self.label_8 = QLabel(self.verticalLayoutWidget_6)
+        self.label_8.setObjectName(u"label_8")
+
+        self.horizontalLayout_4.addWidget(self.label_8)
+
+        self.dataset_filtering_media_cbox = QComboBox(self.verticalLayoutWidget_6)
+        self.dataset_filtering_media_cbox.setObjectName(u"dataset_filtering_media_cbox")
+
+        self.horizontalLayout_4.addWidget(self.dataset_filtering_media_cbox)
+
+
+        self.verticalLayout_2.addLayout(self.horizontalLayout_4)
+
+        self.horizontalLayout_2 = QHBoxLayout()
+        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
+        self.label_3 = QLabel(self.verticalLayoutWidget_6)
+        self.label_3.setObjectName(u"label_3")
+
+        self.horizontalLayout_2.addWidget(self.label_3)
+
+        self.dataset_filtering_from_date = QLineEdit(self.verticalLayoutWidget_6)
+        self.dataset_filtering_from_date.setObjectName(u"dataset_filtering_from_date")
+
+        self.horizontalLayout_2.addWidget(self.dataset_filtering_from_date)
+
+        self.label_4 = QLabel(self.verticalLayoutWidget_6)
+        self.label_4.setObjectName(u"label_4")
+
+        self.horizontalLayout_2.addWidget(self.label_4)
+
+        self.dataset_filtering_to_date = QLineEdit(self.verticalLayoutWidget_6)
+        self.dataset_filtering_to_date.setObjectName(u"dataset_filtering_to_date")
+
+        self.horizontalLayout_2.addWidget(self.dataset_filtering_to_date)
+
+
+        self.verticalLayout_2.addLayout(self.horizontalLayout_2)
+
+        self.horizontalLayout = QHBoxLayout()
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.apply_filters = QPushButton(self.verticalLayoutWidget_6)
+        self.apply_filters.setObjectName(u"apply_filters")
+
+        self.horizontalLayout.addWidget(self.apply_filters)
+
+        self.reset_filters = QPushButton(self.verticalLayoutWidget_6)
+        self.reset_filters.setObjectName(u"reset_filters")
+
+        self.horizontalLayout.addWidget(self.reset_filters)
+
+        self.label_10 = QLabel(self.verticalLayoutWidget_6)
+        self.label_10.setObjectName(u"label_10")
+
+        self.horizontalLayout.addWidget(self.label_10)
+
+        self.filtered_dataset_size = QLabel(self.verticalLayoutWidget_6)
+        self.filtered_dataset_size.setObjectName(u"filtered_dataset_size")
+
+        self.horizontalLayout.addWidget(self.filtered_dataset_size)
+
+
+        self.verticalLayout_2.addLayout(self.horizontalLayout)
+
         self.box_right_low = QWidget(self.centralwidget)
         self.box_right_low.setObjectName(u"box_right_low")
         self.box_right_low.setEnabled(True)
         self.box_right_low.setGeometry(QRect(1060, 420, 471, 341))
         self.formLayoutWidget = QWidget(self.box_right_low)
         self.formLayoutWidget.setObjectName(u"formLayoutWidget")
-        self.formLayoutWidget.setGeometry(QRect(10, 0, 171, 139))
+        self.formLayoutWidget.setGeometry(QRect(10, 0, 201, 188))
         self.formLayout = QFormLayout(self.formLayoutWidget)
         self.formLayout.setObjectName(u"formLayout")
         self.formLayout.setContentsMargins(0, 0, 0, 0)
@@ -95,21 +182,57 @@ class Ui_MainWindow(object):
 
         self.formLayout.setWidget(3, QFormLayout.ItemRole.LabelRole, self.label_dummy)
 
+        self.combo_emotion_slider = QSlider(self.formLayoutWidget)
+        self.combo_emotion_slider.setObjectName(u"combo_emotion_slider")
+        self.combo_emotion_slider.setMaximum(100)
+        self.combo_emotion_slider.setOrientation(Qt.Orientation.Horizontal)
+
+        self.formLayout.setWidget(3, QFormLayout.ItemRole.FieldRole, self.combo_emotion_slider)
+
+        self.label_dummy_2 = QLabel(self.formLayoutWidget)
+        self.label_dummy_2.setObjectName(u"label_dummy_2")
+
+        self.formLayout.setWidget(4, QFormLayout.ItemRole.LabelRole, self.label_dummy_2)
+
+        self.combo_clip_slider = QSlider(self.formLayoutWidget)
+        self.combo_clip_slider.setObjectName(u"combo_clip_slider")
+        self.combo_clip_slider.setMaximum(100)
+        self.combo_clip_slider.setOrientation(Qt.Orientation.Horizontal)
+
+        self.formLayout.setWidget(4, QFormLayout.ItemRole.FieldRole, self.combo_clip_slider)
+
+        self.label_dummy_3 = QLabel(self.formLayoutWidget)
+        self.label_dummy_3.setObjectName(u"label_dummy_3")
+
+        self.formLayout.setWidget(5, QFormLayout.ItemRole.LabelRole, self.label_dummy_3)
+
+        self.combo_semantic_slider = QSlider(self.formLayoutWidget)
+        self.combo_semantic_slider.setObjectName(u"combo_semantic_slider")
+        self.combo_semantic_slider.setMaximum(100)
+        self.combo_semantic_slider.setOrientation(Qt.Orientation.Horizontal)
+
+        self.formLayout.setWidget(5, QFormLayout.ItemRole.FieldRole, self.combo_semantic_slider)
+
+        self.recalc_similarity = QPushButton(self.formLayoutWidget)
+        self.recalc_similarity.setObjectName(u"recalc_similarity")
+
+        self.formLayout.setWidget(7, QFormLayout.ItemRole.SpanningRole, self.recalc_similarity)
+
+        self.label_dummy_4 = QLabel(self.formLayoutWidget)
+        self.label_dummy_4.setObjectName(u"label_dummy_4")
+
+        self.formLayout.setWidget(6, QFormLayout.ItemRole.LabelRole, self.label_dummy_4)
+
         self.combo_dummy_slider = QSlider(self.formLayoutWidget)
         self.combo_dummy_slider.setObjectName(u"combo_dummy_slider")
         self.combo_dummy_slider.setMaximum(100)
         self.combo_dummy_slider.setOrientation(Qt.Orientation.Horizontal)
 
-        self.formLayout.setWidget(3, QFormLayout.ItemRole.FieldRole, self.combo_dummy_slider)
-
-        self.recalc_similarity = QPushButton(self.formLayoutWidget)
-        self.recalc_similarity.setObjectName(u"recalc_similarity")
-
-        self.formLayout.setWidget(4, QFormLayout.ItemRole.SpanningRole, self.recalc_similarity)
+        self.formLayout.setWidget(6, QFormLayout.ItemRole.FieldRole, self.combo_dummy_slider)
 
         self.statistics_tab = QTabWidget(self.box_right_low)
         self.statistics_tab.setObjectName(u"statistics_tab")
-        self.statistics_tab.setGeometry(QRect(10, 150, 451, 181))
+        self.statistics_tab.setGeometry(QRect(10, 200, 451, 131))
         self.artists_stats = QWidget()
         self.artists_stats.setObjectName(u"artists_stats")
         self.verticalLayoutWidget_3 = QWidget(self.artists_stats)
@@ -130,7 +253,7 @@ class Ui_MainWindow(object):
         self.statistics_tab.addTab(self.style_stats, "")
         self.box_recom_img_stats = QGroupBox(self.box_right_low)
         self.box_recom_img_stats.setObjectName(u"box_recom_img_stats")
-        self.box_recom_img_stats.setGeometry(QRect(200, 0, 261, 141))
+        self.box_recom_img_stats.setGeometry(QRect(230, 0, 231, 141))
         self.verticalLayoutWidget_2 = QWidget(self.box_recom_img_stats)
         self.verticalLayoutWidget_2.setObjectName(u"verticalLayoutWidget_2")
         self.verticalLayoutWidget_2.setGeometry(QRect(-1, 9, 261, 131))
@@ -158,7 +281,7 @@ class Ui_MainWindow(object):
         self.box_left_img.setAutoFillBackground(True)
         self.horizontalLayoutWidget = QWidget(self.centralwidget)
         self.horizontalLayoutWidget.setObjectName(u"horizontalLayoutWidget")
-        self.horizontalLayoutWidget.setGeometry(QRect(480, 420, 571, 31))
+        self.horizontalLayoutWidget.setGeometry(QRect(480, 420, 573, 31))
         self.scatterplot_options = QHBoxLayout(self.horizontalLayoutWidget)
         self.scatterplot_options.setObjectName(u"scatterplot_options")
         self.scatterplot_options.setContentsMargins(0, 0, 0, 0)
@@ -299,17 +422,17 @@ class Ui_MainWindow(object):
         self.show_attention.setGeometry(QRect(10, 10, 161, 31))
         self.emotion_opts2 = QGroupBox(self.emotion_tab)
         self.emotion_opts2.setObjectName(u"emotion_opts2")
-        self.emotion_opts2.setGeometry(QRect(10, 70, 501, 61))
+        self.emotion_opts2.setGeometry(QRect(10, 80, 501, 41))
         self.label_7 = QLabel(self.emotion_opts2)
         self.label_7.setObjectName(u"label_7")
-        self.label_7.setGeometry(QRect(10, 20, 111, 31))
+        self.label_7.setGeometry(QRect(30, 10, 111, 31))
         self.label_7.setWordWrap(False)
         self.emotion_opt_cosdist = QRadioButton(self.emotion_opts2)
         self.emotion_opt_cosdist.setObjectName(u"emotion_opt_cosdist")
-        self.emotion_opt_cosdist.setGeometry(QRect(130, 20, 131, 31))
+        self.emotion_opt_cosdist.setGeometry(QRect(150, 10, 131, 31))
         self.emotion_opt_eucdist = QRadioButton(self.emotion_opts2)
         self.emotion_opt_eucdist.setObjectName(u"emotion_opt_eucdist")
-        self.emotion_opt_eucdist.setGeometry(QRect(280, 20, 161, 31))
+        self.emotion_opt_eucdist.setGeometry(QRect(300, 10, 161, 31))
         self.groupBox_2 = QGroupBox(self.emotion_tab)
         self.groupBox_2.setObjectName(u"groupBox_2")
         self.groupBox_2.setGeometry(QRect(10, 150, 501, 71))
@@ -319,12 +442,20 @@ class Ui_MainWindow(object):
         self.emotion_opt_2dsim_3 = QRadioButton(self.groupBox_2)
         self.emotion_opt_2dsim_3.setObjectName(u"emotion_opt_2dsim_3")
         self.emotion_opt_2dsim_3.setGeometry(QRect(240, 30, 200, 31))
+        self.line_5 = QFrame(self.emotion_tab)
+        self.line_5.setObjectName(u"line_5")
+        self.line_5.setGeometry(QRect(10, 60, 501, 20))
+        self.line_5.setFrameShape(QFrame.Shape.HLine)
+        self.line_5.setFrameShadow(QFrame.Shadow.Sunken)
         self.box_metric_tabs.addTab(self.emotion_tab, "")
+        self.semantic_tab = QWidget()
+        self.semantic_tab.setObjectName(u"semantic_tab")
+        self.box_metric_tabs.addTab(self.semantic_tab, "")
         self.clip_tab = QWidget()
         self.clip_tab.setObjectName(u"clip_tab")
         self.verticalLayoutWidget = QWidget(self.clip_tab)
         self.verticalLayoutWidget.setObjectName(u"verticalLayoutWidget")
-        self.verticalLayoutWidget.setGeometry(QRect(10, 100, 501, 141))
+        self.verticalLayoutWidget.setGeometry(QRect(20, 20, 501, 141))
         self.Clip_input_layout = QVBoxLayout(self.verticalLayoutWidget)
         self.Clip_input_layout.setObjectName(u"Clip_input_layout")
         self.Clip_input_layout.setContentsMargins(0, 0, 0, 0)
@@ -344,19 +475,10 @@ class Ui_MainWindow(object):
 
         self.Clip_input_layout.addWidget(self.b_submit)
 
-        self.clip_opts1 = QGroupBox(self.clip_tab)
-        self.clip_opts1.setObjectName(u"clip_opts1")
-        self.clip_opts1.setGeometry(QRect(10, 10, 501, 51))
-        self.clip_op_show_attention = QRadioButton(self.clip_opts1)
-        self.clip_op_show_attention.setObjectName(u"clip_op_show_attention")
-        self.clip_op_show_attention.setGeometry(QRect(20, 13, 131, 31))
         self.box_metric_tabs.addTab(self.clip_tab, "")
         self.dummy_tab = QWidget()
         self.dummy_tab.setObjectName(u"dummy_tab")
         self.box_metric_tabs.addTab(self.dummy_tab, "")
-        self.semantic_tab = QWidget()
-        self.semantic_tab.setObjectName(u"semantic_tab")
-        self.box_metric_tabs.addTab(self.semantic_tab, "")
         self.groupBox = QGroupBox(self.centralwidget)
         self.groupBox.setObjectName(u"groupBox")
         self.groupBox.setGeometry(QRect(1060, 10, 461, 401))
@@ -382,7 +504,7 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
 
         self.statistics_tab.setCurrentIndex(0)
-        self.box_metric_tabs.setCurrentIndex(3)
+        self.box_metric_tabs.setCurrentIndex(4)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
@@ -395,11 +517,22 @@ class Ui_MainWindow(object):
 #endif // QT_CONFIG(tooltip)
         self.b_upload.setText(QCoreApplication.translate("MainWindow", u"Upload Image", None))
         self.l_timeline.setText(QCoreApplication.translate("MainWindow", u"Timeline for above image", None))
+        self.label_5.setText(QCoreApplication.translate("MainWindow", u"nationality", None))
+        self.label_8.setText(QCoreApplication.translate("MainWindow", u"media type", None))
+        self.label_3.setText(QCoreApplication.translate("MainWindow", u"date range", None))
+        self.label_4.setText(QCoreApplication.translate("MainWindow", u"to", None))
+        self.apply_filters.setText(QCoreApplication.translate("MainWindow", u"Apply", None))
+        self.reset_filters.setText(QCoreApplication.translate("MainWindow", u"reset", None))
+        self.label_10.setText(QCoreApplication.translate("MainWindow", u"filtered datset size: ", None))
+        self.filtered_dataset_size.setText(QCoreApplication.translate("MainWindow", u"INT", None))
         self.title.setText(QCoreApplication.translate("MainWindow", u"Metric weights", None))
         self.label_dino.setText(QCoreApplication.translate("MainWindow", u"Dino", None))
         self.label_texture.setText(QCoreApplication.translate("MainWindow", u"Texture", None))
-        self.label_dummy.setText(QCoreApplication.translate("MainWindow", u"Dummy", None))
+        self.label_dummy.setText(QCoreApplication.translate("MainWindow", u"Emotion", None))
+        self.label_dummy_2.setText(QCoreApplication.translate("MainWindow", u"Clip", None))
+        self.label_dummy_3.setText(QCoreApplication.translate("MainWindow", u"Semantic", None))
         self.recalc_similarity.setText(QCoreApplication.translate("MainWindow", u"Recalculate similarity", None))
+        self.label_dummy_4.setText(QCoreApplication.translate("MainWindow", u"Dummy", None))
         self.statistics_tab.setTabText(self.statistics_tab.indexOf(self.artists_stats), QCoreApplication.translate("MainWindow", u"Artisit statistics", None))
         self.statistics_tab.setTabText(self.statistics_tab.indexOf(self.style_stats), QCoreApplication.translate("MainWindow", u"Style statistics", None))
         self.box_recom_img_stats.setTitle(QCoreApplication.translate("MainWindow", u"Similarity aspects stats", None))
@@ -445,14 +578,12 @@ class Ui_MainWindow(object):
         self.emotion_opt_fullsim.setText(QCoreApplication.translate("MainWindow", u"full feature vector similarity", None))
         self.emotion_opt_2dsim_3.setText(QCoreApplication.translate("MainWindow", u"2d reprojection similarity", None))
         self.box_metric_tabs.setTabText(self.box_metric_tabs.indexOf(self.emotion_tab), QCoreApplication.translate("MainWindow", u"Emotion", None))
+        self.box_metric_tabs.setTabText(self.box_metric_tabs.indexOf(self.semantic_tab), QCoreApplication.translate("MainWindow", u"Semantic", None))
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"Describe similarity aspect to a Clip model", None))
         self.tb_clip_input.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Can you give me an image with a similar ...", None))
         self.b_submit.setText(QCoreApplication.translate("MainWindow", u"Submit Similarity Description", None))
-        self.clip_opts1.setTitle("")
-        self.clip_op_show_attention.setText(QCoreApplication.translate("MainWindow", u"show attention", None))
         self.box_metric_tabs.setTabText(self.box_metric_tabs.indexOf(self.clip_tab), QCoreApplication.translate("MainWindow", u"Clip", None))
         self.box_metric_tabs.setTabText(self.box_metric_tabs.indexOf(self.dummy_tab), QCoreApplication.translate("MainWindow", u"Dummy", None))
-        self.box_metric_tabs.setTabText(self.box_metric_tabs.indexOf(self.semantic_tab), QCoreApplication.translate("MainWindow", u"Semantic", None))
         self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"Similar Images", None))
         self.box_right_img.setText("")
         self.n2.setText("")

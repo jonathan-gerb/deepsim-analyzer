@@ -69,6 +69,102 @@
      </property>
      <layout class="QVBoxLayout" name="box_timeline_layout"/>
     </widget>
+    <widget class="QWidget" name="verticalLayoutWidget_6">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>441</width>
+       <height>141</height>
+      </rect>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <item>
+         <widget class="QLabel" name="label_5">
+          <property name="text">
+           <string>nationality</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QComboBox" name="dataset_filtering_nationality_cbox"/>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <item>
+         <widget class="QLabel" name="label_8">
+          <property name="text">
+           <string>media type</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QComboBox" name="dataset_filtering_media_cbox"/>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <item>
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>date range</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="dataset_filtering_from_date"/>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_4">
+          <property name="text">
+           <string>to</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="dataset_filtering_to_date"/>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <widget class="QPushButton" name="apply_filters">
+          <property name="text">
+           <string>Apply</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="reset_filters">
+          <property name="text">
+           <string>reset</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_10">
+          <property name="text">
+           <string>filtered datset size: </string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="filtered_dataset_size">
+          <property name="text">
+           <string>INT</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
    </widget>
    <widget class="QWidget" name="box_right_low" native="true">
     <property name="enabled">
@@ -87,8 +183,8 @@
       <rect>
        <x>10</x>
        <y>0</y>
-       <width>171</width>
-       <height>139</height>
+       <width>201</width>
+       <height>188</height>
       </rect>
      </property>
      <layout class="QFormLayout" name="formLayout">
@@ -142,11 +238,69 @@
       <item row="3" column="0">
        <widget class="QLabel" name="label_dummy">
         <property name="text">
-         <string>Dummy</string>
+         <string>Emotion</string>
         </property>
        </widget>
       </item>
       <item row="3" column="1">
+       <widget class="QSlider" name="combo_emotion_slider">
+        <property name="maximum">
+         <number>100</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="label_dummy_2">
+        <property name="text">
+         <string>Clip</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QSlider" name="combo_clip_slider">
+        <property name="maximum">
+         <number>100</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="label_dummy_3">
+        <property name="text">
+         <string>Semantic</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="QSlider" name="combo_semantic_slider">
+        <property name="maximum">
+         <number>100</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0" colspan="2">
+       <widget class="QPushButton" name="recalc_similarity">
+        <property name="text">
+         <string>Recalculate similarity</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0">
+       <widget class="QLabel" name="label_dummy_4">
+        <property name="text">
+         <string>Dummy</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="1">
        <widget class="QSlider" name="combo_dummy_slider">
         <property name="maximum">
          <number>100</number>
@@ -156,22 +310,15 @@
         </property>
        </widget>
       </item>
-      <item row="4" column="0" colspan="2">
-       <widget class="QPushButton" name="recalc_similarity">
-        <property name="text">
-         <string>Recalculate similarity</string>
-        </property>
-       </widget>
-      </item>
      </layout>
     </widget>
     <widget class="QTabWidget" name="statistics_tab">
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>150</y>
+       <y>200</y>
        <width>451</width>
-       <height>181</height>
+       <height>131</height>
       </rect>
      </property>
      <property name="currentIndex">
@@ -213,9 +360,9 @@
     <widget class="QGroupBox" name="box_recom_img_stats">
      <property name="geometry">
       <rect>
-       <x>200</x>
+       <x>230</x>
        <y>0</y>
-       <width>261</width>
+       <width>231</width>
        <height>141</height>
       </rect>
      </property>
@@ -318,7 +465,7 @@
      <rect>
       <x>480</x>
       <y>420</y>
-      <width>571</width>
+      <width>573</width>
       <height>31</height>
      </rect>
     </property>
@@ -373,7 +520,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>3</number>
+     <number>4</number>
     </property>
     <widget class="QWidget" name="dino_tab">
      <attribute name="title">
@@ -787,9 +934,9 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>70</y>
+        <y>80</y>
         <width>501</width>
-        <height>61</height>
+        <height>41</height>
        </rect>
       </property>
       <property name="title">
@@ -798,8 +945,8 @@
       <widget class="QLabel" name="label_7">
        <property name="geometry">
         <rect>
-         <x>10</x>
-         <y>20</y>
+         <x>30</x>
+         <y>10</y>
          <width>111</width>
          <height>31</height>
         </rect>
@@ -814,8 +961,8 @@
       <widget class="QRadioButton" name="emotion_opt_cosdist">
        <property name="geometry">
         <rect>
-         <x>130</x>
-         <y>20</y>
+         <x>150</x>
+         <y>10</y>
          <width>131</width>
          <height>31</height>
         </rect>
@@ -827,8 +974,8 @@
       <widget class="QRadioButton" name="emotion_opt_eucdist">
        <property name="geometry">
         <rect>
-         <x>280</x>
-         <y>20</y>
+         <x>300</x>
+         <y>10</y>
          <width>161</width>
          <height>31</height>
         </rect>
@@ -877,6 +1024,24 @@
        </property>
       </widget>
      </widget>
+     <widget class="Line" name="line_5">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>60</y>
+        <width>501</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="semantic_tab">
+     <attribute name="title">
+      <string>Semantic</string>
+     </attribute>
     </widget>
     <widget class="QWidget" name="clip_tab">
      <attribute name="title">
@@ -885,8 +1050,8 @@
      <widget class="QWidget" name="verticalLayoutWidget">
       <property name="geometry">
        <rect>
-        <x>10</x>
-        <y>100</y>
+        <x>20</x>
+        <y>20</y>
         <width>501</width>
         <height>141</height>
        </rect>
@@ -918,41 +1083,10 @@
        </item>
       </layout>
      </widget>
-     <widget class="QGroupBox" name="clip_opts1">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>10</y>
-        <width>501</width>
-        <height>51</height>
-       </rect>
-      </property>
-      <property name="title">
-       <string/>
-      </property>
-      <widget class="QRadioButton" name="clip_op_show_attention">
-       <property name="geometry">
-        <rect>
-         <x>20</x>
-         <y>13</y>
-         <width>131</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>show attention</string>
-       </property>
-      </widget>
-     </widget>
     </widget>
     <widget class="QWidget" name="dummy_tab">
      <attribute name="title">
       <string>Dummy</string>
-     </attribute>
-    </widget>
-    <widget class="QWidget" name="semantic_tab">
-     <attribute name="title">
-      <string>Semantic</string>
      </attribute>
     </widget>
    </widget>
