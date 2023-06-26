@@ -225,13 +225,12 @@ class MainWindow(QMainWindow):
         # self.bp = pg.PlotWidget()
         self.bp = BarChart(self)
         # self.bp=RangeSlider(self)
-        # self.get_Selected_stats.connect(self.get_selected_points_stats)
-        self.ui.radioButton.toggled.connect(self.get_selected_points_stats)
-        self.ui.radioButton.toggle()
+        self.get_Selected_stats.connect(self.get_selected_points_stats)
+        self.get_Selected_stats.emit(0) # barplot shows once in beginning because of this
 
         # img_stats_container = self.ui.box_recom_img_stats
         # img_stats_container = self.ui.verticalLayoutWidget_2
-        img_stats_container = self.ui.selection_stats_layout
+        img_stats_container = self.ui.artisits_stats_layout
         img_stats_container.layout().addWidget(self.bp)
 
         # Set the size policy for the bar plot widget
@@ -252,23 +251,7 @@ class MainWindow(QMainWindow):
                 self.data_dict[current_metric_type.lower()]["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame
             )
             self.scatterplot.plot_widget.scene().mousePressEvent=self.on_canvas_click
-            
-            # self.scatterplot.plot_widget.scene().mousePressEvent.connect(lambda event: self.on_scene_mouse_move(event))
-            
-            # self.scatterplot.plot_widget.sigSceneMouseMoved.connect(self.on_scene_mouse_move)
-            # self.scatterplot.plot_widget.sigSceneMouseClicked.connect(lambda event: self.on_canvas_click(event, 0))
-
-            # self.scatterplot.plot_widget.scene().sigMouseMoved.connect(lambda event: self.on_scene_mouse_move(event))
-            # self.scatterplot.plot_widget.scene().sigMouseMoved.connect(lambda event: self.scatterplot.on_scene_mouse_move(event))
-
-            # self.scatterplot.plot_widget.scene().sigMouseClicked.connect(lambda event: self.on_canvas_click(event,0))
-            # self.scatterplot.plot_widget.scene().sigMouseClicked.connect(lambda event: self.on_canvas_click(event))
-            # self.scatterplot.plot_widget.scene().sigMouseClicked.connect(lambda event: self.scatterplot.on_canvas_click(event))
-            # self.scatterplot.plot_widget.scene().sigMouseClicked.connect(lambda event: self.scatterplot.on_canvas_click(event,0))
-            # self.scatterplot.plot_widget.scene().sceneEvent.connect(lambda event: self.on_canvas_click(event))
-
-            # Install event filter on the scene to handle mouse press events
-            # self.scatterplot.plot_widget.scene().installEventFilter(self)
+            # self.scatterplot.plot_widget.scene().sigMouseClicked.connect(self.on_canvas_click)
 
             self.scatterplot.selected_idx.emit(0)
         else:
@@ -278,19 +261,9 @@ class MainWindow(QMainWindow):
             else:
                 self.scatterplot.draw_scatterplot()
             self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
-
-
-
-    # def eventFilter(self, source, event):
-    #     if event.type() == QEvent.GraphicsSceneMousePress:
-    #         if source == self.scatterplot.plot_widget.scene():
-    #             # Handle the mouse press event
-    #             self.on_canvas_click(event)
-    #             return True
-    #     return super().eventFilter(source, event)
-        
-    def on_scene_mouse_move(self, event):
-        print('----mouseMoveEvent2')
+            # werkt niet cause only called one for setup
+        print('here to emit stats')
+        self.get_Selected_stats.emit(0) # doesnt work 
 
     def recalc_similarity(self):
         topk_dict = self.calculate_nearest_neighbours()
@@ -761,28 +734,48 @@ class MainWindow(QMainWindow):
             self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
 
     def on_canvas_click(self, ev):
-        # QGraphicsScene.mousePressEvent(self.plot_widget.scene(), ev)
         # super().mousePressEvent(ev)
 
         self.scatterplot.clear_selection()
         pos = ev.scenePos()
         print("on canvas click:", pos)
         if ev.button() == Qt.MouseButton.LeftButton:
-            # print("self.image_items", self.image_items)
-            for idx, index, item in self.scatterplot.image_items:
-                # print("item.mapFromScene(pos)", item, item.mapFromScene(pos))
-                if item.contains(item.mapFromScene(pos)):
-                    self.scatterplot.selected_point = int(pos.x()), int(pos.y())
-                    self.scatterplot.selected_index = index
-                    self.scatterplot.selected_idx.emit(index)
-                    self.scatterplot.plot_index = idx
-                    # TODO: rmv after all check, partial select ect
-                    print('selected_index==plot_index?',index==idx)
-                    self.clicked_on_point()
-                    break
-            
+            if self.scatterplot.dots_plot:
+                range_radius = 0.1
+                for index, plot_data_item in self.scatterplot.plot_data_items:
+                    item_pos = plot_data_item.mapFromScene(pos)
+                    parent_pos = plot_data_item.mapToParent(item_pos)
+                    x_data, y_data = plot_data_item.getData()
+                    # print('------x_data, y_data = plot_data_item.getData()', x_data, y_data)
+                    # print('pos:', pos, 'item_pos:', item_pos, 'parent_pos:', parent_pos)
+                    # if plot_data_item.contains(item_pos):
+                    for x, y in zip(x_data, y_data):
+                        if abs(x - item_pos.x()) <= range_radius and abs(y - item_pos.y()) <= range_radius:
+                            self.scatterplot.selected_point = item_pos.x(), item_pos.y()
+                            print('self.scatterplot.selected_point',self.scatterplot.selected_point)
+                            self.scatterplot.selected_index = index
+                            self.scatterplot.selected_idx.emit(index)
+                            self.clicked_on_point()
+                            break
+
+            else:
+                # print("self.image_items", self.image_items)
+                for idx, index, item in self.scatterplot.image_items:
+                    # print("item.mapFromScene(pos)", item, item.mapFromScene(pos))
+                    item_pos=item.mapFromScene(pos)
+                    if item.contains(item_pos):
+                        self.scatterplot.selected_point = item_pos.x(), item_pos.y()
+                        self.scatterplot.selected_index = index
+                        self.scatterplot.selected_idx.emit(index)
+                        self.scatterplot.plot_index = idx
+                        # TODO: rmv after all check, partial select ect
+                        print('selected_index==plot_index?',index==idx)
+                        self.clicked_on_point()
+                        break
+                
         QGraphicsScene.mousePressEvent(self.scatterplot.plot_widget.scene(), ev)
-        
+
+
 
     # TODO: maybe change loc of this fn, or split its a little in between scatterplot and main
     def clicked_on_point(self):
@@ -856,7 +849,7 @@ if __name__ == "__main__":
     sys.exit(app.exec())
 
 
-
+# TODO: i will put it in a seperate py file when it's done
 
 from PyQt6.QtCore import QRect
 from PyQt6.QtWidgets import (

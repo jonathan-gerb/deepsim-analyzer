@@ -31,8 +31,8 @@ class TimelineWindow(QWidget):
         view = TimelineView(self.scene)
         # view.setAlignment(Qt.AlignmentFlag.AlignTop)
         view.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        view.setFixedWidth(300)
-        view.setFixedHeight(100)
+        # view.setFixedWidth(300)
+        # view.setFixedHeight(100)
         self.setLayout(QVBoxLayout())
         self.layout().addWidget(view)
 
@@ -45,9 +45,9 @@ class TimelineWindow(QWidget):
         for year in years:
             x_pos = (year-min(years)) * 20
             self.create_timeline_point(str(year), x_pos)
-
+        
         for image_data in images:
-            print(image_data["image_path"])
+            print('image_data["image_path"]', image_data["image_path"])
             item = self.create_timeline_item(images, image_data["image_path"], image_data["year"])
             self.scene.addItem(item)
         
@@ -58,7 +58,7 @@ class TimelineWindow(QWidget):
         data_info_path = basepath.parent.parent.parent.parent / 'data/artistic_visual_storytelling.csv'
         data_info_df = pd.read_csv(data_info_path)
         images_years_before_after = self.get_images_paths_years(data_info_df, 'images/'+main_photo)
-        imgs_filepath = basepath.parent.parent.parent.parent / 'data/raw_immutable/test_images'
+        # imgs_filepath = basepath.parent.parent.parent.parent / 'data/raw_immutable/test_images'
         image_names = images_years_before_after[0]+images_years_before_after[2]
         image_years = images_years_before_after[1]+images_years_before_after[3]
         # imag_name="vincent-van-gogh_still-life-with-a-basket-of-apples-and-two-pumpkins-1885.jpg"
@@ -84,10 +84,10 @@ class TimelineWindow(QWidget):
                             'subsequent_100_inside_style'
                             ]
         
-        print(data['image'])
-        print(most_sim_img)
+        print('data[image]', data['image'])
+        print('most_sim_img', most_sim_img)
         print('len', len(data[data['image']==most_sim_img]==False))
-        print(data[data['image']==most_sim_img][attributes_before])
+        print('after len', data[data['image']==most_sim_img][attributes_before])
         # retrieves ids of images created before and after the input image
         ids_before = data[data['image']==most_sim_img][attributes_before].values[0]
         ids_after = data[data['image']==most_sim_img][attributes_after].values[0]
