@@ -12,6 +12,7 @@ from deepsim_analyzer.ds_dashboard.mainwindow import start_dashboard
 def prepare_dataset(args):
     target_features = args.target_features
     print("preparing dataset!")
+
     if os.path.exists(args.dataset_file):
         print(f"    found dataset file at: {args.dataset_file}")
         if args.refresh:
@@ -33,7 +34,7 @@ def prepare_dataset(args):
             print(f"Calculating features for images")
             # CHANGE THIS HERE TO ADD NEW FEAUTRES TO THE LIST OF FEATURES TO CALCULATE
             calculate_features(
-                args.image_folder, args.dataset_file, target_features=["dino", "semantic", "dummy", "texture","emotion"]
+                args.image_folder, args.dataset_file, target_features=["dino", "semantic", "dummy", "texture","emotion", "clip"]
             )
     else:
         print(f"    creating new dataset from images in {args.image_folder}")
@@ -41,12 +42,12 @@ def prepare_dataset(args):
 
         print(f"Calculating features for images")
         calculate_features(
-            args.image_folder, args.dataset_file, target_features=["dino", "semantic", "dummy", "texture", "emotion"]
+            args.image_folder, args.dataset_file, target_features=["dino", "semantic", "dummy", "texture", "emotion", "clip"]
         )
 
     if args.project:
         print("calculating projection of image features")
-        target_features = ["dino", "semantic", "emotion", "dummy", "texture"]
+        target_features = ["dino", "semantic", "emotion", "dummy", "texture", "clip"]
         for feature_name in target_features:
             calculate_projection(
                 args.dataset_file, feature_name, overwrite=args.refresh

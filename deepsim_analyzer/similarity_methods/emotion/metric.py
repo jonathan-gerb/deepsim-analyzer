@@ -1,4 +1,6 @@
 import numpy as np
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
 import tensorflow as tf
 from tensorflow import keras
 from tqdm import tqdm
@@ -7,7 +9,7 @@ from tqdm import tqdm
 
 import matplotlib.cm as cm
 from deepface import DeepFace
-
+from deepface.basemodels import VGGFace
 
 def get_img_array(img_path, size):
     # `img` is a PIL image of size 299x299
@@ -84,55 +86,31 @@ def save_and_display_gradcam(img_path, heatmap, cam_path='Testdata/', alpha=0.2)
 
     # Display Grad CAM
     # display(Image(cam_path))
+    return superimposed_img
 
 
 
-def calc_and_save_features(images, datafile_path, save_feature_maps=False):
-    from deepsim_analyzer.io import get_image_hash, save_feature
-    # device = (
-    #         torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-    #     )
+def calc_and_save_features(images, datafile_path, save_feature_maps=True):
+    from deepsim_analyzer.io import get_image_hash, load_image, save_feature
+    # force to use cpu as something does not work with gpu
+
     # Make model
-    # model = VGGFace.loadModel()
-
+    model = VGGFace.loadModel()
     for image_path in tqdm(
         images, desc=f"calculating emotion features", total=len(images)
     ):
         image_path = str(image_path)  # in case image_path is a pathlib path
-
-
-        hash = get_image_hash(image_path)
-        # img = load_image(image_path, return_np=False)
-        # preprocess_input = keras.applications.xception.preprocess_input
-        # decode_predictions = keras.applications.xception.decode_predictions
-
-        # target_size = (224, 224)
-        # img1 = cv2.resize(img1, target_size)
-
-        # Prepare image
-        # img_array = preprocess_input(get_img_array(img, size=target_size))
-
-        # Remove last layer's softmax
-        # model.layers[-1].activation = None
-
-        # Print what the top predicted class is
-        # preds = DeepFace.analyze(img_path = image_path, enforce_detection=False)
-        
+        img_hash = get_image_hash(image_path)
         feature_vector = np.array(DeepFace.represent(img_path = image_path, enforce_detection=False)[0]['embedding'])
-        print(feature_vector.shape)
-
-        save_feature(datafile_path, hash, feature_vector, 'emotion')
-
-        # preds = np.array(list(preds[0].values()))
-        # print( preds)
-        # print("Predicted:", decode_predictions(preds, top=1)[0])
+        save_feature(datafile_path, img_hash, feature_vector, 'emotion')
 
         # Generate class activation heatmap
-        # heatmap = make_gradcam_heatmap(img_array, model, 'conv2d_12')
+        if save_feature_maps:
+            target_size = (224, 224)
+            img_array = get_img_array(image_path, target_size)
+            heatmap = make_gradcam_heatmap(img_array, model, model.layers[-8].name)
+            save_feature(datafile_path, img_hash, heatmap, "emotion_fm")
 
-        # Display heatmap
-        # plt.matshow(heatmap)
-        # plt.show()
 
-        # save_and_display_gradcam(image_path, heatmap)
     del DeepFace.model_obj
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"

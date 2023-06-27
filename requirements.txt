@@ -8,3 +8,4 @@ scikit-image==0.21.0
 matplotlib==3.7.1
 transformers==4.29.2 
 umap-learn==0.5.3 
+git+https://github.com/openai/CLIP.git

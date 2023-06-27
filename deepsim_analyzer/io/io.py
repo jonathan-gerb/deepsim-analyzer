@@ -10,7 +10,7 @@ from PIL import Image
 from tqdm import tqdm
 from random import shuffle
 
-from ..similarity_methods import dino, dummy, texture, emotion, semantic
+from ..similarity_methods import dino, dummy, texture, emotion, semantic, clip
 
 
 def save_feature(dataset_filepath, img_hash, img_feature, feature_name, is_projection=False, overwrite=False):
@@ -131,6 +131,8 @@ def calculate_features(image_folder, dataset_filepath, target_features=["dummy"]
             emotion.calc_and_save_features(image_paths, dataset_filepath)
         if feature == "semantic":
             semantic.calc_and_save_features(image_paths, dataset_filepath)
+        if feature == "clip":
+            clip.calc_and_save_features(image_paths, dataset_filepath)
 
 
 def create_dataset(image_folder, dataset_filepath="dataset.h5"):
@@ -193,5 +195,14 @@ def load_image(image_path, return_np=True):
         return np.array(img)
 
 def get_image_hash(filename):
+    h  = hashlib.md5()
+    b  = bytearray(128*1024)
+    mv = memoryview(b)
     with open(filename, 'rb', buffering=0) as f:
-        return hashlib.file_digest(f, 'md5').hexdigest()
+        while n := f.readinto(mv):
+            h.update(mv[:n])
+    return h.hexdigest()
+
+# def get_image_hash(filename):
+#     with open(filename, 'rb', buffering=0) as f:
+#         return hashlib.file_digest(f, 'md5').hexdigest()

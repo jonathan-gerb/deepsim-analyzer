@@ -141,7 +141,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="reset_filters">
+         <widget class="QPushButton" name="reset_dataset_filters">
           <property name="text">
            <string>reset</string>
           </property>
@@ -561,7 +561,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>4</number>
+     <number>2</number>
     </property>
     <widget class="QWidget" name="dino_tab">
      <attribute name="title">
@@ -940,6 +940,45 @@
        <enum>Qt::Horizontal</enum>
       </property>
      </widget>
+     <widget class="QGroupBox" name="groupBox_5">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>150</y>
+        <width>501</width>
+        <height>71</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string/>
+      </property>
+      <widget class="QRadioButton" name="texture_opt_fullsim">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>30</y>
+         <width>251</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>full feature vector similarity</string>
+       </property>
+      </widget>
+      <widget class="QRadioButton" name="texture_opt_2dsim">
+       <property name="geometry">
+        <rect>
+         <x>240</x>
+         <y>30</y>
+         <width>200</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>2d reprojection similarity</string>
+       </property>
+      </widget>
+     </widget>
     </widget>
     <widget class="QWidget" name="emotion_tab">
      <attribute name="title">
@@ -957,7 +996,7 @@
       <property name="title">
        <string/>
       </property>
-      <widget class="QRadioButton" name="show_attention">
+      <widget class="QRadioButton" name="emotion_opts_showfm">
        <property name="geometry">
         <rect>
          <x>10</x>
@@ -967,7 +1006,7 @@
         </rect>
        </property>
        <property name="text">
-        <string>show attention</string>
+        <string>show feature map</string>
        </property>
       </widget>
      </widget>
@@ -1051,7 +1090,7 @@
         <string>full feature vector similarity</string>
        </property>
       </widget>
-      <widget class="QRadioButton" name="emotion_opt_2dsim_3">
+      <widget class="QRadioButton" name="emotion_opt_2dsim">
        <property name="geometry">
         <rect>
          <x>240</x>
@@ -1083,6 +1122,113 @@
      <attribute name="title">
       <string>Semantic</string>
      </attribute>
+     <widget class="QGroupBox" name="emotion_opts2_2">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>80</y>
+        <width>501</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string/>
+      </property>
+      <widget class="QLabel" name="label_9">
+       <property name="geometry">
+        <rect>
+         <x>30</x>
+         <y>10</y>
+         <width>111</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>distance metric:</string>
+       </property>
+       <property name="wordWrap">
+        <bool>false</bool>
+       </property>
+      </widget>
+      <widget class="QRadioButton" name="semantic_opt_cosdist">
+       <property name="geometry">
+        <rect>
+         <x>150</x>
+         <y>10</y>
+         <width>131</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>cosine distance</string>
+       </property>
+      </widget>
+      <widget class="QRadioButton" name="semantic_opt_eucdist">
+       <property name="geometry">
+        <rect>
+         <x>300</x>
+         <y>10</y>
+         <width>161</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>euclidian distance</string>
+       </property>
+      </widget>
+     </widget>
+     <widget class="Line" name="line_6">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>60</y>
+        <width>501</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+     <widget class="QGroupBox" name="groupBox_3">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>150</y>
+        <width>501</width>
+        <height>71</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string/>
+      </property>
+      <widget class="QRadioButton" name="semantic_opt_fullsim">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>30</y>
+         <width>251</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>full feature vector similarity</string>
+       </property>
+      </widget>
+      <widget class="QRadioButton" name="semantic_opt_2dsim">
+       <property name="geometry">
+        <rect>
+         <x>240</x>
+         <y>30</y>
+         <width>200</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>2d reprojection similarity</string>
+       </property>
+      </widget>
+     </widget>
     </widget>
     <widget class="QWidget" name="clip_tab">
      <attribute name="title">
@@ -1092,9 +1238,9 @@
       <property name="geometry">
        <rect>
         <x>20</x>
-        <y>20</y>
+        <y>80</y>
         <width>501</width>
-        <height>141</height>
+        <height>111</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="Clip_input_layout">
@@ -1111,18 +1257,83 @@
           <number>1</number>
          </property>
          <property name="placeholderText">
-          <string>Can you give me an image with a similar ...</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="b_submit">
-         <property name="text">
-          <string>Submit Similarity Description</string>
+          <string>image attribute to compare with.</string>
          </property>
         </widget>
        </item>
       </layout>
+     </widget>
+     <widget class="QWidget" name="horizontalLayoutWidget_2">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>20</y>
+        <width>501</width>
+        <height>51</height>
+       </rect>
+      </property>
+      <layout class="QHBoxLayout" name="horizontalLayout_5">
+       <item>
+        <widget class="QRadioButton" name="clip_radio_combsim">
+         <property name="text">
+          <string>combined sim</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="clip_radio_imgsim">
+         <property name="text">
+          <string>image embedding sim</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="clip_radio_textsim">
+         <property name="text">
+          <string>text sim</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QGroupBox" name="groupBox_4">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>200</y>
+        <width>501</width>
+        <height>51</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string/>
+      </property>
+      <widget class="QRadioButton" name="clip_opt_fullsim">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>10</y>
+         <width>251</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>full feature vector similarity</string>
+       </property>
+      </widget>
+      <widget class="QRadioButton" name="clip_opt_2dsim">
+       <property name="geometry">
+        <rect>
+         <x>240</x>
+         <y>10</y>
+         <width>200</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>2d reprojection similarity</string>
+       </property>
+      </widget>
      </widget>
     </widget>
     <widget class="QWidget" name="dummy_tab">

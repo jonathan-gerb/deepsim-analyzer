@@ -32,13 +32,13 @@ class ScatterplotWidget(QWidget):
 
     get_Selected_stats =pyqtSignal(int)
 
-    def __init__(self, points, indices, img_paths, config, plot_widget):
+    def __init__(self, points, indices, img_paths, config, plot_widget, indices_to_keep):
         super().__init__()
 
         self.plot_widget = plot_widget
         self.setMouseTracking(True)
-        self.initialize(points, indices,img_paths, config)
-        
+        self.initialize(points, indices, img_paths, config, indices_to_keep)
+
         self.points_size = float(config['scatterplot']['point_size'])
         self.points_color = config['scatterplot']['points_color']
         self.selection_color = config['scatterplot']['selection_color']
@@ -64,9 +64,10 @@ class ScatterplotWidget(QWidget):
 
         self.draw_scatterplot()
 
-    def initialize(self, points, indices,img_paths, config):
+    def initialize(self, points, indices, img_paths, config, indices_to_keep):
         self.points = points
         self.indices=indices
+        self.indices_to_keep = indices_to_keep
         self.config=config
         self.img_paths=img_paths
         self.mean_x = np.mean(self.points[:,0])
@@ -96,7 +97,7 @@ class ScatterplotWidget(QWidget):
 
 
     def reset_scatterplot(self, pos):
-        print('reset_scatterplot') #, pos)
+        # print('reset_scatterplot', pos)
         # Get the range of x and y values in the scatterplot
         x_min = np.min(pos[:, 0])
         x_max = np.max(pos[:, 0])
@@ -390,6 +391,9 @@ class ScatterplotWidget(QWidget):
             x,y = point
             # Read in image
             ith_idx= indices[i]
+            if ith_idx not in self.indices_to_keep:
+                continue
+            
             image_path = self.img_paths[ith_idx]
             image = plt.imread(image_path)
             # TODO: change resolution
@@ -433,7 +437,11 @@ class ScatterplotWidget(QWidget):
             self.plot_data_items = []
             self.plot_data_items_not_selected = []
             for i, point in self.points:
-                ith_idx= self.indices[i]
+                ith_idx = self.indices[i]
+                # datset filter
+                if ith_idx not in self.indices_to_keep:
+                    continue
+
                 if point in self.selected_points:
                     # ith_idx= self.selected_indices[i]
                     print('point in selection', point)
