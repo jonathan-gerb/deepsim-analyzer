@@ -95,10 +95,11 @@ def save_and_display_gradcam(img_path, heatmap, cam_path='Testdata/', alpha=0.2)
 
     # Display Grad CAM
     # display(Image(cam_path))
+    return superimposed_img
 
 
 
-def calc_and_save_features(images, datafile_path, save_feature_maps=False):
+def calc_and_save_features(images, datafile_path, save_feature_maps=True):
     from deepsim_analyzer.io import get_image_hash, load_image, save_feature
     device = (
             torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -134,7 +135,10 @@ def calc_and_save_features(images, datafile_path, save_feature_maps=False):
         # print("Predicted:", decode_predictions(preds, top=1)[0])
 
         # Generate class activation heatmap
-        heatmap = make_gradcam_heatmap(img_array, model, 'conv2d_12')
+        heatmap = make_gradcam_heatmap(img_array, model, model.layers[-8].name)
+
+        if save_feature_maps:
+            save_feature(datafile_path, hash, heatmap, "emotion_fm")
 
         # Display heatmap
         # plt.matshow(heatmap)

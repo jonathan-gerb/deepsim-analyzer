@@ -12,6 +12,9 @@ from sklearn.metrics.pairwise import cosine_distances
 import os
 from tqdm import tqdm
 import cv2
+import tensorflow as tf
+from tensorflow import keras
+import matplotlib.cm as cm
 
 # qt imports
 from PyQt6 import QtWidgets
@@ -314,6 +317,74 @@ class MainWindow(QMainWindow):
 
         else:
             raise ValueError("something is wrong with the dino similarity options.")
+        
+    
+        
+
+    def emotion_show_fm(self):
+        print('emotion_show_fm')
+        if not self.ui.emotion_show_fm.isChecked():
+            self.display_photo_left(self.left_img_filename)
+            self.display_photo_right(self.right_img_filename)
+            print("not checked", self.ui.emotion_show_fm)
+        else:
+            original_img_left = da.io.load_image(self.left_img_filename)
+            original_img_right = da.io.load_image(self.right_img_filename)
+
+            layer_key = 'emotion_fm'
+
+            feature_maps_left = da.io.read_feature(
+                    self.datafile_path, self.left_img_key, layer_key, read_projection=False
+                ).squeeze()
+            feature_maps_right = da.io.read_feature(
+                    self.datafile_path, self.right_img_key, layer_key, read_projection=False
+                ).squeeze()
+            
+            # Rescale heatmap to a range 0-255
+            heatmap_left = np.uint8(255 * feature_maps_left)
+            heatmap_right = np.uint8(255 * feature_maps_right)
+            # Use jet colormap to colorize heatmap
+            jet = cm.get_cmap("jet")
+
+            # Use RGB values of the colormap
+            jet_colors = jet(np.arange(256))[:, :3]
+            jet_heatmap_left = jet_colors[heatmap_left]
+            jet_heatmap_right = jet_colors[heatmap_right]
+
+            # Create an image with RGB colorized heatmap
+            jet_heatmap_left = keras.utils.array_to_img(jet_heatmap_left)
+            jet_heatmap_left = jet_heatmap_left.resize((original_img_left.shape[1], original_img_left.shape[0]))
+            jet_heatmap_left = keras.utils.img_to_array(jet_heatmap_left)
+
+            jet_heatmap_right = keras.utils.array_to_img(jet_heatmap_right)
+            jet_heatmap_right = jet_heatmap_right.resize((original_img_right.shape[1], original_img_right.shape[0]))
+            jet_heatmap_right = keras.utils.img_to_array(jet_heatmap_right)
+
+            # Superimpose the heatmap on original image
+            alpha = 0.2
+            superimposed_img_left = jet_heatmap_left * alpha + original_img_left
+            superimposed_img_left = keras.utils.array_to_img(superimposed_img_left)
+
+            superimposed_img_right = jet_heatmap_right * alpha + original_img_right
+            superimposed_img_right = keras.utils.array_to_img(superimposed_img_right)
+
+            # Save the superimposed image
+            # cam_path += name + '.jpg'
+            # superimposed_img.save(cam_path)
+
+            # Display Grad CAM
+            # display(Image(cam_path))
+            leftname = "_tmp_overlay_left.png"
+            rightname = "_tmp_overlay_right.png"
+            left = Image.fromarray(superimposed_img_left)
+            left.save(leftname)
+
+            right = Image.fromarray(superimposed_img_right)
+            right.save(rightname)
+
+            self.display_photo_left(leftname)
+            self.display_photo_right(rightname)
+
     
     def texture_show_fm(self):
         print('texture_show_fm')
