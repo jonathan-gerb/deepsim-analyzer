@@ -83,9 +83,17 @@ class BarChart(QWidget):
         self.chartView.setRenderHint(QPainter.RenderHint.Antialiasing)
 
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0) 
         layout.addWidget(self.chartView)
 
         # self.setMinimumSize(200, 200)
+        # Enable animations for the chart
+        # self.chart.setAnimationOptions(QtCharts.QChart.SeriesAnimations)
+        self.chart.setAnimationOptions(QtCharts.QChart.AnimationOption.AllAnimations)
+        self.chart.setTheme(QtCharts.QChart.ChartTheme.ChartThemeDark)
+
+
+
 
     def setColor(self, color):
         # Set color for the bar chart

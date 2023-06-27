@@ -184,7 +184,7 @@
        <x>10</x>
        <y>0</y>
        <width>201</width>
-       <height>201</height>
+       <height>229</height>
       </rect>
      </property>
      <layout class="QFormLayout" name="formLayout">
@@ -286,13 +286,6 @@
         </property>
        </widget>
       </item>
-      <item row="7" column="0" colspan="2">
-       <widget class="QPushButton" name="recalc_similarity">
-        <property name="text">
-         <string>Recalculate similarity</string>
-        </property>
-       </widget>
-      </item>
       <item row="6" column="0">
        <widget class="QLabel" name="label_dummy_4">
         <property name="text">
@@ -310,6 +303,13 @@
         </property>
        </widget>
       </item>
+      <item row="7" column="0" colspan="2">
+       <widget class="QPushButton" name="recalc_similarity">
+        <property name="text">
+         <string>Recalculate similarity</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
     <widget class="QTabWidget" name="statistics_tab">
@@ -318,7 +318,7 @@
        <x>10</x>
        <y>200</y>
        <width>451</width>
-       <height>131</height>
+       <height>141</height>
       </rect>
      </property>
      <property name="currentIndex">
@@ -331,10 +331,10 @@
       <widget class="QWidget" name="verticalLayoutWidget_3">
        <property name="geometry">
         <rect>
-         <x>-1</x>
-         <y>9</y>
+         <x>0</x>
+         <y>0</y>
          <width>451</width>
-         <height>141</height>
+         <height>111</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="artisits_stats_layout"/>

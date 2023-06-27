@@ -142,7 +142,7 @@ class Ui_MainWindow(object):
         self.box_right_low.setGeometry(QRect(1060, 420, 471, 341))
         self.formLayoutWidget = QWidget(self.box_right_low)
         self.formLayoutWidget.setObjectName(u"formLayoutWidget")
-        self.formLayoutWidget.setGeometry(QRect(10, 0, 201, 201))
+        self.formLayoutWidget.setGeometry(QRect(10, 0, 201, 229))
         self.formLayout = QFormLayout(self.formLayoutWidget)
         self.formLayout.setObjectName(u"formLayout")
         self.formLayout.setContentsMargins(0, 0, 0, 0)
@@ -213,11 +213,6 @@ class Ui_MainWindow(object):
 
         self.formLayout.setWidget(5, QFormLayout.ItemRole.FieldRole, self.combo_semantic_slider)
 
-        self.recalc_similarity = QPushButton(self.formLayoutWidget)
-        self.recalc_similarity.setObjectName(u"recalc_similarity")
-
-        self.formLayout.setWidget(7, QFormLayout.ItemRole.SpanningRole, self.recalc_similarity)
-
         self.label_dummy_4 = QLabel(self.formLayoutWidget)
         self.label_dummy_4.setObjectName(u"label_dummy_4")
 
@@ -230,14 +225,19 @@ class Ui_MainWindow(object):
 
         self.formLayout.setWidget(6, QFormLayout.ItemRole.FieldRole, self.combo_dummy_slider)
 
+        self.recalc_similarity = QPushButton(self.formLayoutWidget)
+        self.recalc_similarity.setObjectName(u"recalc_similarity")
+
+        self.formLayout.setWidget(7, QFormLayout.ItemRole.SpanningRole, self.recalc_similarity)
+
         self.statistics_tab = QTabWidget(self.box_right_low)
         self.statistics_tab.setObjectName(u"statistics_tab")
-        self.statistics_tab.setGeometry(QRect(10, 200, 451, 131))
+        self.statistics_tab.setGeometry(QRect(10, 200, 451, 141))
         self.artists_stats = QWidget()
         self.artists_stats.setObjectName(u"artists_stats")
         self.verticalLayoutWidget_3 = QWidget(self.artists_stats)
         self.verticalLayoutWidget_3.setObjectName(u"verticalLayoutWidget_3")
-        self.verticalLayoutWidget_3.setGeometry(QRect(-1, 9, 451, 141))
+        self.verticalLayoutWidget_3.setGeometry(QRect(0, 0, 451, 111))
         self.artisits_stats_layout = QVBoxLayout(self.verticalLayoutWidget_3)
         self.artisits_stats_layout.setObjectName(u"artisits_stats_layout")
         self.artisits_stats_layout.setContentsMargins(0, 0, 0, 0)
@@ -531,8 +531,8 @@ class Ui_MainWindow(object):
         self.label_dummy.setText(QCoreApplication.translate("MainWindow", u"Emotion", None))
         self.label_dummy_2.setText(QCoreApplication.translate("MainWindow", u"Clip", None))
         self.label_dummy_3.setText(QCoreApplication.translate("MainWindow", u"Semantic", None))
-        self.recalc_similarity.setText(QCoreApplication.translate("MainWindow", u"Recalculate similarity", None))
         self.label_dummy_4.setText(QCoreApplication.translate("MainWindow", u"Dummy", None))
+        self.recalc_similarity.setText(QCoreApplication.translate("MainWindow", u"Recalculate similarity", None))
         self.statistics_tab.setTabText(self.statistics_tab.indexOf(self.artists_stats), QCoreApplication.translate("MainWindow", u"Artisit statistics", None))
         self.statistics_tab.setTabText(self.statistics_tab.indexOf(self.style_stats), QCoreApplication.translate("MainWindow", u"Style statistics", None))
         self.box_recom_img_stats.setTitle(QCoreApplication.translate("MainWindow", u"Similarity aspects stats", None))

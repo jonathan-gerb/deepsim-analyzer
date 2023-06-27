@@ -66,8 +66,8 @@ class MainWindow(QMainWindow):
 
         # in time we have to get all features for all the data, we will start with
         # just the dummy feature
-        self.available_features = ["dino", "semantic", "dummy", "texture", "emotion"]
-        # self.available_features = ["dino", "dummy", "texture"]
+        # self.available_features = ["dino", "semantic", "dummy", "texture", "emotion"]
+        self.available_features = ["dino", "dummy", "texture"]
 
         # metric option defaults
         self.dino_distance_measure = "euclidian"
@@ -1015,6 +1015,7 @@ class MainWindow(QMainWindow):
         style_count_selection = [sel_style_counts[np.where(sel_unique_styles == style)[0].tolist()[0]] if np.isin(style, sel_unique_styles) else 0 for style in unique_styles]
        
         self.bp.fill_in_barplot(unique_styles,style_counts,style_count_selection)
+        self.bp.show()
         
 
 def start_dashboard(key_dict, dataset_filepath, images_filepath):

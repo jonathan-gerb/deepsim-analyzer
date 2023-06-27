@@ -61,9 +61,7 @@ class ScatterplotWidget(QWidget):
         
         self.plot_widget.setAcceptHoverEvents(True)
         self.hover_img=pg.ImageItem()
-        self.plot_widget.addItem(self.hover_img)
-        self.hover_img.setZValue(50)
-        self.hover_img.setVisible(False)
+        # self.plot_widget.addItem(self.hover_img)
 
         self.draw_scatterplot()
 
@@ -180,26 +178,23 @@ class ScatterplotWidget(QWidget):
                 # Handle the found points
                 point = points[0]  # Assuming you want to handle the first point
                 x, y = point
-                
+
                 # print(self.points[:5], point)
                 i =np.where((self.points[:, 0] == x) & (self.points[:, 1] == y))[0][0]
-                print('getting image')
                 image_path = self.img_paths[i]
                 image = plt.imread(image_path)
                 w, h, _ = image.shape
                 self.hover_img.setImage(image)
                 # Adjust image
-                # scale = 0.3
-                scale = 1
+                scale = 1.5
                 rotation = -90
                 self.hover_img.setScale(scale / np.sqrt(w**2 + h**2))
                 self.hover_img.setPos(x, y)
                 self.hover_img.setRotation(rotation)
-                print('almost done to show img')
-                # self.hover_img.show()
-                self.hover_img.setVisible(False)
+                
+                self.hover_img.setVisible(True)
+                self.plot_widget.addItem(self.hover_img)
             else:
-                # self.hover_img.hide()
                 self.hover_img.setVisible(False)
 
         # def on_scene_mouse_move_with_QPointF(self, event):
@@ -401,6 +396,9 @@ class ScatterplotWidget(QWidget):
         self.plot_widget.update()
 
     def draw_scatterplot_dots(self,reset=True):
+        # for item in self.plot_widget.scene().items():
+        #     print('zValue', item.zValue(), item)
+
         print('draw_scatterplot_dots')
         self.plot_widget.clear()
         # self.plot_widget.scene().clear()
@@ -418,11 +416,11 @@ class ScatterplotWidget(QWidget):
                 if point in self.selected_points:
                     # ith_idx= self.selected_indices[i]
                     print('point in selection', point)
-                    plot_data_item= self.plot_widget.plot([point[0]], [point[1]], pen=None, symbolBrush=self.selection_color, symbolSize=self.selection_points_size)
+                    plot_data_item= self.plot_widget.plot([point[0]], [point[1]], pen=None, symbolBrush=self.selection_color, symbolSize=self.selection_points_size, hover=True)
                     # plot_data_item.setPos(point[0], point[1])
                     self.plot_data_items.append((i,ith_idx,plot_data_item))
                 else:
-                    plot_data_item= self.plot_widget.plot([point[0]], [point[1]], pen=None, symbolBrush=self.points_color, symbolSize=self.points_size)
+                    plot_data_item= self.plot_widget.plot([point[0]], [point[1]], pen=None, symbolBrush=self.points_color, symbolSize=self.points_size, hover=True)
                     # plot_data_item.setPos(point[0], point[1])
                     self.plot_data_items_not_selected.append((i,ith_idx,plot_data_item))
         else:
@@ -438,8 +436,9 @@ class ScatterplotWidget(QWidget):
             self.plot_data_items = []
             for i, point in enumerate(points):
                 ith_idx= indices[i]
-                plot_data_item= self.plot_widget.plot([point[0]], [point[1]], pen=None, symbolBrush=self.selection_color, symbolSize=self.selection_points_size)
+                plot_data_item= self.plot_widget.plot([point[0]], [point[1]], pen=None, symbolBrush=self.selection_color, symbolSize=self.selection_points_size, hover=True)
                 # plot_data_item.setPos(point[0], point[1])
+                plot_data_item.setToolTip("This is a tip")
                 self.plot_data_items.append((i, ith_idx, plot_data_item))
 
         if reset:
