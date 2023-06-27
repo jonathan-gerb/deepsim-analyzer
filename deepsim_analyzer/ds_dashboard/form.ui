@@ -321,8 +321,17 @@
        <height>141</height>
       </rect>
      </property>
+     <property name="autoFillBackground">
+      <bool>true</bool>
+     </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
+     </property>
+     <property name="tabsClosable">
+      <bool>false</bool>
+     </property>
+     <property name="tabBarAutoHide">
+      <bool>false</bool>
      </property>
      <widget class="QWidget" name="artists_stats">
       <attribute name="title">
@@ -340,6 +349,22 @@
        <layout class="QVBoxLayout" name="artisits_stats_layout"/>
       </widget>
      </widget>
+     <widget class="QWidget" name="nationality_stats">
+      <attribute name="title">
+       <string>Nationality statistics</string>
+      </attribute>
+      <widget class="QWidget" name="verticalLayoutWidget_7">
+       <property name="geometry">
+        <rect>
+         <x>-1</x>
+         <y>0</y>
+         <width>451</width>
+         <height>111</height>
+        </rect>
+       </property>
+       <layout class="QVBoxLayout" name="nationality_stats_layout"/>
+      </widget>
+     </widget>
      <widget class="QWidget" name="style_stats">
       <attribute name="title">
        <string>Style statistics</string>
@@ -347,13 +372,29 @@
       <widget class="QWidget" name="verticalLayoutWidget_4">
        <property name="geometry">
         <rect>
-         <x>-1</x>
-         <y>9</y>
+         <x>0</x>
+         <y>0</y>
          <width>451</width>
-         <height>141</height>
+         <height>111</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="style_stats_layout"/>
+      </widget>
+     </widget>
+     <widget class="QWidget" name="date_stats">
+      <attribute name="title">
+       <string>date_statistics</string>
+      </attribute>
+      <widget class="QWidget" name="verticalLayoutWidget_8">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>451</width>
+         <height>111</height>
+        </rect>
+       </property>
+       <layout class="QVBoxLayout" name="date_stats_layout"/>
       </widget>
      </widget>
     </widget>

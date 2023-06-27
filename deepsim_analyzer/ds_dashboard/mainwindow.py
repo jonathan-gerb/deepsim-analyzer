@@ -122,9 +122,6 @@ class MainWindow(QMainWindow):
         self.original_data_dict = deepcopy(self.data_dict)
 
 
-
-
-
         # ================ SETUP LEFT COLUMN ================
         print("-------setting up left column of dashboard")
         # ---------------- STARTING IMG ----------------
@@ -232,21 +229,34 @@ class MainWindow(QMainWindow):
         print("dashboard setup complete!")
 
 
-        print('--------setting up barplot')
-        # self.bp = pg.PlotWidget()
+        print('--------setting up barplots')
         self.bp = BarChart(self)
-        # self.bp=RangeSlider(self)
+        self.bp1 = BarChart(self)
+        self.bp2 = BarChart(self)
+        self.bp3 = BarChart(self)
+        self.bp4 = BarChart(self)
         self.scatterplot.get_Selected_stats.connect(self.get_selected_points_stats)
         self.scatterplot.get_Selected_stats.emit(0) # once for initialization, after in scatterplot.get_selection
 
-        # img_stats_container = self.ui.box_recom_img_stats
-        # img_stats_container = self.ui.verticalLayoutWidget_2
         img_stats_container = self.ui.artisits_stats_layout
         img_stats_container.layout().addWidget(self.bp)
+
+        img_stats_container2 = self.ui.nationality_stats_layout
+        img_stats_container2.layout().addWidget(self.bp2)
+
+        img_stats_container3 = self.ui.style_stats_layout
+        img_stats_container3.layout().addWidget(self.bp3)
+
+        img_stats_container4 = self.ui.date_stats_layout
+        img_stats_container4.layout().addWidget(self.bp4)
 
         # Set the size policy for the bar plot widget
         size_policy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.bp.setSizePolicy(size_policy)
+        self.bp1.setSizePolicy(size_policy)
+        self.bp2.setSizePolicy(size_policy)
+        self.bp3.setSizePolicy(size_policy)
+        self.bp4.setSizePolicy(size_policy)
       
       # ========================
 
@@ -360,8 +370,6 @@ class MainWindow(QMainWindow):
             # self.scatterplot.plot_widget.scene().sigMousePressEvent.connect(lambda event: self.on_canvas_click(event))
             # self.scatterplot.plot_widget.scene().sigMousePressEvent.emit(0)
             # self.scatterplot.plot_widget.scene().mousePressEvent=self.scatterplot.mousePressEvent
-
-            # self.scatterplot.highlight_selected_point(0)
         else:
             print('only redraw scatterplot')
             self.scatterplot.points = self.data_dict[current_metric_type.lower()]["projection"]
@@ -369,8 +377,6 @@ class MainWindow(QMainWindow):
                 self.scatterplot.draw_scatterplot_dots()
             else:
                 self.scatterplot.draw_scatterplot()
-            # self.scatterplot.remove_highlight_selected_point(self.scatterplot.selected_index)
-            # self.scatterplot.highlight_selected_point(self.scatterplot.selected_index)
 
 
     def recalc_similarity(self):
@@ -712,7 +718,6 @@ class MainWindow(QMainWindow):
 
         return topk_results
 
-
     def upload_image_left(self):
         file_dialog = QFileDialog()
         file_dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
@@ -721,19 +726,37 @@ class MainWindow(QMainWindow):
         if file_dialog.exec() == QFileDialog.DialogCode.Accepted:
             filenames = file_dialog.selectedFiles()
             if len(filenames) > 0:
-                current_filepath = self.image_paths[self.key_to_idx[img_hash]]
+                # current_filepath = self.image_paths[self.key_to_idx[img_hash]]
+                # we take only one file/ first file
+                current_filepath=filenames[0]
+                print('current_filepath', current_filepath)
                 
-                img_hash = da.get_image_hash(current_filepath)
-                print(f"hash: {img_hash}")
-                self.left_img_key = img_hash
-                self.left_img_filename = current_filepath
+                # img_hash = da.get_image_hash(current_filepath)
+                # print(f"hash: {img_hash}")
+                # print('does this hash already exist?', img_hash in self.image_keys)
+                # self.left_img_key = img_hash
+                # self.left_img_filename = current_filepath
 
-                self.update_leftimg_data(self.left_img_key)
+                dataset_filepath = str( Path(f"{__file__}").parents[1] / "data" / "processed" / "dataset.h5")
+                for feature in self.available_features:
+                    if feature == "dummy":
+                        da.dummy.calc_and_save_features(current_filepath, dataset_filepath)
+                    elif feature == "dino":
+                        da.dino.calc_and_save_features(current_filepath, dataset_filepath)
+                    elif feature == "texture":
+                        da.texture.calc_and_save_features(current_filepath, dataset_filepath)
+                    elif feature == "emotion":
+                        da.emotion.calc_and_save_features(current_filepath, dataset_filepath)
+                    elif feature == "semantic":
+                        da.semantic.calc_and_save_features(current_filepath, dataset_filepath)
+
                 # display the photo on the left
                 self.display_photo_left(current_filepath)
+                self.update_leftimg_data(self.left_img_key)
 
                 topk_dict = self.calculate_nearest_neighbours()
                 self.display_nearest_neighbours(topk_dict)
+
 
     def update_leftimg_data(self, img_hash):
         # update image metdata if available
@@ -750,17 +773,18 @@ class MainWindow(QMainWindow):
 
             # load in timeline
             base_filename = os.path.basename(filepath)
-            self.timeline.draw_timeline(base_filename)
-            self.no_timeline_label.hide()
-            self.timeline.show()
+            # self.timeline.draw_timeline(base_filename)
+            # self.no_timeline_label.hide()
+            # self.timeline.show()
         else:
+            filepath = self.image_paths[self.key_to_idx[img_hash]]
             # get feature_vectors for new image 
             self.left_img_features = self.get_point_new_img(filepath)
 
             print(f"no metadata available for image: {filepath}")
-            self.update_image_info("unknown date", "unknown artist", "unknown style", "unknown tags")
-            self.timeline.hide()
-            self.no_timeline_label.show()
+            # self.update_image_info("unknown date", "unknown artist", "unknown style", "unknown tags")
+            # self.timeline.hide()
+            # self.no_timeline_label.show()
 
 
     def get_features_from_dataset(self, img_hash):
@@ -867,12 +891,12 @@ class MainWindow(QMainWindow):
             distance_3 = 0
 
         indices_nn_preview = [idx_1, idx_2, idx_3]
-        print(f"{indices_nn_preview=}")
-        print(f"{distance_1=}")
-        print(f"{distance_2=}")
-        print(f"{distance_3=}")
+        # print(f"{indices_nn_preview=}")
+        # print(f"{distance_1=}")
+        # print(f"{distance_2=}")
+        # print(f"{distance_3=}")
         fp_nn_preview = [self.image_paths[int(index)] for index in indices_nn_preview]
-        print(f"{fp_nn_preview=}")
+        # print(f"{fp_nn_preview=}")
 
         self.display_preview_nns(fp_nn_preview)
         
@@ -889,7 +913,7 @@ class MainWindow(QMainWindow):
             ui_element.setMouseTracking(True)
             # ui_element.mousePressEvent=self.switch_top_and_preview(i, filename)
             ui_element.mousePressEvent = lambda event, id=id, filename=filename: self.switch_top_and_preview(id, filename)
-            print('id',id+1,'filename', os.path.basename(filename))
+            # print('id',id+1,'filename', os.path.basename(filename))
 
             ui_element.setAutoFillBackground(True)
             p = ui_element.palette()
@@ -994,10 +1018,14 @@ class MainWindow(QMainWindow):
         # for selection_ids in self.scatterplot.selected_indices:
         img_hashes = [self.image_keys[index] for index in self.scatterplot.selected_indices]
         self.metadata= da.read_metadata_batch(self.datafile_path, img_hashes)
+        # if len(img_hashes)>0:
+        #     print(self.metadata[img_hashes[0]])
 
         sel_unique_dates, sel_date_counts = np.unique([self.metadata[hash_]['date'] for hash_ in img_hashes], return_counts=True)
-        sel_unique_tags, sel_tag_counts = np.unique([self.metadata[hash_]['tags'] for hash_ in img_hashes], return_counts=True)
+        sel_unique_tags, sel_tag_counts = np.unique([self.metadata[hash_]['tags'] for hash_ in img_hashes], return_counts=True) # could have more than one
         sel_unique_artist_names, sel_artist_name_counts = np.unique([self.metadata[hash_]['artist_name'] for hash_ in img_hashes], return_counts=True)
+        sel_unique_nationalities, sel_nationalities_counts = np.unique([self.metadata[hash_]['artist_nationality'] for hash_ in img_hashes], return_counts=True)
+        sel_unique_media, sel_media_counts = np.unique([self.metadata[hash_]['media'] for hash_ in img_hashes], return_counts=True) # could have more than one
         sel_unique_styles, sel_style_counts = np.unique([self.metadata[hash_]['style'] for hash_ in img_hashes], return_counts=True)
 
         img_hashes = [self.image_keys[index] for index in self.scatterplot.indices]
@@ -1006,15 +1034,23 @@ class MainWindow(QMainWindow):
         unique_dates, date_counts = np.unique([self.metadata[hash_]['date'] for hash_ in img_hashes], return_counts=True)
         unique_tags, tag_counts = np.unique([self.metadata[hash_]['tags'] for hash_ in img_hashes], return_counts=True)
         unique_artist_names, artist_name_counts = np.unique([self.metadata[hash_]['artist_name'] for hash_ in img_hashes], return_counts=True)
+        unique_nationalities, nationalities_counts = np.unique([self.metadata[hash_]['artist_nationality'] for hash_ in img_hashes], return_counts=True)
+        unique_media, media_counts = np.unique([self.metadata[hash_]['media'] for hash_ in img_hashes], return_counts=True)
         unique_styles, style_counts = np.unique([self.metadata[hash_]['style'] for hash_ in img_hashes], return_counts=True)
 
         count_selection = [sel_date_counts[np.where(sel_unique_dates == date)[0].tolist()[0]] if np.isin(date , sel_unique_dates) else 0 for date in unique_dates]
         tag_count_selection = [sel_tag_counts[np.where(sel_unique_tags == tag)[0].tolist()[0]] if np.isin(tag , sel_unique_tags) else 0 for tag in unique_tags]
         artist_count_selection = [sel_artist_name_counts[np.where(sel_unique_artist_names == artist_name)[0].tolist()[0]] if np.isin(artist_name, sel_unique_artist_names) else 0 for artist_name in unique_artist_names]
+        nationalities_count_selection = [sel_nationalities_counts[np.where(sel_unique_nationalities == nationalities)[0].tolist()[0]] if np.isin(nationalities, sel_unique_nationalities) else 0 for nationalities in unique_nationalities]
+        media_count_selection = [sel_media_counts[np.where(sel_unique_media == media)[0].tolist()[0]] if np.isin(media, sel_unique_media) else 0 for media in unique_media]
         style_count_selection = [sel_style_counts[np.where(sel_unique_styles == style)[0].tolist()[0]] if np.isin(style, sel_unique_styles) else 0 for style in unique_styles]
        
-        self.bp.fill_in_barplot(unique_styles,style_counts,style_count_selection)
-        # self.bp.show()
+        self.bp.fill_in_barplot(unique_artist_names,artist_name_counts,artist_count_selection)
+        self.bp2.fill_in_barplot(unique_nationalities,nationalities_counts,nationalities_count_selection)
+        self.bp3.fill_in_barplot(unique_styles,style_counts,style_count_selection)
+        self.bp4.fill_in_barplot(unique_dates,date_counts,count_selection)
+        # self.bp5.fill_in_barplot(unique_media,media_counts,media_count_selection)
+        # self.bp6.fill_in_barplot(unique_tags,tag_counts,tag_count_selection)
         
 
 def start_dashboard(key_dict, dataset_filepath, images_filepath):
@@ -1041,6 +1077,7 @@ if __name__ == "__main__":
 
     datafile_path = "/home/parting/master_AI/MMA/deepsim-analyzer/data/processed/dataset.h5"
     images_filepath = "/home/parting/master_AI/MMA/deepsim-analyzer/data/raw_immutable/test_images"
+
     widget = MainWindow(key_dict, datafile_path, images_filepath)
     widget.show()
     sys.exit(app.exec())

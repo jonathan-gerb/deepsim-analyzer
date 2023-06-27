@@ -19,8 +19,7 @@ from pyqtgraph.Point import Point
 from pyqtgraph import functions as fn
 
 from pyqtgraph import PlotDataItem
-# from pyqtgraph.graphicsItems.ScatterPlotItem import HoverEvent
-
+from pyqtgraph.Qt import QtGui
 
 
 class ScatterplotWidget(QWidget):
@@ -39,7 +38,7 @@ class ScatterplotWidget(QWidget):
         self.plot_widget = plot_widget
         self.setMouseTracking(True)
         self.initialize(points, indices,img_paths, config)
-
+        
         self.points_size = float(config['scatterplot']['point_size'])
         self.points_color = config['scatterplot']['points_color']
         self.selection_color = config['scatterplot']['selection_color']
@@ -87,20 +86,27 @@ class ScatterplotWidget(QWidget):
 
         self.lastMousePos=None
         self.view = self.plot_widget.getViewBox()
+        # Set background color for the view (PlotItem)
+        # self.view.setBackgroundColor('blue')
+        self.view.setBackgroundColor((0, 0, 255, 128))
+
+        # Set background color for the scene (QGraphicsView)
+        # self.plot_widget.plotItem.scene().setBackgroundBrush(QtGui.QBrush(QtGui.QColor('red')))
+
 
 
     def reset_scatterplot(self, pos):
         print('reset_scatterplot') #, pos)
         # Get the range of x and y values in the scatterplot
-        # x_min = np.min(pos[:, 0])
-        # x_max = np.max(pos[:, 0])
-        # y_min = np.min(pos[:, 1])
-        # y_max = np.max(pos[:, 1])
+        x_min = np.min(pos[:, 0])
+        x_max = np.max(pos[:, 0])
+        y_min = np.min(pos[:, 1])
+        y_max = np.max(pos[:, 1])
 
-        x_min = np.min(self.points[:, 0])
-        x_max = np.max(self.points[:, 0])
-        y_min = np.min(self.points[:, 1])
-        y_max = np.max(self.points[:, 1])
+        # x_min = np.min(self.points[:, 0])
+        # x_max = np.max(self.points[:, 0])
+        # y_min = np.min(self.points[:, 1])
+        # y_max = np.max(self.points[:, 1])
 
         # Calculate the range of x and y values with a buffer
         x_buffer = (x_max - x_min) * 0.1  # 10% buffer
@@ -108,9 +114,12 @@ class ScatterplotWidget(QWidget):
         x_range = (x_min - x_buffer, x_max + x_buffer)
         y_range = (y_min - y_buffer, y_max + y_buffer)
 
-        self.plot_widget.setRange(xRange=x_range, yRange=y_range)
+        # self.plot_widget.setRange(xRange=x_range, yRange=y_range)
+
         # print('reset view')
+        # self.view = self.plot_widget.getViewBox()
         self.view.resetTransform()
+        self.view.setBackgroundColor((0, 0, 255, 128))
 
 
     def on_scene_mouse_double_click(self, event):
@@ -122,10 +131,11 @@ class ScatterplotWidget(QWidget):
         print("*mouseReleaseEvent")
         if event.button() == Qt.MouseButton.LeftButton and self.start_point is not None and self.end_point is not None:
             self.get_selection_in_rectangle()
-            if self.dots_plot:
-                self.draw_scatterplot_dots()
-            else:
-                self.draw_scatterplot()
+            if self.selected_points!=[]:
+                if self.dots_plot:
+                    self.draw_scatterplot_dots()
+                else:
+                    self.draw_scatterplot()
 
         # self.clear_selection() # ? but will also put selected_points = [] or
         self.start_point=None
@@ -134,10 +144,22 @@ class ScatterplotWidget(QWidget):
             self.plot_widget.scene().removeItem(self.rect)
     
     def translate(self, dx, dy):
+        # print('panning')
         tr = QTransform().translate(dx, dy)
-        view = self.plot_widget.getViewBox()
-        view.setTransform(view.transform() * tr)
-            
+        # self.view = self.plot_widget.getViewBox()
+        # print(view.transform())
+        self.view.setBackgroundColor((0, 0, 255, 128))
+        self.view.setTransform(self.view.transform() * tr)
+
+    # def translate(self, dx, dy):
+    #     tr = QTransform().translate(dx, dy)
+    #     self.plot_widget.plotItem.scene().setTransform(self.plot_widget.plotItem.scene().transform() * tr)
+
+    # def translate(self, dx, dy):
+    #     tr = QTransform().translate(dx, dy)
+    #     self.plot_widget.setTransform(self.plot_widget.transform() * tr)
+
+
     def on_scene_mouse_move(self, event):
         # print('mouseMoveEvent')
         if self.start_point is not None:
@@ -156,10 +178,12 @@ class ScatterplotWidget(QWidget):
             # print('delta', delta)
             self.lastMousePos = lpos
                 
-            view = self.plot_widget.getViewBox()
-            px = Point(view.pixelSize()[0], view.pixelSize()[1])
-            tr = -delta * px
-            self.translate(tr[0], tr[1])
+            # view = self.plot_widget.getViewBox()
+            # px = Point(view.pixelSize()[0], view.pixelSize()[1])
+            # tr = -delta * px
+            # self.translate(tr[0], tr[1])
+
+            self.translate(delta.x(), delta.y())
         else:
             self.lastMousePos = event.scenePos()
 
@@ -190,7 +214,6 @@ class ScatterplotWidget(QWidget):
                 image = plt.imread(image_path)
                 w, h, _ = image.shape
                 self.hover_img.setImage(image)
-                # Adjust image
                 scale = 1.5
                 rotation = -90
                 self.hover_img.setScale(scale / np.sqrt(w**2 + h**2))
@@ -268,11 +291,8 @@ class ScatterplotWidget(QWidget):
             view_coords = self.plot_widget.mapToView(pos)
             self.start_point = (view_coords.x(), view_coords.y())
 
-    # def end_selection(self, ev):
     def end_selection(self, pos):
-        # if ev.button() == Qt.MouseButton.LeftButton and self.start_point is not None:
-        # print("end_selection", ev)
-        # pos = ev.scenePos()
+        print("end_selection", pos)
         view_coords = self.plot_widget.mapToView(pos)
         self.end_point = (view_coords.x(), view_coords.y())
         if self.start_point!= self.end_point and self.end_point is not None and self.start_point is not None:
@@ -316,12 +336,6 @@ class ScatterplotWidget(QWidget):
         w = abs(x1 - x2)
         h = abs(y1 - y2)
 
-        # Calculate the position and size of the rectangle
-        x = min(x1, x2)
-        y = min(y1, y2)
-        w = abs(x1 - x2)
-        h = abs(y1 - y2)
-
         # Remove the old rectangle if it exists
         if self.rect is not None and self.rect in self.plot_widget.scene().items():
             self.plot_widget.scene().removeItem(self.rect)
@@ -354,7 +368,9 @@ class ScatterplotWidget(QWidget):
         if not np.array_equal(self.selected_indices, selected_indices2):
             print('self.selected_indices', self.selected_indices)
             print('self.selected_indices2', self.selected_indices)
-        self.get_Selected_stats.emit(0) 
+
+        if self.selected_points!=[]:
+            self.get_Selected_stats.emit(0) 
         
 
     def draw_scatterplot(self,reset=True) :
