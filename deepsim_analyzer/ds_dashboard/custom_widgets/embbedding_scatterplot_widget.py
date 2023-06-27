@@ -88,7 +88,7 @@ class ScatterplotWidget(QWidget):
         self.view = self.plot_widget.getViewBox()
         # Set background color for the view (PlotItem)
         # self.view.setBackgroundColor('blue')
-        self.view.setBackgroundColor((0, 0, 255, 128))
+        # self.view.setBackgroundColor((0, 0, 255, 128))
 
         # Set background color for the scene (QGraphicsView)
         # self.plot_widget.plotItem.scene().setBackgroundBrush(QtGui.QBrush(QtGui.QColor('red')))
@@ -119,7 +119,7 @@ class ScatterplotWidget(QWidget):
         # print('reset view')
         # self.view = self.plot_widget.getViewBox()
         self.view.resetTransform()
-        self.view.setBackgroundColor((0, 0, 255, 128))
+        # self.view.setBackgroundColor((0, 0, 255, 128))
 
 
     def on_scene_mouse_double_click(self, event):
@@ -148,7 +148,7 @@ class ScatterplotWidget(QWidget):
         tr = QTransform().translate(dx, dy)
         # self.view = self.plot_widget.getViewBox()
         # print(view.transform())
-        self.view.setBackgroundColor((0, 0, 255, 128))
+        # self.view.setBackgroundColor((0, 0, 255, 128))
         self.view.setTransform(self.view.transform() * tr)
 
     # def translate(self, dx, dy):
