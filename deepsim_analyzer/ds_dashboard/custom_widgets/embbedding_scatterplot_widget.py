@@ -79,7 +79,7 @@ class ScatterplotWidget(QWidget):
         self.selected_point=self.points[0]
         self.plot_inex=None
         self.selected_points = []
-        self.selected_indices=[]
+        self.selected_indices = []
         self.outside_points_visible = False
 
         # We now toggle in setup to insure images are plotted first
@@ -115,7 +115,7 @@ class ScatterplotWidget(QWidget):
         x_range = (x_min - x_buffer, x_max + x_buffer)
         y_range = (y_min - y_buffer, y_max + y_buffer)
 
-        # self.plot_widget.setRange(xRange=x_range, yRange=y_range)
+        self.plot_widget.setRange(xRange=x_range, yRange=y_range)
 
         # print('reset view')
         # self.view = self.plot_widget.getViewBox()
@@ -317,7 +317,7 @@ class ScatterplotWidget(QWidget):
     def clear_selection(self):
         print('clear selection')
         self.selected_points = []
-        self.selected_indices=[]
+        self.selected_indices = []
         if self.rect is not None and self.rect in self.plot_widget.scene().items():
             self.plot_widget.scene().removeItem(self.rect)
         self.start_point=None
@@ -372,25 +372,29 @@ class ScatterplotWidget(QWidget):
 
         if self.selected_points!=[]:
             self.get_Selected_stats.emit(0) 
-        
+
+
+    def update_selected_points_values(self):
+        self.selected_points = self.points[self.selected_indices].copy()
+
 
     def draw_scatterplot(self,reset=True) :
         print('draw_scatterplot')
         self.plot_widget.clear()
-        if self.selected_points!=[]:
-            points= self.selected_points
-            indices= self.selected_indices
+        if len(self.selected_points) != 0:
+            points = self.selected_points
+            indices = self.selected_indices
         else:
-            points=self.points
-            indices= self.indices
+            points = self.points
+            indices = self.indices
 
         self.image_items = []
-        new_pos=[]
+        new_pos = []
         print('len points in draw plot', len(points))
         for i, point in enumerate(points):
             x,y = point
             # Read in image
-            ith_idx= indices[i]
+            ith_idx = indices[i]
             if ith_idx not in self.indices_to_keep:
                 continue
             
@@ -453,13 +457,13 @@ class ScatterplotWidget(QWidget):
                     # plot_data_item.setPos(point[0], point[1])
                     self.plot_data_items_not_selected.append((i,ith_idx,plot_data_item))
         else:
-            if self.selected_points!=[]:
+            if self.selected_points != []:
                 print('plot selected points')
-                points= self.selected_points
-                indices= self.selected_indices
+                points = self.selected_points
+                indices = self.selected_indices
             else:
-                points=self.points
-                indices= self.indices
+                points = self.points
+                indices = self.indices
 
             print(len(points),points[0])
             self.plot_data_items = []
@@ -475,7 +479,6 @@ class ScatterplotWidget(QWidget):
 
         # self.remove_highlight_selected_point(self.selected_index)
         self.highlight_selected_point(self.selected_index)
-        
         self.plot_widget.update()
 
 
