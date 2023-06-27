@@ -10,7 +10,7 @@ from PIL import Image
 from tqdm import tqdm
 from random import shuffle
 
-from ..similarity_methods import dino, dummy, texture
+from ..similarity_methods import dino, dummy, texture, emotion, semantic, clip
 
 
 def save_feature(dataset_filepath, img_hash, img_feature, feature_name, is_projection=False, overwrite=False):
@@ -101,6 +101,14 @@ def read_metadata_batch(dataset_filepath, img_hashes):
                 key : f[img_hash]['metadata'][key][()] for key in metadata_keys
             }
             metadata_dict[img_hash] = metadata_for_key
+
+        # convert all the strings from byte to string
+        for hash, metadata in metadata_dict.items():
+            for key, value in metadata.items():
+                try:
+                    metadata_dict[hash][key] = value.decode('UTF-8')
+                except:
+                    pass
     return metadata_dict
 
 
@@ -119,6 +127,12 @@ def calculate_features(image_folder, dataset_filepath, target_features=["dummy"]
             dino.calc_and_save_features(image_paths, dataset_filepath)
         if feature == "texture":
             texture.calc_and_save_features(image_paths, dataset_filepath)
+        if feature == "emotion":
+            emotion.calc_and_save_features(image_paths, dataset_filepath)
+        if feature == "semantic":
+            semantic.calc_and_save_features(image_paths, dataset_filepath)
+        if feature == "clip":
+            clip.calc_and_save_features(image_paths, dataset_filepath)
 
 
 def create_dataset(image_folder, dataset_filepath="dataset.h5"):

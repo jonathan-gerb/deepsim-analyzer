@@ -1,1 +1,2 @@
 from .visualize_attention import get_features, get_feature_maps, get_att_feature_vector, get_attention_maps, calc_and_save_features
+from .vision_transformer import vit_base, vit_small, vit_tiny, VisionTransformer

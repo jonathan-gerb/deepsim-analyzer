@@ -8,14 +8,14 @@
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PyQt6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
     QMetaObject, QObject, QPoint, QRect,
     QSize, QTime, QUrl, Qt)
-from PyQt6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
+from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PyQt6.QtWidgets import (QApplication, QComboBox, QFormLayout, QFrame,
+from PySide6.QtWidgets import (QApplication, QComboBox, QFormLayout, QFrame,
     QGroupBox, QHBoxLayout, QLabel, QLineEdit,
     QMainWindow, QPlainTextEdit, QPushButton, QRadioButton,
     QSizePolicy, QSlider, QTabWidget, QVBoxLayout,
@@ -33,7 +33,7 @@ class Ui_MainWindow(object):
         self.b_upload = QPushButton(self.centralwidget)
         self.b_upload.setObjectName(u"b_upload")
         self.b_upload.setGeometry(QRect(10, 330, 451, 25))
-        sizePolicy = QSizePolicy()
+        sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.b_upload.sizePolicy().hasHeightForWidth())
@@ -148,87 +148,87 @@ class Ui_MainWindow(object):
         self.formLayout.setContentsMargins(0, 0, 0, 0)
         self.title = QLabel(self.formLayoutWidget)
         self.title.setObjectName(u"title")
-        self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.title.setAlignment(Qt.AlignCenter)
 
-        self.formLayout.setWidget(0, QFormLayout.ItemRole.SpanningRole, self.title)
+        self.formLayout.setWidget(0, QFormLayout.SpanningRole, self.title)
 
         self.label_dino = QLabel(self.formLayoutWidget)
         self.label_dino.setObjectName(u"label_dino")
 
-        self.formLayout.setWidget(1, QFormLayout.ItemRole.LabelRole, self.label_dino)
+        self.formLayout.setWidget(1, QFormLayout.LabelRole, self.label_dino)
 
         self.combo_dino_slider = QSlider(self.formLayoutWidget)
         self.combo_dino_slider.setObjectName(u"combo_dino_slider")
         self.combo_dino_slider.setMaximum(100)
-        self.combo_dino_slider.setOrientation(Qt.Orientation.Horizontal)
+        self.combo_dino_slider.setOrientation(Qt.Horizontal)
 
-        self.formLayout.setWidget(1, QFormLayout.ItemRole.FieldRole, self.combo_dino_slider)
+        self.formLayout.setWidget(1, QFormLayout.FieldRole, self.combo_dino_slider)
 
         self.label_texture = QLabel(self.formLayoutWidget)
         self.label_texture.setObjectName(u"label_texture")
 
-        self.formLayout.setWidget(2, QFormLayout.ItemRole.LabelRole, self.label_texture)
+        self.formLayout.setWidget(2, QFormLayout.LabelRole, self.label_texture)
 
         self.combo_texture_slider = QSlider(self.formLayoutWidget)
         self.combo_texture_slider.setObjectName(u"combo_texture_slider")
         self.combo_texture_slider.setMaximum(100)
         self.combo_texture_slider.setSliderPosition(100)
-        self.combo_texture_slider.setOrientation(Qt.Orientation.Horizontal)
+        self.combo_texture_slider.setOrientation(Qt.Horizontal)
 
-        self.formLayout.setWidget(2, QFormLayout.ItemRole.FieldRole, self.combo_texture_slider)
+        self.formLayout.setWidget(2, QFormLayout.FieldRole, self.combo_texture_slider)
 
         self.label_dummy = QLabel(self.formLayoutWidget)
         self.label_dummy.setObjectName(u"label_dummy")
 
-        self.formLayout.setWidget(3, QFormLayout.ItemRole.LabelRole, self.label_dummy)
+        self.formLayout.setWidget(3, QFormLayout.LabelRole, self.label_dummy)
 
         self.combo_emotion_slider = QSlider(self.formLayoutWidget)
         self.combo_emotion_slider.setObjectName(u"combo_emotion_slider")
         self.combo_emotion_slider.setMaximum(100)
-        self.combo_emotion_slider.setOrientation(Qt.Orientation.Horizontal)
+        self.combo_emotion_slider.setOrientation(Qt.Horizontal)
 
-        self.formLayout.setWidget(3, QFormLayout.ItemRole.FieldRole, self.combo_emotion_slider)
+        self.formLayout.setWidget(3, QFormLayout.FieldRole, self.combo_emotion_slider)
 
         self.label_dummy_2 = QLabel(self.formLayoutWidget)
         self.label_dummy_2.setObjectName(u"label_dummy_2")
 
-        self.formLayout.setWidget(4, QFormLayout.ItemRole.LabelRole, self.label_dummy_2)
+        self.formLayout.setWidget(4, QFormLayout.LabelRole, self.label_dummy_2)
 
         self.combo_clip_slider = QSlider(self.formLayoutWidget)
         self.combo_clip_slider.setObjectName(u"combo_clip_slider")
         self.combo_clip_slider.setMaximum(100)
-        self.combo_clip_slider.setOrientation(Qt.Orientation.Horizontal)
+        self.combo_clip_slider.setOrientation(Qt.Horizontal)
 
-        self.formLayout.setWidget(4, QFormLayout.ItemRole.FieldRole, self.combo_clip_slider)
+        self.formLayout.setWidget(4, QFormLayout.FieldRole, self.combo_clip_slider)
 
         self.label_dummy_3 = QLabel(self.formLayoutWidget)
         self.label_dummy_3.setObjectName(u"label_dummy_3")
 
-        self.formLayout.setWidget(5, QFormLayout.ItemRole.LabelRole, self.label_dummy_3)
+        self.formLayout.setWidget(5, QFormLayout.LabelRole, self.label_dummy_3)
 
         self.combo_semantic_slider = QSlider(self.formLayoutWidget)
         self.combo_semantic_slider.setObjectName(u"combo_semantic_slider")
         self.combo_semantic_slider.setMaximum(100)
-        self.combo_semantic_slider.setOrientation(Qt.Orientation.Horizontal)
+        self.combo_semantic_slider.setOrientation(Qt.Horizontal)
 
-        self.formLayout.setWidget(5, QFormLayout.ItemRole.FieldRole, self.combo_semantic_slider)
+        self.formLayout.setWidget(5, QFormLayout.FieldRole, self.combo_semantic_slider)
 
         self.recalc_similarity = QPushButton(self.formLayoutWidget)
         self.recalc_similarity.setObjectName(u"recalc_similarity")
 
-        self.formLayout.setWidget(7, QFormLayout.ItemRole.SpanningRole, self.recalc_similarity)
+        self.formLayout.setWidget(7, QFormLayout.SpanningRole, self.recalc_similarity)
 
         self.label_dummy_4 = QLabel(self.formLayoutWidget)
         self.label_dummy_4.setObjectName(u"label_dummy_4")
 
-        self.formLayout.setWidget(6, QFormLayout.ItemRole.LabelRole, self.label_dummy_4)
+        self.formLayout.setWidget(6, QFormLayout.LabelRole, self.label_dummy_4)
 
         self.combo_dummy_slider = QSlider(self.formLayoutWidget)
         self.combo_dummy_slider.setObjectName(u"combo_dummy_slider")
         self.combo_dummy_slider.setMaximum(100)
-        self.combo_dummy_slider.setOrientation(Qt.Orientation.Horizontal)
+        self.combo_dummy_slider.setOrientation(Qt.Horizontal)
 
-        self.formLayout.setWidget(6, QFormLayout.ItemRole.FieldRole, self.combo_dummy_slider)
+        self.formLayout.setWidget(6, QFormLayout.FieldRole, self.combo_dummy_slider)
 
         self.statistics_tab = QTabWidget(self.box_right_low)
         self.statistics_tab.setObjectName(u"statistics_tab")
@@ -316,13 +316,13 @@ class Ui_MainWindow(object):
         self.line_2 = QFrame(self.dino_tab)
         self.line_2.setObjectName(u"line_2")
         self.line_2.setGeometry(QRect(10, 60, 501, 20))
-        self.line_2.setFrameShape(QFrame.Shape.HLine)
-        self.line_2.setFrameShadow(QFrame.Shadow.Sunken)
+        self.line_2.setFrameShape(QFrame.HLine)
+        self.line_2.setFrameShadow(QFrame.Sunken)
         self.line_3 = QFrame(self.dino_tab)
         self.line_3.setObjectName(u"line_3")
         self.line_3.setGeometry(QRect(10, 120, 501, 16))
-        self.line_3.setFrameShape(QFrame.Shape.HLine)
-        self.line_3.setFrameShadow(QFrame.Shadow.Sunken)
+        self.line_3.setFrameShape(QFrame.HLine)
+        self.line_3.setFrameShadow(QFrame.Sunken)
         self.dino_opts1 = QGroupBox(self.dino_tab)
         self.dino_opts1.setObjectName(u"dino_opts1")
         self.dino_opts1.setGeometry(QRect(10, 10, 501, 51))
@@ -409,8 +409,8 @@ class Ui_MainWindow(object):
         self.line_4 = QFrame(self.texture_tab)
         self.line_4.setObjectName(u"line_4")
         self.line_4.setGeometry(QRect(10, 60, 501, 20))
-        self.line_4.setFrameShape(QFrame.Shape.HLine)
-        self.line_4.setFrameShadow(QFrame.Shadow.Sunken)
+        self.line_4.setFrameShape(QFrame.HLine)
+        self.line_4.setFrameShadow(QFrame.Sunken)
         self.box_metric_tabs.addTab(self.texture_tab, "")
         self.emotion_tab = QWidget()
         self.emotion_tab.setObjectName(u"emotion_tab")
@@ -445,8 +445,8 @@ class Ui_MainWindow(object):
         self.line_5 = QFrame(self.emotion_tab)
         self.line_5.setObjectName(u"line_5")
         self.line_5.setGeometry(QRect(10, 60, 501, 20))
-        self.line_5.setFrameShape(QFrame.Shape.HLine)
-        self.line_5.setFrameShadow(QFrame.Shadow.Sunken)
+        self.line_5.setFrameShape(QFrame.HLine)
+        self.line_5.setFrameShadow(QFrame.Sunken)
         self.box_metric_tabs.addTab(self.emotion_tab, "")
         self.semantic_tab = QWidget()
         self.semantic_tab.setObjectName(u"semantic_tab")
