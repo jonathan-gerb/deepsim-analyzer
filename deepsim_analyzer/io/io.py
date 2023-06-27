@@ -195,5 +195,14 @@ def load_image(image_path, return_np=True):
         return np.array(img)
 
 def get_image_hash(filename):
+    h  = hashlib.md5()
+    b  = bytearray(128*1024)
+    mv = memoryview(b)
     with open(filename, 'rb', buffering=0) as f:
-        return hashlib.file_digest(f, 'md5').hexdigest()
+        while n := f.readinto(mv):
+            h.update(mv[:n])
+    return h.hexdigest()
+
+# def get_image_hash(filename):
+#     with open(filename, 'rb', buffering=0) as f:
+#         return hashlib.file_digest(f, 'md5').hexdigest()

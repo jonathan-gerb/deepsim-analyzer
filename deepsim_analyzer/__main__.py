@@ -12,6 +12,7 @@ from deepsim_analyzer.ds_dashboard.mainwindow import start_dashboard
 def prepare_dataset(args):
     target_features = args.target_features
     print("preparing dataset!")
+
     if os.path.exists(args.dataset_file):
         print(f"    found dataset file at: {args.dataset_file}")
         if args.refresh:

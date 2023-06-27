@@ -29,9 +29,6 @@ from PyQt6.QtGui import QColor, QMouseEvent, QPainter, QPixmap, QTransform
 from PyQt6.QtWidgets import (QApplication, QFileDialog, QGraphicsScene,
                              QGraphicsView, QMainWindow, QSizePolicy,
                              QTabWidget, QVBoxLayout,QLabel)
-
-from sklearn.metrics.pairwise import cosine_distances
-from sklearn.preprocessing import minmax_scale
 from tqdm import tqdm
 
 # deepsim analyzer package
@@ -49,7 +46,7 @@ from .ui_form import Ui_MainWindow
 
 class MainWindow(QMainWindow):
 
-    def __init__(self, key_dict, datafile_path, images_filepath):
+    def __init__(self, key_dict, datafile_path, image_directory):
         super().__init__()
 
         self.ui = Ui_MainWindow()
@@ -70,14 +67,21 @@ class MainWindow(QMainWindow):
 
         # save passed arguments as attributes
         self.image_key_dict = key_dict
+        self.image_directory = image_directory
         self.image_keys = [key for key in key_dict.keys()] # hashes
         self.image_indices = list(range(len(self.image_keys)))
+        self.indices_to_keep = self.image_indices
         self.key_to_idx = {key:i for i, key in enumerate(self.image_keys)} # hashes
         # self.image_indices = list(self.key_to_idx.values())
-        self.image_paths = [str(Path(images_filepath) / key_dict[key]) for key in self.image_keys]
+        self.image_paths = [str(Path(image_directory) / self.image_key_dict[key]) for key in self.image_keys]
+        print("idx 0")
         print(self.image_keys[0])
         print(self.image_indices[0])
         print(self.image_paths[0])
+        print("idx 1")
+        print(self.image_keys[1])
+        print(self.image_indices[1])
+        print(self.image_paths[1])
 
         self.dataset_mask = np.ones(len(self.image_keys))
 
@@ -89,8 +93,12 @@ class MainWindow(QMainWindow):
         self.dino_distance_measure = "euclidian"
         self.texture_distance_measure = "euclidian"
         self.emotion_distance_measure = "euclidian"
+        self.semantic_distance_measure = "cosine"
         self.emotion_opt_sim_vector_type = "full"
         self.dino_opt_sim_vector_type = "full"
+        self.clip_opt_sim_vector_type = "full"
+        self.texture_opt_sim_vector_type = "full"
+        self.semantic_opt_sim_vector_type = "full"
 
         # set color for main ui
         self.set_color_element(self.ui.centralwidget, [71, 71, 71])
@@ -138,17 +146,13 @@ class MainWindow(QMainWindow):
                 
         self.original_data_dict = deepcopy(self.data_dict)
 
-
-
-
-
         # ================ SETUP LEFT COLUMN ================
         print("-------setting up left column of dashboard")
         # ---------------- STARTING IMG ----------------
         # load an initial first image to display
         default_image_key = list(key_dict.keys())[0]
         default_image_path = key_dict[default_image_key]
-        default_image_path_absolute = str(Path(images_filepath) / default_image_path)
+        default_image_path_absolute = str(Path(image_directory) / default_image_path)
         
         self.left_img_key = default_image_key
         self.left_img_filename = default_image_path_absolute
@@ -186,12 +190,16 @@ class MainWindow(QMainWindow):
         self.ui.r_image_points.toggled.connect(self.change_scatterplot_pointtype)
 
         print("------setting up middle metric options")
-        # SETUP TEXTURE OPTIONs
+        # ----------------SETUP TEXTURE OPTIONS----------------
         print("setting up texture options")
         # options for what distance measure to use.
         self.ui.texture_opt_eucdist.toggle()
         self.ui.texture_opt_cosdist.toggled.connect(self.texture_opt_dist_cos)
         self.ui.texture_opt_eucdist.toggled.connect(self.texture_opt_dist_euc)
+
+        self.ui.texture_opt_fullsim.toggle()
+        self.ui.texture_opt_2dsim.toggled.connect(self.texture_opt_simtype)
+        self.ui.texture_opt_fullsim.toggled.connect(self.texture_opt_simtype)
 
         # add options for head similarity to comboboxes
         for i in range(256):
@@ -203,24 +211,43 @@ class MainWindow(QMainWindow):
         self.ui.texture_opt_filtervis.currentIndexChanged.connect(self.texture_show_fm)
         self.ui.texture_opt_show_fm.toggled.connect(self.texture_show_fm)
 
-        # SETUP CLIP OPTIONS
+        # ----------------SETUP CLIP OPTIONS----------------
         print("setting up clip options")
-        self.device = (
-                torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-            )
+        self.device = (torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"))
+
         print("loading clip model")
         self.clip_model, self.clip_preprocess = clip.load("ViT-B/32", device=self.device)
         self.clip_model = self.clip_model.to(self.device)
         self.ui.clip_radio_imgsim.toggle()
 
-        # SETUP EMOTION OPTIONs
+        self.ui.clip_opt_fullsim.toggle()
+        self.ui.clip_opt_2dsim.toggled.connect(self.clip_opt_simtype)
+        self.ui.clip_opt_fullsim.toggled.connect(self.clip_opt_simtype)
+
+        # ----------------SETUP EMOTION OPTIONS----------------
         print("setting up emotion options")
         # options for what distance measure to use.
         self.ui.emotion_opt_eucdist.toggle()
         self.ui.emotion_opt_cosdist.toggled.connect(self.emotion_opt_dist_cos)
         self.ui.emotion_opt_eucdist.toggled.connect(self.emotion_opt_dist_euc)
+        
+        # options for calculating similarity based on what vector
+        self.ui.emotion_opt_fullsim.toggle()
+        self.ui.emotion_opt_2dsim.toggled.connect(self.emotion_opt_simtype)
+        self.ui.emotion_opt_fullsim.toggled.connect(self.emotion_opt_simtype)
 
-        # SETUP DINO OPTIONS
+        self.ui.emotion_opts_showfm.toggled.connect(self.emotion_show_fm)
+        # ----------------SETUP SEMANTIC OPTIONS----------------
+        self.ui.semantic_opt_eucdist.toggle()
+        self.ui.semantic_opt_cosdist.toggled.connect(self.semantic_opt_dist_cos)
+        self.ui.semantic_opt_eucdist.toggled.connect(self.semantic_opt_dist_euc)
+        
+        # options for calculating similarity based on what vector
+        self.ui.semantic_opt_fullsim.toggle()
+        self.ui.semantic_opt_2dsim.toggled.connect(self.semantic_opt_simtype)
+        self.ui.semantic_opt_fullsim.toggled.connect(self.semantic_opt_simtype)
+
+        # ----------------SETUP DINO OPTIONS----------------
         print("setting up dino options")
         # options for what distance measure to use.
         self.ui.dino_opt_eucdist.toggle()
@@ -232,7 +259,6 @@ class MainWindow(QMainWindow):
         self.ui.dino_opt_2dsim.toggled.connect(self.dino_opt_simtype)
         self.ui.dino_opt_fullsim.toggled.connect(self.dino_opt_simtype)
         self.ui.dino_opt_headsim.toggled.connect(self.dino_opt_simtype)
-        
 
         # add options for head similarity to comboboxes
         for i in range(12):
@@ -314,7 +340,7 @@ class MainWindow(QMainWindow):
         self.ui.dataset_filtering_from_date.setText(str(min(dates)))
         self.ui.dataset_filtering_to_date.setText(str(max(dates)+1))
 
-        self.ui.filtered_dataset_size.setText(f"{str(self.data_dict['dummy']['projection'].shape[0])}/{self.original_data_dict['dummy']['projection'].shape[0]}")
+        self.ui.filtered_dataset_size.setText(f"{len(self.indices_to_keep)}/{len(self.image_indices)}")
         
 
     def apply_filters(self):
@@ -351,34 +377,28 @@ class MainWindow(QMainWindow):
 
         print(f"keeping {len(keys_to_keep)} indices after applying nationality: {filter_nationality} and media: {filter_media} and date: {filter_date_from}-{filter_date_to}")
 
-        self.ui.filtered_dataset_size.setText(f"{len(keys_to_keep)}/{self.original_data_dict['dummy']['projection'].shape[0]}")        
 
-        self.filter_datadict_by_key(keys_to_keep)
+        # self.filter_data_by_key(keys_to_keep)
+        self.indices_to_keep = [self.key_to_idx[img_hash] for img_hash in keys_to_keep]
         self.recalc_similarity()
         self.setup_scatterplot()
 
-    def filter_datadict_by_key(self, keys_to_keep):
-        indices_to_keep = np.array([self.key_to_idx[img_hash] for img_hash in keys_to_keep])
-        for feature_name in self.original_data_dict.keys():
-            self.data_dict[feature_name]['full'] = deepcopy(self.original_data_dict[feature_name]['full'][indices_to_keep])
-            self.data_dict[feature_name]['projection'] = deepcopy(self.original_data_dict[feature_name]['projection'][indices_to_keep])
+        self.ui.filtered_dataset_size.setText(f"{len(self.indices_to_keep)}/{len(self.image_indices)}")
 
 
     def reset_data_dict(self):
-        self.data_dict = deepcopy(self.original_data_dict)
+        self.indices_to_keep = self.image_indices
         self.setup_filters()
         self.apply_filters()
 
     def setup_scatterplot(self):
         current_metric_type = self.ui.box_metric_tabs.tabText(self.ui.box_metric_tabs.currentIndex())
         print("changing 2d scatterplot to: ", current_metric_type)
-        # if current_metric_type == "Dino":
-        #     current_metric_type = "texture"
-        # current_metric_type = "emo"
+
         if not hasattr(self, 'scatterplot'):
             print(f'a new scatterplot is created for {current_metric_type.lower()}')
             self.scatterplot = ScatterplotWidget(
-                self.data_dict[current_metric_type.lower()]["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame
+                self.data_dict[current_metric_type.lower()]["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame, self.indices_to_keep
             )
             self.scatterplot.plot_widget.scene().mousePressEvent=self.on_canvas_click
 
@@ -398,6 +418,7 @@ class MainWindow(QMainWindow):
         else:
             print('only redraw scatterplot')
             self.scatterplot.points = self.data_dict[current_metric_type.lower()]["projection"]
+            self.scatterplot.indices_to_keep = self.indices_to_keep
             if self.scatterplot.dots_plot:
                 self.scatterplot.draw_scatterplot_dots()
             else:
@@ -413,59 +434,90 @@ class MainWindow(QMainWindow):
         
     def texture_opt_dist_cos(self):
         self.texture_distance_measure = "cosine"
-        topk_dict = self.calculate_nearest_neighbours()
-        self.display_nearest_neighbours(topk_dict)
+        self.recalc_similarity()
     
     def texture_opt_dist_euc(self):
         self.texture_distance_measure = "euclidian"
-        topk_dict = self.calculate_nearest_neighbours()
-        self.display_nearest_neighbours(topk_dict)
+        self.recalc_similarity()
 
     def dino_opt_dist_cos(self):
         print('dino_opt_dist_cos')
         self.dino_distance_measure = "cosine"
-        topk_dict = self.calculate_nearest_neighbours()
-        self.display_nearest_neighbours(topk_dict)
+        self.recalc_similarity()
     
     def dino_opt_dist_euc(self):
         print('dino_opt_dist_euc')
         self.dino_distance_measure = "euclidian"
-        topk_dict = self.calculate_nearest_neighbours()
-        self.display_nearest_neighbours(topk_dict)
+        self.recalc_similarity()
 
     def emotion_opt_dist_cos(self):
         self.emotion_distance_measure = "cosine"
-        topk_dict = self.calculate_nearest_neighbours()
-        self.display_nearest_neighbours(topk_dict)
+        self.recalc_similarity()
     
     def emotion_opt_dist_euc(self):
         self.emotion_distance_measure = "euclidian"
-        topk_dict = self.calculate_nearest_neighbours()
-        self.display_nearest_neighbours(topk_dict)
+        self.recalc_similarity()
+
+    def semantic_opt_dist_cos(self):
+        self.semantic_distance_measure = "cosine"
+        self.recalc_similarity()
+    
+    def semantic_opt_dist_euc(self):
+        self.semantic_distance_measure = "euclidian"
+        self.recalc_similarity()
+
+    def clip_opt_simtype(self):
+        if self.ui.clip_opt_fullsim.isChecked():
+            self.clip_opt_sim_vector_type = "full"
+        elif self.ui.clip_opt_2dsim.isChecked():
+            self.clip_opt_sim_vector_type = "projection"
+        else:
+            raise ValueError("something is wrong with the clip similarity options.")
+        
+    def emotion_opt_simtype(self):
+        if self.ui.emotion_opt_fullsim.isChecked():
+            self.emotion_opt_sim_vector_type = "full"
+        elif self.ui.emotion_opt_2dsim.isChecked():
+            self.emotion_opt_sim_vector_type = "projection"
+        else:
+            raise ValueError("something is wrong with the emotion similarity options.")
+        
+    def texture_opt_simtype(self):
+        if self.ui.texture_opt_fullsim.isChecked():
+            self.texture_opt_sim_vector_type = "full"
+        elif self.ui.texture_opt_2dsim.isChecked():
+            self.texture_opt_sim_vector_type = "projection"
+        else:
+            raise ValueError("something is wrong with the texture similarity options.")
+        
+    def semantic_opt_simtype(self):
+        if self.ui.semantic_opt_fullsim.isChecked():
+            self.semantic_opt_sim_vector_type = "full"
+        elif self.ui.semantic_opt_2dsim.isChecked():
+            self.semantic_opt_sim_vector_type = "projection"
+        else:
+            raise ValueError("something is wrong with the semantic similarity options.")
 
     def dino_opt_simtype(self):
-        print('dino_opt_simtype')
-        if self.ui.dino_opt_fullsim.isChecked:
+        if self.ui.dino_opt_fullsim.isChecked():
             self.dino_opt_sim_vector_type = "full"
-        elif self.ui.dino_opt_2dsim.isChecked:
+        elif self.ui.dino_opt_2dsim.isChecked():
             self.dino_opt_sim_vector_type = "projection"
         elif self.ui.dino_opt_headsim.isChecked:
-            l = self.ui.dino_opt_layersim_cbox.currentText()
+            l = self.ui.isChecked().currentText()
             h = self.ui.dino_opt_headsim_cbox.currentText()
             self.dino_opt_sim_vector_type = f"{l}_{h}"
 
         else:
             raise ValueError("something is wrong with the dino similarity options.")
-        
-    
-        
+        print(f"changed dino vector type to : {self.dino_opt_sim_vector_type}")
+
 
     def emotion_show_fm(self):
-        print('emotion_show_fm')
-        if not self.ui.emotion_show_fm.isChecked():
+        if not self.ui.emotion_opts_showfm.isChecked():
             self.display_photo_left(self.left_img_filename)
             self.display_photo_right(self.right_img_filename)
-            print("not checked", self.ui.emotion_show_fm)
+            print("not checked", self.ui.emotion_opts_showfm)
         else:
             original_img_left = da.io.load_image(self.left_img_filename)
             original_img_right = da.io.load_image(self.right_img_filename)
@@ -500,7 +552,7 @@ class MainWindow(QMainWindow):
             jet_heatmap_right = keras.utils.img_to_array(jet_heatmap_right)
 
             # Superimpose the heatmap on original image
-            alpha = 0.2
+            alpha = 0.4
             superimposed_img_left = jet_heatmap_left * alpha + original_img_left
             superimposed_img_left = keras.utils.array_to_img(superimposed_img_left)
 
@@ -515,11 +567,9 @@ class MainWindow(QMainWindow):
             # display(Image(cam_path))
             leftname = "_tmp_overlay_left.png"
             rightname = "_tmp_overlay_right.png"
-            left = Image.fromarray(superimposed_img_left)
-            left.save(leftname)
+            superimposed_img_left.save(leftname)
 
-            right = Image.fromarray(superimposed_img_right)
-            right.save(rightname)
+            superimposed_img_right.save(rightname)
 
             self.display_photo_left(leftname)
             self.display_photo_right(rightname)
@@ -732,6 +782,10 @@ class MainWindow(QMainWindow):
         distances = np.sqrt(np.einsum('ij,ij->j', a_min_b, a_min_b))
         return distances
     
+    def cosine_distance(self, current_vector, feature_name, vector_type_key):
+        distances = cosine_distances(current_vector.reshape(1, -1), self.data_dict[feature_name][vector_type_key]).squeeze()
+        return distances
+    
     def calculate_nearest_neighbours(self, topk=5):
         # get features for current image
         topk_results = {}
@@ -741,42 +795,67 @@ class MainWindow(QMainWindow):
         print("weights of all metrics: ", feature_weight_dict)
         
         indices = np.arange(len(self.image_keys))
+
+        # apply filter mask
+        indices = indices[self.indices_to_keep]
+
         for feature_name in self.available_features:
             
             # weither to use full vector for similarity, only a specific part or the 2d reprojection
             if feature_name == "dino":
                 vector_type_key = self.dino_opt_sim_vector_type
+            elif feature_name == "clip":
+                vector_type_key = self.clip_opt_sim_vector_type
+            elif feature_name == "texture":
+                vector_type_key = self.texture_opt_sim_vector_type
+            elif feature_name == "emotion":
+                vector_type_key = self.emotion_opt_sim_vector_type
+            elif feature_name == "semantic":
+                vector_type_key = self.semantic_opt_sim_vector_type
             else:
                 # TODO: implement additional options for other metrics to use projection or not
                 # for metric similarity
                 vector_type_key = "full"
-
+                
+            print(f"calculating {feature_name} with {vector_type_key} vectors ")
             current_vector = self.left_img_features[feature_name][vector_type_key]
             distances = np.zeros((self.data_dict[feature_name][vector_type_key].shape[0]))
             
             # calculate distances
             if feature_name == "dino":
                 if self.dino_distance_measure == "cosine":
-                    distances = cosine_distances(current_vector.reshape(1, -1), self.data_dict[feature_name][vector_type_key]).squeeze()
+                    distances = self.cosine_distance(current_vector, feature_name, vector_type_key)
                 if self.dino_distance_measure == "euclidian":
                     distances = self.euclidian_distance(current_vector, feature_name, vector_type_key)
             elif feature_name == "texture":
                 if self.texture_distance_measure == "cosine":
-                    distances = cosine_distances(current_vector.reshape(1, -1), self.data_dict[feature_name][vector_type_key]).squeeze()
+                    distances = self.cosine_distance(current_vector, feature_name, vector_type_key)
                 if self.texture_distance_measure == "euclidian":
                     distances = self.euclidian_distance(current_vector, feature_name, vector_type_key)
+            elif feature_name == "semantic":
+                if self.semantic_distance_measure == "cosine":
+                    distances = self.cosine_distance(current_vector, feature_name, vector_type_key)
+                if self.semantic_distance_measure == "euclidian":
+                    distances = self.euclidian_distance(current_vector, feature_name, vector_type_key)
+            elif feature_name == "emotion":
+                if self.emotion_distance_measure == "cosine":
+                    distances = self.cosine_distance(current_vector, feature_name, vector_type_key)
+                if self.emotion_distance_measure == "euclidian":
+                    distances = self.euclidian_distance(current_vector, feature_name, vector_type_key)
+
             elif feature_name == "clip":
                 if self.ui.clip_radio_textsim.isChecked():
                     text = self.ui.tb_clip_input.toPlainText()
                     print(f"using text similarity, similar to: '{text}'")
                     text = clip.tokenize([text]).to(self.device)
                     current_vector = self.clip_model.encode_text(text).squeeze().cpu().detach().numpy()
-                    print(current_vector.shape)
 
-                    distances = self.euclidian_distance(current_vector, feature_name, vector_type_key)
+                    # distances = self.euclidian_distance(current_vector, feature_name, vector_type_key)
+                    distances = self.cosine_distance(current_vector, feature_name, vector_type_key)
                 elif self.ui.clip_radio_imgsim.isChecked():
                     # use the normal image based current_vector as retrieved above
-                    distances = self.euclidian_distance(current_vector, feature_name, vector_type_key)
+                    # distances = self.euclidian_distance(current_vector, feature_name, vector_type_key)
+                    distances = self.cosine_distance(current_vector, feature_name, vector_type_key)
                 elif self.ui.clip_radio_combsim.isChecked():
                     print("using combined similarity!")
                     text = self.ui.tb_clip_input.toPlainText()
@@ -784,13 +863,17 @@ class MainWindow(QMainWindow):
                     current_text_vector = self.clip_model.encode_text(text).squeeze().cpu().detach().numpy()
 
                     # similarity of text
-                    distances_text = self.euclidian_distance(current_text_vector, feature_name, vector_type_key)
-                    distances_img = self.euclidian_distance(current_vector, feature_name, vector_type_key)
+                    # distances_text = self.euclidian_distance(current_text_vector, feature_name, vector_type_key)
+                    # distances_img = self.euclidian_distance(current_vector, feature_name, vector_type_key)
+
+                    distances_text = self.cosine_distance(current_text_vector, feature_name, vector_type_key)
+                    distances_img = self.cosine_distance(current_vector, feature_name, vector_type_key)
                     # we can just sum as they should be in the same scale
                     distances = distances_text + distances_img 
 
             else:
                 # by default we use euclidian distance for a feature
+                print("defaulting to euclidian distance")
                 distances = self.euclidian_distance(current_vector, feature_name, vector_type_key)
             
             # rescale distances so that the distances are always within the range of 0-1
@@ -799,6 +882,8 @@ class MainWindow(QMainWindow):
             distances = minmax_scale(distances, axis=0, feature_range=(0, 1), copy=False)
 
             distances_dict[feature_name] = distances
+
+            distances = distances[self.indices_to_keep]
 
             sorting_indices = distances.argsort()
             sorted_distances = distances[sorting_indices]
@@ -813,6 +898,7 @@ class MainWindow(QMainWindow):
                 sorted_distances = sorted_distances[1:]
                 ranking_feature = ranking_feature[1:]
 
+
             topk_results[feature_name] = {}
             topk_results[feature_name]['distances'] = sorted_distances
             topk_results[feature_name]['ranking'] = ranking_feature
@@ -826,6 +912,9 @@ class MainWindow(QMainWindow):
             all_distances_sum = np.average(all_distances, axis=1, weights=weights)
         else:
             all_distances_sum = np.average(all_distances, axis=1)
+
+        # apply filter mask
+        all_distances_sum = all_distances_sum[self.indices_to_keep]
 
         sorting_indices = all_distances_sum.argsort()
         combined_ranking = indices[sorting_indices]
@@ -861,8 +950,7 @@ class MainWindow(QMainWindow):
                 # display the photo on the left
                 self.display_photo_left(current_filepath)
 
-                topk_dict = self.calculate_nearest_neighbours()
-                self.display_nearest_neighbours(topk_dict)
+                self.recalc_similarity()
 
     def update_leftimg_data(self, img_hash):
         # update image metdata if available
@@ -962,8 +1050,6 @@ class MainWindow(QMainWindow):
         self.ui.box_right_img.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
     def display_nearest_neighbours(self, topk):
-        print('display_nearest_neighbours')
-
         # save for potential use in other parts of the program
         self.topk = topk
         try:
@@ -1114,8 +1200,7 @@ class MainWindow(QMainWindow):
         self.display_photo_left(self.left_img_filename)
         self.update_leftimg_data(self.left_img_key)
 
-        topk_dict = self.calculate_nearest_neighbours()
-        self.display_nearest_neighbours(topk_dict)
+        self.recalc_similarity()
 
 
     def get_selected_points_stats(self, int):
