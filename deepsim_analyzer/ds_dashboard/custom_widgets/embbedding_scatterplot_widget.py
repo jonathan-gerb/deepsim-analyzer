@@ -90,12 +90,17 @@ class ScatterplotWidget(QWidget):
 
 
     def reset_scatterplot(self, pos):
-        print('reset_scatterplot', pos)
+        print('reset_scatterplot') #, pos)
         # Get the range of x and y values in the scatterplot
-        x_min = np.min(pos[:, 0])
-        x_max = np.max(pos[:, 0])
-        y_min = np.min(pos[:, 1])
-        y_max = np.max(pos[:, 1])
+        # x_min = np.min(pos[:, 0])
+        # x_max = np.max(pos[:, 0])
+        # y_min = np.min(pos[:, 1])
+        # y_max = np.max(pos[:, 1])
+
+        x_min = np.min(self.points[:, 0])
+        x_max = np.max(self.points[:, 0])
+        y_min = np.min(self.points[:, 1])
+        y_max = np.max(self.points[:, 1])
 
         # Calculate the range of x and y values with a buffer
         x_buffer = (x_max - x_min) * 0.1  # 10% buffer
@@ -104,7 +109,7 @@ class ScatterplotWidget(QWidget):
         y_range = (y_min - y_buffer, y_max + y_buffer)
 
         self.plot_widget.setRange(xRange=x_range, yRange=y_range)
-        print('reset view')
+        # print('reset view')
         self.view.resetTransform()
 
 
@@ -174,7 +179,7 @@ class ScatterplotWidget(QWidget):
                         points.append((x, y))
 
             if points:
-                print('show hover and points = ', points)
+                # print('show hover and points = ', points)
                 # Handle the found points
                 point = points[0]  # Assuming you want to handle the first point
                 x, y = point

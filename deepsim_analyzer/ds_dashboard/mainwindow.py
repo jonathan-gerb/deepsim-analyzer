@@ -973,7 +973,6 @@ class MainWindow(QMainWindow):
         # super(self.scatterplot, self).mousePressEvent(ev)
 
 
-
     # TODO: maybe change loc of this fn, or split its a little in between scatterplot and main
     def clicked_on_point(self):
         print("point/ image clicked, load on the left")
@@ -1015,7 +1014,7 @@ class MainWindow(QMainWindow):
         style_count_selection = [sel_style_counts[np.where(sel_unique_styles == style)[0].tolist()[0]] if np.isin(style, sel_unique_styles) else 0 for style in unique_styles]
        
         self.bp.fill_in_barplot(unique_styles,style_counts,style_count_selection)
-        self.bp.show()
+        # self.bp.show()
         
 
 def start_dashboard(key_dict, dataset_filepath, images_filepath):
