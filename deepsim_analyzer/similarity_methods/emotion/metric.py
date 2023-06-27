@@ -103,19 +103,14 @@ def calc_and_save_features(images, datafile_path, save_feature_maps=True):
         img_hash = get_image_hash(image_path)
         feature_vector = np.array(DeepFace.represent(img_path = image_path, enforce_detection=False)[0]['embedding'])
         save_feature(datafile_path, img_hash, feature_vector, 'emotion')
-        # preds = np.array(list(preds[0].values()))
-        # print(preds)
-        # print("Predicted:", decode_predictions(preds, top=1)[0])
-        target_size = (224, 224)
-        img_array = get_img_array(image_path, target_size)
 
         # Generate class activation heatmap
-        heatmap = make_gradcam_heatmap(img_array, model, model.layers[-8].name)
-
         if save_feature_maps:
+            target_size = (224, 224)
+            img_array = get_img_array(image_path, target_size)
+            heatmap = make_gradcam_heatmap(img_array, model, model.layers[-8].name)
             save_feature(datafile_path, img_hash, heatmap, "emotion_fm")
 
-        save_feature(datafile_path, img_hash, feature_vector, 'emotion')
 
     del DeepFace.model_obj
     os.environ["CUDA_VISIBLE_DEVICES"] = "0"
