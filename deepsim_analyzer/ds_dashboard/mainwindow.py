@@ -18,7 +18,7 @@ from PyQt6.QtCore import QCoreApplication, QDate, QEvent, QRect, Qt, pyqtSignal
 from PyQt6.QtGui import QColor, QMouseEvent, QPainter, QPixmap, QTransform
 from PyQt6.QtWidgets import (QApplication, QFileDialog, QGraphicsScene,
                              QGraphicsView, QMainWindow, QSizePolicy,
-                             QTabWidget, QVBoxLayout)
+                             QTabWidget, QVBoxLayout,QLabel)
 
 from sklearn.metrics.pairwise import cosine_distances
 from sklearn.preprocessing import minmax_scale
@@ -28,7 +28,7 @@ from tqdm import tqdm
 import deepsim_analyzer as da
 
 # custom widgets
-from .custom_widgets import ScatterplotWidget, TimelineView, TimelineWindow
+from .custom_widgets import ScatterplotWidget, TimelineView, TimelineWindow,RangeSlider,BarChart
 # Important:
 # You need to run the following command to generate the ui_form.py file
 #     pyside6-uic form.ui -o ui_form.py, or
@@ -38,7 +38,6 @@ from .ui_form import Ui_MainWindow
 
 
 class MainWindow(QMainWindow):
-    get_Selected_stats =pyqtSignal(int)
 
     def __init__(self, key_dict, datafile_path, images_filepath):
         super().__init__()
@@ -129,6 +128,10 @@ class MainWindow(QMainWindow):
                 
         self.original_data_dict = deepcopy(self.data_dict)
 
+
+
+
+
         # ================ SETUP LEFT COLUMN ================
         print("-------setting up left column of dashboard")
         # ---------------- STARTING IMG ----------------
@@ -143,7 +146,7 @@ class MainWindow(QMainWindow):
         print('default_image_path',default_image_path)
         # load in timeline
         self.timeline= TimelineWindow(default_image_path)
-        self.timeline.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
+        # self.timeline.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
         self.ui.box_timeline_layout.addWidget(self.timeline)
         self.no_timeline_label = QLabel('No data for timeline of new uploaded image')
         self.ui.box_timeline_layout.addWidget(self.no_timeline_label)
@@ -159,6 +162,7 @@ class MainWindow(QMainWindow):
         self.ui.reset_dataset_filters.pressed.connect(self.reset_data_dict)
 
         # ================ SETUP MIDDLE COLUMN ================
+        
         print("------setting up scatterplot")
         self.ui.box_metric_tabs.setCurrentIndex(0)
         # setup scatterplot
@@ -246,6 +250,24 @@ class MainWindow(QMainWindow):
         self.ui.recalc_similarity.pressed.connect(self.recalc_similarity)
         print("dashboard setup complete!")
 
+
+        print('--------setting up barplot')
+        # self.bp = pg.PlotWidget()
+        self.bp = BarChart(self)
+        # self.bp=RangeSlider(self)
+        self.scatterplot.get_Selected_stats.connect(self.get_selected_points_stats)
+        self.scatterplot.get_Selected_stats.emit(0) # once for initialization, after in scatterplot.get_selection
+
+        # img_stats_container = self.ui.box_recom_img_stats
+        # img_stats_container = self.ui.verticalLayoutWidget_2
+        img_stats_container = self.ui.artisits_stats_layout
+        img_stats_container.layout().addWidget(self.bp)
+
+        # Set the size policy for the bar plot widget
+        size_policy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.bp.setSizePolicy(size_policy)
+      
+      # ========================
 
     def setup_filters(self):
         nationalities = []
@@ -337,30 +359,6 @@ class MainWindow(QMainWindow):
         self.setup_filters()
         self.apply_filters()
 
-
-      # ========================
-
-        # Create a plot widget
-        # self.bp = pg.PlotWidget()
-        # self.bp = BarChart(self)
-        # # self.bp=RangeSlider(self)
-        # self.get_Selected_stats.connect(self.get_selected_points_stats)
-        # self.get_Selected_stats.emit(0) # barplot shows once in beginning because of this
-
-        # # img_stats_container = self.ui.box_recom_img_stats
-        # # img_stats_container = self.ui.verticalLayoutWidget_2
-        # img_stats_container = self.ui.artisits_stats_layout
-        # img_stats_container.layout().addWidget(self.bp)
-
-        # # Set the size policy for the bar plot widget
-        # size_policy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        # self.bp.setSizePolicy(size_policy)
-        
-        # Set the size policy for the layout item containing the bar plot widget
-        # layout_item = img_stats_container.layout().itemAt(0)
-        # layout_item.setSizePolicy(size_policy)
-
-
     def setup_scatterplot(self):
         current_metric_type = self.ui.box_metric_tabs.tabText(self.ui.box_metric_tabs.currentIndex())
         print("changing 2d scatterplot to: ", current_metric_type)
@@ -373,9 +371,20 @@ class MainWindow(QMainWindow):
                 self.data_dict[current_metric_type.lower()]["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame
             )
             self.scatterplot.plot_widget.scene().mousePressEvent=self.on_canvas_click
-            # self.scatterplot.plot_widget.scene().sigMouseClicked.connect(self.on_canvas_click)
 
-            self.scatterplot.selected_idx.emit(0)
+            # self.scatterplot.plot_widget.scene().sigMouseClicked.connect(self.on_canvas_click)
+            # self.scatterplot.plot_widget.scene().sigMouseClicked.connect(self.scatterplot.on_scene_mouse_click)
+            # self.scatterplot.plot_widget.scene().sigMouseClicked.emit(0)
+
+            # self.scatterplot.plot_widget.scene().sigMouseClicked.connect(lambda event: self.on_canvas_click(event))
+            # self.scatterplot.plot_widget.scene().sigMouseClicked.emit(0)
+
+            
+            # self.scatterplot.plot_widget.scene().sigMousePressEvent.connect(lambda event: self.on_canvas_click(event))
+            # self.scatterplot.plot_widget.scene().sigMousePressEvent.emit(0)
+            # self.scatterplot.plot_widget.scene().mousePressEvent=self.scatterplot.mousePressEvent
+
+            # self.scatterplot.highlight_selected_point(0)
         else:
             print('only redraw scatterplot')
             self.scatterplot.points = self.data_dict[current_metric_type.lower()]["projection"]
@@ -383,10 +392,9 @@ class MainWindow(QMainWindow):
                 self.scatterplot.draw_scatterplot_dots()
             else:
                 self.scatterplot.draw_scatterplot()
-            self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
-            # werkt niet cause only called one for setup
-        print('here to emit stats')
-        self.get_Selected_stats.emit(0) # doesnt work 
+            # self.scatterplot.remove_highlight_selected_point(self.scatterplot.selected_index)
+            # self.scatterplot.highlight_selected_point(self.scatterplot.selected_index)
+
 
     def recalc_similarity(self):
         print('recalculating similarity')
@@ -962,11 +970,13 @@ class MainWindow(QMainWindow):
             #TODO: give user reset option/button. initially its FALSE
             self.scatterplot.dots_plot=False
             self.scatterplot.draw_scatterplot(reset=False)
-            self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
+            # self.scatterplot.remove_highlight_selected_point(self.scatterplot.selected_index)
+            # self.scatterplot.highlight_selected_point(self.scatterplot.selected_index)
         else:
             self.scatterplot.dots_plot=True
             self.scatterplot.draw_scatterplot_dots(reset=False)
-            self.scatterplot.selected_idx.emit(self.scatterplot.selected_index)
+            # self.scatterplot.remove_highlight_selected_point(self.scatterplot.selected_index)
+            # self.scatterplot.highlight_selected_point(self.scatterplot.selected_index)
 
     def on_canvas_click(self, ev):
         # super().mousePressEvent(ev)
@@ -977,7 +987,7 @@ class MainWindow(QMainWindow):
         if ev.button() == Qt.MouseButton.LeftButton:
             if self.scatterplot.dots_plot:
                 range_radius = 0.1
-                for index, plot_data_item in self.scatterplot.plot_data_items:
+                for i, index,plot_data_item in self.scatterplot.plot_data_items:
                     item_pos = plot_data_item.mapFromScene(pos)
                     parent_pos = plot_data_item.mapToParent(item_pos)
                     x_data, y_data = plot_data_item.getData()
@@ -988,27 +998,30 @@ class MainWindow(QMainWindow):
                         if abs(x - item_pos.x()) <= range_radius and abs(y - item_pos.y()) <= range_radius:
                             self.scatterplot.selected_point = item_pos.x(), item_pos.y()
                             print('self.scatterplot.selected_point',self.scatterplot.selected_point)
+                            self.scatterplot.remove_highlight_selected_point(self.scatterplot.selected_index)
                             self.scatterplot.selected_index = index
-                            self.scatterplot.selected_idx.emit(index)
+                            self.scatterplot.highlight_selected_point(index)
                             self.clicked_on_point()
                             break
 
             else:
                 # print("self.image_items", self.image_items)
-                for idx, index, item in self.scatterplot.image_items:
+                for i, index, item in self.scatterplot.image_items:
                     # print("item.mapFromScene(pos)", item, item.mapFromScene(pos))
                     item_pos=item.mapFromScene(pos)
                     if item.contains(item_pos):
+                        print('selected_index==plot_index?',index==i)
                         self.scatterplot.selected_point = item_pos.x(), item_pos.y()
+                        self.scatterplot.remove_highlight_selected_point(self.scatterplot.selected_index)
                         self.scatterplot.selected_index = index
-                        self.scatterplot.selected_idx.emit(index)
-                        self.scatterplot.plot_index = idx
+                        self.scatterplot.highlight_selected_point(index)
+                        # self.scatterplot.plot_index = idx
                         # TODO: rmv after all check, partial select ect
-                        print('selected_index==plot_index?',index==idx)
                         self.clicked_on_point()
                         break
                 
-        QGraphicsScene.mousePressEvent(self.scatterplot.plot_widget.scene(), ev)
+        # QGraphicsScene.mousePressEvent(self.scatterplot.plot_widget.scene(), ev)
+        # super(self.scatterplot, self).mousePressEvent(ev)
 
 
 
@@ -1083,128 +1096,3 @@ if __name__ == "__main__":
     widget.show()
     sys.exit(app.exec())
 
-
-# TODO: i will put it in a seperate py file when it's done
-
-from PyQt6.QtCharts import QChart
-from PyQt6 import QtCharts
-# from PyQt6 import QtCharts
-from PyQt6.QtCore import QRect
-from PyQt6.QtGui import QColor, QPalette
-from PyQt6.QtWidgets import (QGridLayout, QHBoxLayout, QLabel, QLineEdit,
-                             QRadioButton, QSlider, QToolTip, QVBoxLayout,
-                             QWidget)
-
-
-class RangeSlider(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.domain = [0, 100]
-        self.values = [0, 100]
-        self.update = [0, 100]
-        self.inputValues = [0, 100]
-        self.color = QColor(0, 0, 255)  # Example color
-        self.typeNumber = "int"  # Example type
-        self.step = 1  # Example step
-        self.hover_index = 0  # Example hover index
-        self.isToggleOn = False
-        self.initUI()
-
-    def initUI(self):
-        layout = QGridLayout(self)
-        # BarChart Widget
-        self.bar_chart = BarChart(self)  # Replace BarChart with your own widget
-        # self.bar_chart.setFixedHeight(40)
-        # self.bar_chart.setFixedWidth(70)
-        # self.bar_chart.autoFillBackground(True)
-        # bar_chart.setColor(self.color)
-        # Add other necessary configuration for the BarChart widget
-        layout.addWidget(self.bar_chart, 0, 0, 1, 3)
-       
-        # Double Range Slider Widget
-        range_slider = QSlider()
-        range_slider.setOrientation(Qt.Orientation.Horizontal)
-        # range_slider.setRange(self.domain[0], self.domain[1])
-        # range_slider.setValues(self.values[0], self.values[1])
-        range_slider.setMinimum(self.domain[0])
-        range_slider.setMaximum(self.domain[1])
-        range_slider.setValue(self.values[0])
-        range_slider.setTickPosition(QSlider.TickPosition.TicksBothSides)
-        range_slider.setTickInterval(1)
-        range_slider.setSingleStep(1)
-        range_slider.sliderMoved.connect(self.changeSlider)
-        layout.addWidget(range_slider, 1, 0, 1, 3)
-
-        # Set size policies for the widgets
-        # size_policy_chart = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        # size_policy_slider = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-
-        # self.bar_chart.setSizePolicy(size_policy_chart)
-        # range_slider.setSizePolicy(size_policy_slider)
-
-        # Set stretch factors for the widgets
-        # layout.setColumnStretch(0, 1)
-        # layout.setColumnStretch(1, 1)
-        # layout.setColumnStretch(2, 1)
-
-        self.setLayout(layout)
-
-        # Additional styling if required
-        # self.setStyleSheet("...")
-
-    def changeSlider(self, values):
-        # Function to handle slider value changes
-        pass
-
-
-class BarChart(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.series = QtCharts.QBarSeries()
-        self.chart = QtCharts.QChart()
-        self.chart.addSeries(self.series)
-        self.axisX = QtCharts.QBarCategoryAxis()
-        self.axisY = QtCharts.QValueAxis()
-        self.chart.addAxis(self.axisX, Qt.AlignmentFlag.AlignBottom)
-        self.chart.addAxis(self.axisY, Qt.AlignmentFlag.AlignLeft)
-        self.chart.legend().setVisible(False)
-        self.chartView = QtCharts.QChartView(self.chart)
-        self.chartView.setRenderHint(QPainter.RenderHint.Antialiasing)
-
-        layout = QVBoxLayout(self)
-        layout.addWidget(self.chartView)
-
-        self.setMinimumSize(200, 200)
-
-    def setColor(self, color):
-        # Set color for the bar chart
-        palette = self.chartView.palette()
-        palette.setColor(QPalette.ColorRole.Window, color)
-        self.chartView.setPalette(palette)
-
-    def setBarData(self, unique_styles, style_counts, style_count_selection):
-        self.series.clear()
-        categories = [str(style) for style in unique_styles]
-        self.axisX.clear()
-        self.axisX.append(categories)
-
-        bar_set = QtCharts.QBarSet("Bar")
-        for count in style_counts:
-            bar_set.append(count)
-        # bar_set.setColor(QColor(0, 0, 255)) 
-        self.series.append(bar_set)
-
-        selected_bar_set = QtCharts.QBarSet("Selected Bar")
-        for count in style_count_selection:
-            selected_bar_set.append(count)
-        # selected_bar_set.setColor(QColor(255, 0, 0))
-        self.series.append(selected_bar_set)
-
-        self.chart.removeSeries(self.series)
-        self.chart.addSeries(self.series)
-        self.series.attachAxis(self.axisX)
-        self.series.attachAxis(self.axisY)
-
-    def fill_in_barplot(self, unique_styles, style_counts, style_count_selection):
-        self.setBarData(unique_styles, style_counts, style_count_selection)
-        self.repaint()
