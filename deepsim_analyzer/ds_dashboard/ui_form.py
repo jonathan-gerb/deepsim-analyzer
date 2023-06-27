@@ -585,13 +585,8 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
 
-<<<<<<< HEAD
-        self.statistics_tab.setCurrentIndex(1)
-        self.box_metric_tabs.setCurrentIndex(4)
-=======
         self.statistics_tab.setCurrentIndex(0)
         self.box_metric_tabs.setCurrentIndex(2)
->>>>>>> c0b2543feb37053e3f5d0895e87342c21b3f8390
 
 
         QMetaObject.connectSlotsByName(MainWindow)

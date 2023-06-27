@@ -87,12 +87,7 @@ class MainWindow(QMainWindow):
 
         # in time we have to get all features for all the data, we will start with
         # just the dummy feature
-<<<<<<< HEAD
-        # self.available_features = ["dino", "semantic", "dummy", "texture", "emotion"]
-        self.available_features = ["dino", "dummy", "texture"]
-=======
         self.available_features = ["dino", "semantic", "dummy", "texture", "emotion", "clip"]
->>>>>>> c0b2543feb37053e3f5d0895e87342c21b3f8390
 
         # metric option defaults
         self.dino_distance_measure = "euclidian"
