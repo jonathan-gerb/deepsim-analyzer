@@ -118,10 +118,10 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout.addWidget(self.apply_filters)
 
-        self.reset_filters = QPushButton(self.verticalLayoutWidget_6)
-        self.reset_filters.setObjectName(u"reset_filters")
+        self.reset_dataset_filters = QPushButton(self.verticalLayoutWidget_6)
+        self.reset_dataset_filters.setObjectName(u"reset_dataset_filters")
 
-        self.horizontalLayout.addWidget(self.reset_filters)
+        self.horizontalLayout.addWidget(self.reset_dataset_filters)
 
         self.label_10 = QLabel(self.verticalLayoutWidget_6)
         self.label_10.setObjectName(u"label_10")
@@ -455,7 +455,7 @@ class Ui_MainWindow(object):
         self.clip_tab.setObjectName(u"clip_tab")
         self.verticalLayoutWidget = QWidget(self.clip_tab)
         self.verticalLayoutWidget.setObjectName(u"verticalLayoutWidget")
-        self.verticalLayoutWidget.setGeometry(QRect(20, 20, 501, 141))
+        self.verticalLayoutWidget.setGeometry(QRect(20, 90, 501, 141))
         self.Clip_input_layout = QVBoxLayout(self.verticalLayoutWidget)
         self.Clip_input_layout.setObjectName(u"Clip_input_layout")
         self.Clip_input_layout.setContentsMargins(0, 0, 0, 0)
@@ -470,10 +470,26 @@ class Ui_MainWindow(object):
 
         self.Clip_input_layout.addWidget(self.tb_clip_input)
 
-        self.b_submit = QPushButton(self.verticalLayoutWidget)
-        self.b_submit.setObjectName(u"b_submit")
+        self.horizontalLayoutWidget_2 = QWidget(self.clip_tab)
+        self.horizontalLayoutWidget_2.setObjectName(u"horizontalLayoutWidget_2")
+        self.horizontalLayoutWidget_2.setGeometry(QRect(20, 20, 501, 51))
+        self.horizontalLayout_5 = QHBoxLayout(self.horizontalLayoutWidget_2)
+        self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
+        self.horizontalLayout_5.setContentsMargins(0, 0, 0, 0)
+        self.clip_radio_combsim = QRadioButton(self.horizontalLayoutWidget_2)
+        self.clip_radio_combsim.setObjectName(u"clip_radio_combsim")
 
-        self.Clip_input_layout.addWidget(self.b_submit)
+        self.horizontalLayout_5.addWidget(self.clip_radio_combsim)
+
+        self.clip_radio_imgsim = QRadioButton(self.horizontalLayoutWidget_2)
+        self.clip_radio_imgsim.setObjectName(u"clip_radio_imgsim")
+
+        self.horizontalLayout_5.addWidget(self.clip_radio_imgsim)
+
+        self.clip_radio_textsim = QRadioButton(self.horizontalLayoutWidget_2)
+        self.clip_radio_textsim.setObjectName(u"clip_radio_textsim")
+
+        self.horizontalLayout_5.addWidget(self.clip_radio_textsim)
 
         self.box_metric_tabs.addTab(self.clip_tab, "")
         self.dummy_tab = QWidget()
@@ -522,7 +538,7 @@ class Ui_MainWindow(object):
         self.label_3.setText(QCoreApplication.translate("MainWindow", u"date range", None))
         self.label_4.setText(QCoreApplication.translate("MainWindow", u"to", None))
         self.apply_filters.setText(QCoreApplication.translate("MainWindow", u"Apply", None))
-        self.reset_filters.setText(QCoreApplication.translate("MainWindow", u"reset", None))
+        self.reset_dataset_filters.setText(QCoreApplication.translate("MainWindow", u"reset", None))
         self.label_10.setText(QCoreApplication.translate("MainWindow", u"filtered datset size: ", None))
         self.filtered_dataset_size.setText(QCoreApplication.translate("MainWindow", u"INT", None))
         self.title.setText(QCoreApplication.translate("MainWindow", u"Metric weights", None))
@@ -581,7 +597,9 @@ class Ui_MainWindow(object):
         self.box_metric_tabs.setTabText(self.box_metric_tabs.indexOf(self.semantic_tab), QCoreApplication.translate("MainWindow", u"Semantic", None))
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"Describe similarity aspect to a Clip model", None))
         self.tb_clip_input.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Can you give me an image with a similar ...", None))
-        self.b_submit.setText(QCoreApplication.translate("MainWindow", u"Submit Similarity Description", None))
+        self.clip_radio_combsim.setText(QCoreApplication.translate("MainWindow", u"combined sim", None))
+        self.clip_radio_imgsim.setText(QCoreApplication.translate("MainWindow", u"image embedding sim", None))
+        self.clip_radio_textsim.setText(QCoreApplication.translate("MainWindow", u"text sim", None))
         self.box_metric_tabs.setTabText(self.box_metric_tabs.indexOf(self.clip_tab), QCoreApplication.translate("MainWindow", u"Clip", None))
         self.box_metric_tabs.setTabText(self.box_metric_tabs.indexOf(self.dummy_tab), QCoreApplication.translate("MainWindow", u"Dummy", None))
         self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"Similar Images", None))

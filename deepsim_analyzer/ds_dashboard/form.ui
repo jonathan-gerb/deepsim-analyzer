@@ -141,7 +141,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="reset_filters">
+         <widget class="QPushButton" name="reset_dataset_filters">
           <property name="text">
            <string>reset</string>
           </property>
@@ -1051,7 +1051,7 @@
       <property name="geometry">
        <rect>
         <x>20</x>
-        <y>20</y>
+        <y>90</y>
         <width>501</width>
         <height>141</height>
        </rect>
@@ -1074,10 +1074,36 @@
          </property>
         </widget>
        </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="horizontalLayoutWidget_2">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>20</y>
+        <width>501</width>
+        <height>51</height>
+       </rect>
+      </property>
+      <layout class="QHBoxLayout" name="horizontalLayout_5">
        <item>
-        <widget class="QPushButton" name="b_submit">
+        <widget class="QRadioButton" name="clip_radio_combsim">
          <property name="text">
-          <string>Submit Similarity Description</string>
+          <string>combined sim</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="clip_radio_imgsim">
+         <property name="text">
+          <string>image embedding sim</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="clip_radio_textsim">
+         <property name="text">
+          <string>text sim</string>
          </property>
         </widget>
        </item>

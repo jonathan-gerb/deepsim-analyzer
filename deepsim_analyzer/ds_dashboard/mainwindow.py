@@ -7,10 +7,10 @@ from copy import deepcopy
 from pathlib import Path
 
 import cv2
-# deepsim analyzer package
-import deepsim_analyzer as da
+import clip
 import numpy as np
 import pyqtgraph as pg
+import torch
 from PIL import Image
 # qt imports
 from PyQt6 import QtWidgets
@@ -19,10 +19,13 @@ from PyQt6.QtGui import QColor, QMouseEvent, QPainter, QPixmap, QTransform
 from PyQt6.QtWidgets import (QApplication, QFileDialog, QGraphicsScene,
                              QGraphicsView, QMainWindow, QSizePolicy,
                              QTabWidget, QVBoxLayout)
-from scipy import spatial
+
 from sklearn.metrics.pairwise import cosine_distances
 from sklearn.preprocessing import minmax_scale
 from tqdm import tqdm
+
+# deepsim analyzer package
+import deepsim_analyzer as da
 
 # custom widgets
 from .custom_widgets import ScatterplotWidget, TimelineView, TimelineWindow
@@ -59,15 +62,19 @@ class MainWindow(QMainWindow):
         # save passed arguments as attributes
         self.image_key_dict = key_dict
         self.image_keys = [key for key in key_dict.keys()] # hashes
-        self.key_to_idx = {key:i for i, key in enumerate(key_dict.keys())} # hashes
-        self.image_indices = list(self.key_to_idx.values())
-        self.image_paths = [str(Path(images_filepath) / image_name) for image_name in key_dict.values()]
+        self.image_indices = list(range(len(self.image_keys)))
+        self.key_to_idx = {key:i for i, key in enumerate(self.image_keys)} # hashes
+        # self.image_indices = list(self.key_to_idx.values())
+        self.image_paths = [str(Path(images_filepath) / key_dict[key]) for key in self.image_keys]
+        print(self.image_keys[0])
+        print(self.image_indices[0])
+        print(self.image_paths[0])
 
         self.dataset_mask = np.ones(len(self.image_keys))
 
         # in time we have to get all features for all the data, we will start with
         # just the dummy feature
-        self.available_features = ["dino", "semantic", "dummy", "texture", "emotion"]
+        self.available_features = ["dino", "semantic", "dummy", "texture", "emotion", "clip"]
 
         # metric option defaults
         self.dino_distance_measure = "euclidian"
@@ -90,6 +97,7 @@ class MainWindow(QMainWindow):
         self.set_color_element(self.ui.texture_tab, [143, 143, 143])
         self.set_color_element(self.ui.emotion_tab, [143, 143, 143])
         self.set_color_element(self.ui.semantic_tab, [143, 143, 143])
+        self.set_color_element(self.ui.clip_tab, [143, 143, 143])
 
         # ================ SETUP DATA ================
         print("setting up internal data")
@@ -148,6 +156,7 @@ class MainWindow(QMainWindow):
 
         self.setup_filters()
         self.ui.apply_filters.pressed.connect(self.apply_filters)
+        self.ui.reset_dataset_filters.pressed.connect(self.reset_data_dict)
 
         # ================ SETUP MIDDLE COLUMN ================
         print("------setting up scatterplot")
@@ -164,6 +173,7 @@ class MainWindow(QMainWindow):
 
         print("------setting up middle metric options")
         # SETUP TEXTURE OPTIONs
+        print("setting up texture options")
         # options for what distance measure to use.
         self.ui.texture_opt_eucdist.toggle()
         self.ui.texture_opt_cosdist.toggled.connect(self.texture_opt_dist_cos)
@@ -179,20 +189,30 @@ class MainWindow(QMainWindow):
         self.ui.texture_opt_filtervis.currentIndexChanged.connect(self.texture_show_fm)
         self.ui.texture_opt_show_fm.toggled.connect(self.texture_show_fm)
 
+        # SETUP CLIP OPTIONS
+        print("setting up clip options")
+        self.device = (
+                torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+            )
+        print("loading clip model")
+        self.clip_model, self.clip_preprocess = clip.load("ViT-B/32", device=self.device)
+        self.clip_model = self.clip_model.to(self.device)
+        self.ui.clip_radio_imgsim.toggle()
+
         # SETUP EMOTION OPTIONs
+        print("setting up emotion options")
         # options for what distance measure to use.
         self.ui.emotion_opt_eucdist.toggle()
         self.ui.emotion_opt_cosdist.toggled.connect(self.emotion_opt_dist_cos)
         self.ui.emotion_opt_eucdist.toggled.connect(self.emotion_opt_dist_euc)
 
         # SETUP DINO OPTIONS
-
+        print("setting up dino options")
         # options for what distance measure to use.
         self.ui.dino_opt_eucdist.toggle()
         self.ui.dino_opt_cosdist.toggled.connect(self.dino_opt_dist_cos)
         self.ui.dino_opt_eucdist.toggled.connect(self.dino_opt_dist_euc)
         
-
         # options for calculating similarity based on what vector
         self.ui.dino_opt_fullsim.toggle()
         self.ui.dino_opt_2dsim.toggled.connect(self.dino_opt_simtype)
@@ -293,6 +313,8 @@ class MainWindow(QMainWindow):
             passed_date_filter = int(value['date']) >= filter_date_from and int(value['date']) < filter_date_to
 
             if passed_nationality_filter and passed_media_filter and passed_date_filter:
+                print("-" * 50)
+                print(f"keeping {key}, with values: {value}")
                 keys_to_keep.append(key)
 
         print(f"keeping {len(keys_to_keep)} indices after applying nationality: {filter_nationality} and media: {filter_media} and date: {filter_date_from}-{filter_date_to}")
@@ -312,25 +334,27 @@ class MainWindow(QMainWindow):
 
     def reset_data_dict(self):
         self.data_dict = deepcopy(self.original_data_dict)
+        self.setup_filters()
+        self.apply_filters()
 
 
       # ========================
 
         # Create a plot widget
         # self.bp = pg.PlotWidget()
-        self.bp = BarChart(self)
-        # self.bp=RangeSlider(self)
-        self.get_Selected_stats.connect(self.get_selected_points_stats)
-        self.get_Selected_stats.emit(0) # barplot shows once in beginning because of this
+        # self.bp = BarChart(self)
+        # # self.bp=RangeSlider(self)
+        # self.get_Selected_stats.connect(self.get_selected_points_stats)
+        # self.get_Selected_stats.emit(0) # barplot shows once in beginning because of this
 
-        # img_stats_container = self.ui.box_recom_img_stats
-        # img_stats_container = self.ui.verticalLayoutWidget_2
-        img_stats_container = self.ui.artisits_stats_layout
-        img_stats_container.layout().addWidget(self.bp)
+        # # img_stats_container = self.ui.box_recom_img_stats
+        # # img_stats_container = self.ui.verticalLayoutWidget_2
+        # img_stats_container = self.ui.artisits_stats_layout
+        # img_stats_container.layout().addWidget(self.bp)
 
-        # Set the size policy for the bar plot widget
-        size_policy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.bp.setSizePolicy(size_policy)
+        # # Set the size policy for the bar plot widget
+        # size_policy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        # self.bp.setSizePolicy(size_policy)
         
         # Set the size policy for the layout item containing the bar plot widget
         # layout_item = img_stats_container.layout().itemAt(0)
@@ -534,7 +558,6 @@ class MainWindow(QMainWindow):
             self.display_photo_left(leftname)
             self.display_photo_right(rightname)
 
-            self.ui.reset_filters.pressed.connect(self.setup_filters)
 
     def set_color_element(self, ui_element, color):
         ui_element.setAutoFillBackground(True)
@@ -606,6 +629,7 @@ class MainWindow(QMainWindow):
         texture = self.ui.combo_texture_slider.value()
         emotion = self.ui.combo_emotion_slider.value()
         semantic = self.ui.combo_semantic_slider.value()
+        clip = self.ui.combo_clip_slider.value()
         # TODO: add sliders for the other metrics
         feature_weight_dict = {
             "dummy": dummy / 100,
@@ -613,8 +637,14 @@ class MainWindow(QMainWindow):
             "texture": texture / 100,
             "emotion": emotion / 100,
             "semantic": semantic / 100,
+            "clip": clip / 100
         }
         return feature_weight_dict
+    
+    def euclidian_distance(self, current_vector, feature_name, vector_type_key):
+        a_min_b = current_vector.reshape(-1, 1) - self.data_dict[feature_name][vector_type_key].T
+        distances = np.sqrt(np.einsum('ij,ij->j', a_min_b, a_min_b))
+        return distances
     
     def calculate_nearest_neighbours(self, topk=5):
         # get features for current image
@@ -643,17 +673,39 @@ class MainWindow(QMainWindow):
                 if self.dino_distance_measure == "cosine":
                     distances = cosine_distances(current_vector.reshape(1, -1), self.data_dict[feature_name][vector_type_key]).squeeze()
                 if self.dino_distance_measure == "euclidian":
-                    a_min_b = current_vector.reshape(-1, 1) - self.data_dict[feature_name][vector_type_key].T
-                    distances = np.sqrt(np.einsum('ij,ij->j', a_min_b, a_min_b))
+                    distances = self.euclidian_distance(current_vector, feature_name, vector_type_key)
             elif feature_name == "texture":
                 if self.texture_distance_measure == "cosine":
                     distances = cosine_distances(current_vector.reshape(1, -1), self.data_dict[feature_name][vector_type_key]).squeeze()
                 if self.texture_distance_measure == "euclidian":
-                    a_min_b = current_vector.reshape(-1, 1) - self.data_dict[feature_name][vector_type_key].T
-                    distances = np.sqrt(np.einsum('ij,ij->j', a_min_b, a_min_b))
+                    distances = self.euclidian_distance(current_vector, feature_name, vector_type_key)
+            elif feature_name == "clip":
+                if self.ui.clip_radio_textsim.isChecked():
+                    text = self.ui.tb_clip_input.toPlainText()
+                    print(f"using text similarity, similar to: '{text}'")
+                    text = clip.tokenize([text]).to(self.device)
+                    current_vector = self.clip_model.encode_text(text).squeeze().cpu().detach().numpy()
+                    print(current_vector.shape)
+
+                    distances = self.euclidian_distance(current_vector, feature_name, vector_type_key)
+                elif self.ui.clip_radio_imgsim.isChecked():
+                    # use the normal image based current_vector as retrieved above
+                    distances = self.euclidian_distance(current_vector, feature_name, vector_type_key)
+                elif self.ui.clip_radio_combsim.isChecked():
+                    print("using combined similarity!")
+                    text = self.ui.tb_clip_input.toPlainText()
+                    text = clip.tokenize([text]).to(self.device)
+                    current_text_vector = self.clip_model.encode_text(text).squeeze().cpu().detach().numpy()
+
+                    # similarity of text
+                    distances_text = self.euclidian_distance(current_text_vector, feature_name, vector_type_key)
+                    distances_img = self.euclidian_distance(current_vector, feature_name, vector_type_key)
+                    # we can just sum as they should be in the same scale
+                    distances = distances_text + distances_img 
+
             else:
-                a_min_b = current_vector.reshape(-1, 1) - self.data_dict[feature_name][vector_type_key].T
-                distances = np.sqrt(np.einsum('ij,ij->j', a_min_b, a_min_b))
+                # by default we use euclidian distance for a feature
+                distances = self.euclidian_distance(current_vector, feature_name, vector_type_key)
             
             # rescale distances so that the distances are always within the range of 0-1
             # this way we can combine them, the element with distance 0 is the image itself if it's 
@@ -1035,6 +1087,7 @@ if __name__ == "__main__":
 # TODO: i will put it in a seperate py file when it's done
 
 from PyQt6.QtCharts import QChart
+from PyQt6 import QtCharts
 # from PyQt6 import QtCharts
 from PyQt6.QtCore import QRect
 from PyQt6.QtGui import QColor, QPalette
