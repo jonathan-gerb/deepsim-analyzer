@@ -32,7 +32,7 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName(u"centralwidget")
         self.b_upload = QPushButton(self.centralwidget)
         self.b_upload.setObjectName(u"b_upload")
-        self.b_upload.setGeometry(QRect(10, 330, 451, 25))
+        self.b_upload.setGeometry(QRect(10, 330, 451, 31))
         sizePolicy = QSizePolicy()
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -123,6 +123,11 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout.addWidget(self.reset_dataset_filters)
 
+        self.reload_everything = QPushButton(self.verticalLayoutWidget_6)
+        self.reload_everything.setObjectName(u"reload_everything")
+
+        self.horizontalLayout.addWidget(self.reload_everything)
+
         self.label_10 = QLabel(self.verticalLayoutWidget_6)
         self.label_10.setObjectName(u"label_10")
 
@@ -199,20 +204,15 @@ class Ui_MainWindow(object):
         self.scatterplot_options = QHBoxLayout(self.horizontalLayoutWidget)
         self.scatterplot_options.setObjectName(u"scatterplot_options")
         self.scatterplot_options.setContentsMargins(0, 0, 0, 0)
-        self.b_recalculate = QPushButton(self.horizontalLayoutWidget)
-        self.b_recalculate.setObjectName(u"b_recalculate")
+        self.combined_projection_btn = QPushButton(self.horizontalLayoutWidget)
+        self.combined_projection_btn.setObjectName(u"combined_projection_btn")
 
-        self.scatterplot_options.addWidget(self.b_recalculate)
+        self.scatterplot_options.addWidget(self.combined_projection_btn)
 
-        self.b_combined = QPushButton(self.horizontalLayoutWidget)
-        self.b_combined.setObjectName(u"b_combined")
+        self.subset_projection_btn = QPushButton(self.horizontalLayoutWidget)
+        self.subset_projection_btn.setObjectName(u"subset_projection_btn")
 
-        self.scatterplot_options.addWidget(self.b_combined)
-
-        self.b_metric = QPushButton(self.horizontalLayoutWidget)
-        self.b_metric.setObjectName(u"b_metric")
-
-        self.scatterplot_options.addWidget(self.b_metric)
+        self.scatterplot_options.addWidget(self.subset_projection_btn)
 
         self.scatterplot_frame = PlotWidget(self.centralwidget)
         self.scatterplot_frame.setObjectName(u"scatterplot_frame")
@@ -593,7 +593,8 @@ class Ui_MainWindow(object):
         self.label_3.setText(QCoreApplication.translate("MainWindow", u"date range", None))
         self.label_4.setText(QCoreApplication.translate("MainWindow", u"to", None))
         self.apply_filters.setText(QCoreApplication.translate("MainWindow", u"Apply", None))
-        self.reset_dataset_filters.setText(QCoreApplication.translate("MainWindow", u"reset", None))
+        self.reset_dataset_filters.setText(QCoreApplication.translate("MainWindow", u"reset filter", None))
+        self.reload_everything.setText(QCoreApplication.translate("MainWindow", u"reload data", None))
         self.label_10.setText(QCoreApplication.translate("MainWindow", u"filtered datset size: ", None))
         self.filtered_dataset_size.setText(QCoreApplication.translate("MainWindow", u"INT", None))
         self.statistics_tabs.setTabText(self.statistics_tabs.indexOf(self.style_stats), QCoreApplication.translate("MainWindow", u"Style statistics", None))
@@ -604,9 +605,8 @@ class Ui_MainWindow(object):
         self.t_style.setText(QCoreApplication.translate("MainWindow", u"Style:", None))
         self.t_tags.setText(QCoreApplication.translate("MainWindow", u"Tags:", None))
         self.box_left_img.setText("")
-        self.b_recalculate.setText(QCoreApplication.translate("MainWindow", u"Metric specific", None))
-        self.b_combined.setText(QCoreApplication.translate("MainWindow", u"Weighted projection", None))
-        self.b_metric.setText(QCoreApplication.translate("MainWindow", u"Recalculate projection", None))
+        self.combined_projection_btn.setText(QCoreApplication.translate("MainWindow", u"Calc combined projection", None))
+        self.subset_projection_btn.setText(QCoreApplication.translate("MainWindow", u"Reproject current", None))
         self.dino_opts1.setTitle("")
         self.dinolabl2.setText(QCoreApplication.translate("MainWindow", u"head:", None))
         self.dinolabel.setText(QCoreApplication.translate("MainWindow", u"layer:", None))

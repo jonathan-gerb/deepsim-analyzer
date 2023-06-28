@@ -21,6 +21,8 @@ from tqdm import tqdm
 import cv2
 from tensorflow import keras
 import matplotlib.cm as cm
+import joblib
+from umap import UMAP
 
 # qt imports
 from PyQt6 import QtWidgets
@@ -70,24 +72,19 @@ class MainWindow(QMainWindow):
         self.image_directory = image_directory
         self.image_keys = [key for key in key_dict.keys()] # hashes
         self.image_indices = list(range(len(self.image_keys)))
-        self.indices_to_keep = self.image_indices
+        self.non_filtered_indices = self.image_indices
         self.key_to_idx = {key:i for i, key in enumerate(self.image_keys)} # hashes
-        # self.image_indices = list(self.key_to_idx.values())
         self.image_paths = [str(Path(image_directory) / self.image_key_dict[key]) for key in self.image_keys]
-        print("idx 0")
-        print(self.image_keys[0])
-        print(self.image_indices[0])
-        print(self.image_paths[0])
-        print("idx 1")
-        print(self.image_keys[1])
-        print(self.image_indices[1])
-        print(self.image_paths[1])
 
-        self.dataset_mask = np.ones(len(self.image_keys))
-
-        # in time we have to get all features for all the data, we will start with
-        # just the dummy feature
+        # load umap reducers
         self.available_features = ["dino", "semantic", "dummy", "texture", "emotion", "clip"]
+
+        self.reducer_basepath = Path(__file__).parents[2] / "data" / "processed" / "reducers"
+        reducer_paths = [path for path in self.reducer_basepath.glob("*.umap")]
+        self.reducers = {}
+        for r_path in reducer_paths:
+            reducer_name = r_path.name.split(".")[0]
+            self.reducers[reducer_name] = joblib.load(str(r_path))
 
         # metric option defaults
         self.dino_distance_measure = "euclidian"
@@ -131,27 +128,8 @@ class MainWindow(QMainWindow):
         print("reading metadata")
         self.metadata = da.read_metadata_batch(datafile_path, self.image_keys)
 
-        # data dict should contain all the data
-        self.data_dict = {}
-        # init datadict
-
-        # key data for first key to get shapes
-        test_dict_key = self.get_features_from_dataset(self.image_keys[0])
-
-        for feature_name in self.available_features:
-            # get test feature to mock shape
-            test_feature = test_dict_key[feature_name]['full']
-            self.data_dict[feature_name] = {}
-            self.data_dict[feature_name]["projection"] = np.zeros((len(self.image_keys), 2))
-            self.data_dict[feature_name]["full"] = np.zeros((len(self.image_keys), test_feature.shape[0]))
-
-        for i, key in tqdm(enumerate(self.image_keys), desc="loading in feature data", total=len(self.image_keys)):
-            feature_dict_key = self.get_features_from_dataset(key)
-            for feature_name, value in feature_dict_key.items():
-                self.data_dict[feature_name]["projection"][i] = value['projection']
-                self.data_dict[feature_name]["full"][i] = value['full']
-                
-        self.original_data_dict = deepcopy(self.data_dict)
+        # sets up the data_dict
+        self.load_metric_data()
 
         # ================ SETUP LEFT COLUMN ================
         print("-------setting up left column of dashboard")
@@ -179,7 +157,8 @@ class MainWindow(QMainWindow):
 
         self.setup_filters()
         self.ui.apply_filters.pressed.connect(self.apply_filters)
-        self.ui.reset_dataset_filters.pressed.connect(self.reset_data_dict)
+        self.ui.reset_dataset_filters.pressed.connect(self.reset_data_filters)
+        self.ui.reload_everything.pressed.connect(self.reload_data_dict)
 
         # ================ SETUP MIDDLE COLUMN ================
         
@@ -191,6 +170,11 @@ class MainWindow(QMainWindow):
         # And setup up once to initialize
         self.setup_scatterplot()
     
+        # functionality to recalculate projections
+        self.ui.combined_projection_btn.pressed.connect(self.calc_combined_projection)
+
+        self.ui.subset_projection_btn.pressed.connect(self.recalc_projection)
+
         print("------setting up middle metric options")
         # ----------------SETUP TEXTURE OPTIONS----------------
         print("setting up texture options")
@@ -313,6 +297,66 @@ class MainWindow(QMainWindow):
         self.ui.statistics_tabs.currentChanged.connect(self.show_animation_on_tab_switch)
         self.bar_plots = [self.bp, self.bp2, self.bp3]
       # ========================
+    def load_metric_data(self):
+        # init datadict
+        self.data_dict = {}
+
+        # key data for first key to get shapes
+        test_dict_key = self.get_features_from_dataset(self.image_keys[0])
+
+        for feature_name in self.available_features:
+            # get test feature to mock shape
+            test_feature = test_dict_key[feature_name]['full']
+            self.data_dict[feature_name] = {}
+            self.data_dict[feature_name]["projection"] = np.zeros((len(self.image_keys), 2))
+            self.data_dict[feature_name]["full"] = np.zeros((len(self.image_keys), test_feature.shape[0]))
+
+        for i, key in tqdm(enumerate(self.image_keys), desc="loading in feature data", total=len(self.image_keys)):
+            feature_dict_key = self.get_features_from_dataset(key)
+            for feature_name, value in feature_dict_key.items():
+                self.data_dict[feature_name]["projection"][i] = value['projection']
+                self.data_dict[feature_name]["full"][i] = value['full']
+
+
+    def recalc_projection(self):
+        self.any_reprojection_applied = True
+        current_metric_type = self.ui.box_metric_tabs.tabText(self.ui.box_metric_tabs.currentIndex()).lower()
+        print(f"reprojecting data for: {current_metric_type}")
+
+        if len(self.scatterplot.selected_indices) > 0:
+            indices_to_keep_scatterplot = [idx for idx in self.scatterplot.selected_indices if idx in self.non_filtered_indices]
+            print('selected points:')
+            print(indices_to_keep_scatterplot, len(indices_to_keep_scatterplot))
+            print("indices to keep: ")
+            print(self.non_filtered_indices, len(self.non_filtered_indices))
+            indices_to_project = indices_to_keep_scatterplot
+        else:
+            indices_to_project = self.non_filtered_indices
+
+        data_to_reproject = self.data_dict[current_metric_type]['full'][indices_to_project]
+
+        # only use the selected indices to calculate the umap, after that use it to project all the data
+        # (even if it's not actually visible) so that we don't mix projected and reprojected data.
+        print(f"projecting data with shape: {data_to_reproject.shape}")
+        reducer = UMAP(n_neighbors=6, n_components=2, metric='cosine').fit(data_to_reproject)
+        print(f"overwriting reprojected data for metric: {current_metric_type}")
+        reprojected_data = reducer.transform(self.data_dict[current_metric_type]['full'])
+        print(reprojected_data.shape)
+        self.data_dict[current_metric_type]['projection'] = reprojected_data
+
+        # now recalculate projection etc
+        self.recalc_similarity()
+        self.setup_scatterplot(clear_selection=False)
+
+    
+    def calc_combined_projection(self):
+        # first concatenate all the vectors into one big mega vector
+        for feature_name in self.available_features:
+            self.data_dict[feature_name]['full']
+        # then calculate the umap
+
+        # then plot that combined umap
+
 
     def show_animation_on_tab_switch(self,index):
         if 0 <= index < len(self.bar_plots):
@@ -356,7 +400,8 @@ class MainWindow(QMainWindow):
         self.ui.dataset_filtering_from_date.setText(str(min(dates)))
         self.ui.dataset_filtering_to_date.setText(str(max(dates)+1))
 
-        self.ui.filtered_dataset_size.setText(f"{len(self.indices_to_keep)}/{len(self.image_indices)}")
+        self.ui.filtered_dataset_size.setText(f"{len(self.non_filtered_indices)}/{len(self.image_indices)}")
+        # self.ui.filtered_dataset_size.setText(f"{len(self.indices_to_keep)}/{len(self.image_indices)}")
         
 
     def apply_filters(self):
@@ -395,32 +440,44 @@ class MainWindow(QMainWindow):
 
 
         # self.filter_data_by_key(keys_to_keep)
-        self.indices_to_keep = [self.key_to_idx[img_hash] for img_hash in keys_to_keep]
+        self.non_filtered_indices = [self.key_to_idx[img_hash] for img_hash in keys_to_keep]
         self.recalc_similarity()
         self.setup_scatterplot()
 
-        self.ui.filtered_dataset_size.setText(f"{len(self.indices_to_keep)}/{len(self.image_indices)}")
+        self.ui.filtered_dataset_size.setText(f"{len(self.non_filtered_indices)}/{len(self.image_indices)}")
 
 
-    def reset_data_dict(self):
-        self.indices_to_keep = self.image_indices
+    def reset_data_filters(self):
+        """reset filters. don't reset projections"""
+        self.non_filtered_indices = self.image_indices
         self.setup_filters()
         self.apply_filters()
+        
+    def reload_data_dict(self):
+        """reset filters and reload dataset. Also refresh scatterplot and similarity scores."""
+        self.reset_data_filters()
+        self.load_metric_data()
+        self.recalc_similarity()
+        self.setup_scatterplot()
 
-    def setup_scatterplot(self):
+    def setup_scatterplot(self, clear_selection=True):
         current_metric_type = self.ui.box_metric_tabs.tabText(self.ui.box_metric_tabs.currentIndex())
         print("changing 2d scatterplot to: ", current_metric_type)
 
         if not hasattr(self, 'scatterplot'):
-            print(f'a new scatterplot is created for {current_metric_type.lower()}')
+            print(f'a new scatterplot is created for {current_metric_type.lower()}, passing points data of shape: {self.data_dict[current_metric_type.lower()]["projection"].shape}')
             self.scatterplot = ScatterplotWidget(
-                self.data_dict[current_metric_type.lower()]["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame, self.indices_to_keep
+                self.data_dict[current_metric_type.lower()]["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame, self.non_filtered_indices
             )
             self.scatterplot.plot_widget.scene().mousePressEvent=self.on_canvas_click
         else:
-            print('only redraw scatterplot')
+            print(f'redraw scatterplot for {current_metric_type.lower()}, passing points data of shape: {self.data_dict[current_metric_type.lower()]["projection"].shape}')
             self.scatterplot.points = self.data_dict[current_metric_type.lower()]["projection"]
-            self.scatterplot.indices_to_keep = self.indices_to_keep
+            self.scatterplot.update_selected_points_values()
+            self.scatterplot.indices_to_keep = self.non_filtered_indices
+            if clear_selection:
+                self.scatterplot.clear_selection()
+
             if len(self.scatterplot.selected_indices)<100:
                 self.scatterplot.dots_plot=False
                 self.scatterplot.draw_scatterplot()
@@ -799,7 +856,7 @@ class MainWindow(QMainWindow):
         indices = np.arange(len(self.image_keys))
 
         # apply filter mask
-        indices = indices[self.indices_to_keep]
+        indices = indices[self.non_filtered_indices]
 
         for feature_name in self.available_features:
             
@@ -852,21 +909,19 @@ class MainWindow(QMainWindow):
                     text = clip.tokenize([text]).to(self.device)
                     current_vector = self.clip_model.encode_text(text).squeeze().cpu().detach().numpy()
 
-                    # distances = self.euclidian_distance(current_vector, feature_name, vector_type_key)
+                    # TODO actually implement this
+                    if vector_type_key == "projection":
+                        current_vector = self.reducers['clip'].transform(current_vector)
+
                     distances = self.cosine_distance(current_vector, feature_name, vector_type_key)
                 elif self.ui.clip_radio_imgsim.isChecked():
                     # use the normal image based current_vector as retrieved above
-                    # distances = self.euclidian_distance(current_vector, feature_name, vector_type_key)
                     distances = self.cosine_distance(current_vector, feature_name, vector_type_key)
                 elif self.ui.clip_radio_combsim.isChecked():
                     print("using combined similarity!")
                     text = self.ui.tb_clip_input.toPlainText()
                     text = clip.tokenize([text]).to(self.device)
                     current_text_vector = self.clip_model.encode_text(text).squeeze().cpu().detach().numpy()
-
-                    # similarity of text
-                    # distances_text = self.euclidian_distance(current_text_vector, feature_name, vector_type_key)
-                    # distances_img = self.euclidian_distance(current_vector, feature_name, vector_type_key)
 
                     distances_text = self.cosine_distance(current_text_vector, feature_name, vector_type_key)
                     distances_img = self.cosine_distance(current_vector, feature_name, vector_type_key)
@@ -885,7 +940,7 @@ class MainWindow(QMainWindow):
 
             distances_dict[feature_name] = distances
 
-            distances = distances[self.indices_to_keep]
+            distances = distances[self.non_filtered_indices]
 
             sorting_indices = distances.argsort()
             sorted_distances = distances[sorting_indices]
@@ -916,7 +971,7 @@ class MainWindow(QMainWindow):
             all_distances_sum = np.average(all_distances, axis=1)
 
         # apply filter mask
-        all_distances_sum = all_distances_sum[self.indices_to_keep]
+        all_distances_sum = all_distances_sum[self.non_filtered_indices]
 
         sorting_indices = all_distances_sum.argsort()
         combined_ranking = indices[sorting_indices]

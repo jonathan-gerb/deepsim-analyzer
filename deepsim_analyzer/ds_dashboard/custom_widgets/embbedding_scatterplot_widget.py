@@ -76,7 +76,7 @@ class ScatterplotWidget(QWidget):
         self.selected_point=self.points[0]
         self.plot_inex=None
         self.selected_points = []
-        self.selected_indices=[]
+        self.selected_indices = []
         self.outside_points_visible = False
         self.dots_plot=True
 
@@ -193,7 +193,7 @@ class ScatterplotWidget(QWidget):
     def clear_selection(self):
         print('clear selection, is it a switch between tabs?')
         # for switch between tabs, to get all points again
-        # self.selected_points = []
+        # self.selected_points = [] # jonathan had this on
         # self.selected_indices=[]
         if self.rect is not None and self.rect in self.plot_widget.scene().items():
             self.plot_widget.scene().removeItem(self.rect)
@@ -239,17 +239,21 @@ class ScatterplotWidget(QWidget):
 
         if self.selected_indices!=[]:
             self.get_Selected_stats.emit(0) 
-        
+
+
+    def update_selected_points_values(self):
+        self.selected_points = self.points[self.selected_indices].copy()
+
 
     def draw_scatterplot(self):
         print('draw_scatterplot')
         self.plot_widget.clear()
-        if self.selected_indices!=[]:
-            points= self.selected_points
-            indices= self.selected_indices
+        if len(self.selected_points) != 0:
+            points = self.selected_points
+            indices = self.selected_indices
         else:
-            points=self.points
-            indices= self.indices
+            points = self.points
+            indices = self.indices
 
         self.image_items = []
         new_pos=[]

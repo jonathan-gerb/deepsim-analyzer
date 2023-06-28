@@ -20,7 +20,7 @@
       <x>10</x>
       <y>330</y>
       <width>451</width>
-      <height>25</height>
+      <height>31</height>
      </rect>
     </property>
     <property name="sizePolicy">
@@ -143,7 +143,14 @@
         <item>
          <widget class="QPushButton" name="reset_dataset_filters">
           <property name="text">
-           <string>reset</string>
+           <string>reset filter</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="reload_everything">
+          <property name="text">
+           <string>reload data</string>
           </property>
          </widget>
         </item>
@@ -341,23 +348,16 @@
     </property>
     <layout class="QHBoxLayout" name="scatterplot_options">
      <item>
-      <widget class="QPushButton" name="b_recalculate">
+      <widget class="QPushButton" name="combined_projection_btn">
        <property name="text">
-        <string>Metric specific</string>
+        <string>Calc combined projection</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="b_combined">
+      <widget class="QPushButton" name="subset_projection_btn">
        <property name="text">
-        <string>Weighted projection</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="b_metric">
-       <property name="text">
-        <string>Recalculate projection</string>
+        <string>Reproject current</string>
        </property>
       </widget>
      </item>
@@ -1278,7 +1278,7 @@
        <item row="0" column="1">
         <widget class="QSlider" name="combo_dino_slider">
          <property name="toolTip">
-          <string> </string>
+          <string/>
          </property>
          <property name="maximum">
           <number>100</number>
