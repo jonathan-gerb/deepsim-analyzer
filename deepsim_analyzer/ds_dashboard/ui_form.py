@@ -576,7 +576,7 @@ class Ui_MainWindow(object):
         self.b_upload.setText(QCoreApplication.translate("MainWindow", u"Upload Image", None))
         self.l_timeline.setText(QCoreApplication.translate("MainWindow", u"Timeline for above image", None))
         self.label_5.setText(QCoreApplication.translate("MainWindow", u"nationality", None))
-        self.label_8.setText(QCoreApplication.translate("MainWindow", u"media type", None))
+        self.label_8.setText(QCoreApplication.translate("MainWindow", u"material", None))
         self.label_3.setText(QCoreApplication.translate("MainWindow", u"date range", None))
         self.label_4.setText(QCoreApplication.translate("MainWindow", u"to", None))
         self.apply_filters.setText(QCoreApplication.translate("MainWindow", u"Apply", None))
