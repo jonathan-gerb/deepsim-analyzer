@@ -178,154 +178,23 @@
       <height>341</height>
      </rect>
     </property>
-    <widget class="QWidget" name="formLayoutWidget">
+    <widget class="QTabWidget" name="statistics_tabs">
      <property name="geometry">
       <rect>
-       <x>10</x>
+       <x>0</x>
        <y>0</y>
-       <width>201</width>
-       <height>229</height>
-      </rect>
-     </property>
-     <layout class="QFormLayout" name="formLayout">
-      <item row="0" column="0" colspan="2">
-       <widget class="QLabel" name="title">
-        <property name="text">
-         <string>Metric weights</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_dino">
-        <property name="text">
-         <string>Dino</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QSlider" name="combo_dino_slider">
-        <property name="maximum">
-         <number>100</number>
-        </property>
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_texture">
-        <property name="text">
-         <string>Texture</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QSlider" name="combo_texture_slider">
-        <property name="maximum">
-         <number>100</number>
-        </property>
-        <property name="sliderPosition">
-         <number>100</number>
-        </property>
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="label_dummy">
-        <property name="text">
-         <string>Emotion</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="1">
-       <widget class="QSlider" name="combo_emotion_slider">
-        <property name="maximum">
-         <number>100</number>
-        </property>
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="0">
-       <widget class="QLabel" name="label_dummy_2">
-        <property name="text">
-         <string>Clip</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="1">
-       <widget class="QSlider" name="combo_clip_slider">
-        <property name="maximum">
-         <number>100</number>
-        </property>
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="0">
-       <widget class="QLabel" name="label_dummy_3">
-        <property name="text">
-         <string>Semantic</string>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="1">
-       <widget class="QSlider" name="combo_semantic_slider">
-        <property name="maximum">
-         <number>100</number>
-        </property>
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="0">
-       <widget class="QLabel" name="label_dummy_4">
-        <property name="text">
-         <string>Dummy</string>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="1">
-       <widget class="QSlider" name="combo_dummy_slider">
-        <property name="maximum">
-         <number>100</number>
-        </property>
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-       </widget>
-      </item>
-      <item row="7" column="0" colspan="2">
-       <widget class="QPushButton" name="recalc_similarity">
-        <property name="text">
-         <string>Recalculate similarity</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-    <widget class="QTabWidget" name="statistics_tab">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>200</y>
-       <width>451</width>
-       <height>141</height>
+       <width>461</width>
+       <height>341</height>
       </rect>
      </property>
      <property name="autoFillBackground">
       <bool>true</bool>
      </property>
      <property name="currentIndex">
-      <number>1</number>
+      <number>2</number>
+     </property>
+     <property name="usesScrollButtons">
+      <bool>false</bool>
      </property>
      <property name="tabsClosable">
       <bool>false</bool>
@@ -333,20 +202,36 @@
      <property name="tabBarAutoHide">
       <bool>false</bool>
      </property>
-     <widget class="QWidget" name="artists_stats">
+     <widget class="QWidget" name="style_stats">
       <attribute name="title">
-       <string>Artisit statistics</string>
+       <string>Style statistics</string>
       </attribute>
-      <widget class="QWidget" name="verticalLayoutWidget_3">
+      <widget class="QWidget" name="verticalLayoutWidget_4">
        <property name="geometry">
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>451</width>
-         <height>111</height>
+         <width>461</width>
+         <height>311</height>
         </rect>
        </property>
-       <layout class="QVBoxLayout" name="artisits_stats_layout"/>
+       <layout class="QVBoxLayout" name="style_stats_layout"/>
+      </widget>
+     </widget>
+     <widget class="QWidget" name="date_stats">
+      <attribute name="title">
+       <string>Date statistics</string>
+      </attribute>
+      <widget class="QWidget" name="verticalLayoutWidget_8">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>461</width>
+         <height>311</height>
+        </rect>
+       </property>
+       <layout class="QVBoxLayout" name="date_stats_layout"/>
       </widget>
      </widget>
      <widget class="QWidget" name="nationality_stats">
@@ -358,68 +243,12 @@
         <rect>
          <x>-1</x>
          <y>0</y>
-         <width>451</width>
-         <height>111</height>
+         <width>461</width>
+         <height>311</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="nationality_stats_layout"/>
       </widget>
-     </widget>
-     <widget class="QWidget" name="style_stats">
-      <attribute name="title">
-       <string>Style statistics</string>
-      </attribute>
-      <widget class="QWidget" name="verticalLayoutWidget_4">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>0</y>
-         <width>451</width>
-         <height>111</height>
-        </rect>
-       </property>
-       <layout class="QVBoxLayout" name="style_stats_layout"/>
-      </widget>
-     </widget>
-     <widget class="QWidget" name="date_stats">
-      <attribute name="title">
-       <string>date_statistics</string>
-      </attribute>
-      <widget class="QWidget" name="verticalLayoutWidget_8">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>0</y>
-         <width>451</width>
-         <height>111</height>
-        </rect>
-       </property>
-       <layout class="QVBoxLayout" name="date_stats_layout"/>
-      </widget>
-     </widget>
-    </widget>
-    <widget class="QGroupBox" name="box_recom_img_stats">
-     <property name="geometry">
-      <rect>
-       <x>230</x>
-       <y>0</y>
-       <width>231</width>
-       <height>141</height>
-      </rect>
-     </property>
-     <property name="title">
-      <string>Similarity aspects stats</string>
-     </property>
-     <widget class="QWidget" name="verticalLayoutWidget_2">
-      <property name="geometry">
-       <rect>
-        <x>-1</x>
-        <y>9</y>
-        <width>261</width>
-        <height>131</height>
-       </rect>
-      </property>
-      <layout class="QVBoxLayout" name="verticalLayout"/>
      </widget>
     </widget>
    </widget>
@@ -532,13 +361,6 @@
        </property>
       </widget>
      </item>
-     <item>
-      <widget class="QRadioButton" name="r_image_points">
-       <property name="text">
-        <string>points as images</string>
-       </property>
-      </widget>
-     </item>
     </layout>
    </widget>
    <widget class="PlotWidget" name="scatterplot_frame">
@@ -554,14 +376,17 @@
    <widget class="QTabWidget" name="box_metric_tabs">
     <property name="geometry">
      <rect>
-      <x>490</x>
+      <x>480</x>
       <y>460</y>
-      <width>551</width>
+      <width>571</width>
       <height>301</height>
      </rect>
     </property>
+    <property name="autoFillBackground">
+     <bool>true</bool>
+    </property>
     <property name="currentIndex">
-     <number>2</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="dino_tab">
      <attribute name="title">
@@ -1341,6 +1166,187 @@
       <string>Dummy</string>
      </attribute>
     </widget>
+    <widget class="QWidget" name="combined_tab">
+     <attribute name="title">
+      <string>Combined</string>
+     </attribute>
+     <widget class="QWidget" name="formLayoutWidget">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>50</y>
+        <width>271</width>
+        <height>182</height>
+       </rect>
+      </property>
+      <layout class="QFormLayout" name="formLayout">
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_dino">
+         <property name="text">
+          <string>Dino</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_texture">
+         <property name="text">
+          <string>Texture</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QSlider" name="combo_texture_slider">
+         <property name="maximum">
+          <number>100</number>
+         </property>
+         <property name="sliderPosition">
+          <number>100</number>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_dummy">
+         <property name="text">
+          <string>Emotion</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QSlider" name="combo_emotion_slider">
+         <property name="maximum">
+          <number>100</number>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="label_dummy_2">
+         <property name="text">
+          <string>Clip</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QSlider" name="combo_clip_slider">
+         <property name="maximum">
+          <number>100</number>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0">
+        <widget class="QLabel" name="label_dummy_3">
+         <property name="text">
+          <string>Semantic</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="1">
+        <widget class="QSlider" name="combo_semantic_slider">
+         <property name="maximum">
+          <number>100</number>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0">
+        <widget class="QLabel" name="label_dummy_4">
+         <property name="text">
+          <string>Dummy</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="1">
+        <widget class="QSlider" name="combo_dummy_slider">
+         <property name="maximum">
+          <number>100</number>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QSlider" name="combo_dino_slider">
+         <property name="toolTip">
+          <string> </string>
+         </property>
+         <property name="maximum">
+          <number>100</number>
+         </property>
+         <property name="singleStep">
+          <number>1</number>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QGroupBox" name="box_recom_img_stats">
+      <property name="geometry">
+       <rect>
+        <x>300</x>
+        <y>20</y>
+        <width>231</width>
+        <height>231</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Similarity aspects stats</string>
+      </property>
+      <widget class="QWidget" name="verticalLayoutWidget_2">
+       <property name="geometry">
+        <rect>
+         <x>-1</x>
+         <y>9</y>
+         <width>231</width>
+         <height>221</height>
+        </rect>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout"/>
+      </widget>
+     </widget>
+     <widget class="QLabel" name="title">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>20</y>
+        <width>269</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Metric weights</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="recalc_similarity">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>220</y>
+        <width>269</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Recalculate similarity</string>
+      </property>
+     </widget>
+    </widget>
    </widget>
    <widget class="QGroupBox" name="groupBox">
     <property name="geometry">
@@ -1371,6 +1377,9 @@
      </property>
      <property name="text">
       <string/>
+     </property>
+     <property name="margin">
+      <number>0</number>
      </property>
     </widget>
     <widget class="QLabel" name="n2">

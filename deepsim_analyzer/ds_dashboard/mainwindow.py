@@ -35,7 +35,7 @@ from tqdm import tqdm
 import deepsim_analyzer as da
 
 # custom widgets
-from .custom_widgets import ScatterplotWidget, TimelineView, TimelineWindow,RangeSlider,BarChart
+from .custom_widgets import ScatterplotWidget, TimelineView, TimelineWindow,BarChart
 # Important:
 # You need to run the following command to generate the ui_form.py file
 #     pyside6-uic form.ui -o ui_form.py, or
@@ -115,6 +115,13 @@ class MainWindow(QMainWindow):
         self.set_color_element(self.ui.emotion_tab, [143, 143, 143])
         self.set_color_element(self.ui.semantic_tab, [143, 143, 143])
         self.set_color_element(self.ui.clip_tab, [143, 143, 143])
+        self.set_color_element(self.ui.combined_tab, [143, 143, 143])
+
+        # set color for stats 
+        self.set_color_element(self.ui.style_stats, [143, 143, 143])
+        self.set_color_element(self.ui.date_stats, [143, 143, 143])
+        self.set_color_element(self.ui.nationality_stats, [143, 143, 143])
+
 
         # ================ SETUP DATA ================
         print("setting up internal data")
@@ -160,7 +167,6 @@ class MainWindow(QMainWindow):
         print('default_image_path',default_image_path)
         # load in timeline
         self.timeline= TimelineWindow(default_image_path)
-        # self.timeline.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
         self.ui.box_timeline_layout.addWidget(self.timeline)
         self.no_timeline_label = QLabel('No data for timeline of new uploaded image')
         self.ui.box_timeline_layout.addWidget(self.no_timeline_label)
@@ -185,10 +191,6 @@ class MainWindow(QMainWindow):
         # And setup up once to initialize
         self.setup_scatterplot()
     
-        # toggle the the dots to images radio button
-        self.ui.r_image_points.toggle()
-        self.ui.r_image_points.toggled.connect(self.change_scatterplot_pointtype)
-
         print("------setting up middle metric options")
         # ----------------SETUP TEXTURE OPTIONS----------------
         print("setting up texture options")
@@ -286,37 +288,38 @@ class MainWindow(QMainWindow):
         self.ui.recalc_similarity.pressed.connect(self.recalc_similarity)
         print("dashboard setup complete!")
 
-
         print('--------setting up barplots')
         self.bp = BarChart(self)
-        self.bp1 = BarChart(self)
         self.bp2 = BarChart(self)
         self.bp3 = BarChart(self)
-        self.bp4 = BarChart(self)
         self.scatterplot.get_Selected_stats.connect(self.get_selected_points_stats)
         self.scatterplot.get_Selected_stats.emit(0) # once for initialization, after in scatterplot.get_selection
 
-        img_stats_container = self.ui.artisits_stats_layout
+        img_stats_container = self.ui.style_stats_layout
         img_stats_container.layout().addWidget(self.bp)
 
-        img_stats_container2 = self.ui.nationality_stats_layout
+        img_stats_container2 = self.ui.date_stats_layout
         img_stats_container2.layout().addWidget(self.bp2)
-
-        img_stats_container3 = self.ui.style_stats_layout
+        
+        img_stats_container3 = self.ui.nationality_stats_layout
         img_stats_container3.layout().addWidget(self.bp3)
-
-        img_stats_container4 = self.ui.date_stats_layout
-        img_stats_container4.layout().addWidget(self.bp4)
 
         # Set the size policy for the bar plot widget
         size_policy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.bp.setSizePolicy(size_policy)
-        self.bp1.setSizePolicy(size_policy)
         self.bp2.setSizePolicy(size_policy)
         self.bp3.setSizePolicy(size_policy)
-        self.bp4.setSizePolicy(size_policy)
-      
+
+        self.ui.statistics_tabs.currentChanged.connect(self.show_animation_on_tab_switch)
+        self.bar_plots = [self.bp, self.bp2, self.bp3]
       # ========================
+
+    def show_animation_on_tab_switch(self,index):
+        if 0 <= index < len(self.bar_plots):
+            print('show_animation_on_tab_switch')
+            # self.bar_plots[index].repaint()
+            self.bar_plots[index].chartView.update()
+
 
     def setup_filters(self):
         nationalities = []
@@ -414,26 +417,16 @@ class MainWindow(QMainWindow):
                 self.data_dict[current_metric_type.lower()]["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame, self.indices_to_keep
             )
             self.scatterplot.plot_widget.scene().mousePressEvent=self.on_canvas_click
-
-            # self.scatterplot.plot_widget.scene().sigMouseClicked.connect(self.on_canvas_click)
-            # self.scatterplot.plot_widget.scene().sigMouseClicked.connect(self.scatterplot.on_scene_mouse_click)
-            # self.scatterplot.plot_widget.scene().sigMouseClicked.emit(0)
-
-            # self.scatterplot.plot_widget.scene().sigMouseClicked.connect(lambda event: self.on_canvas_click(event))
-            # self.scatterplot.plot_widget.scene().sigMouseClicked.emit(0)
-
-            
-            # self.scatterplot.plot_widget.scene().sigMousePressEvent.connect(lambda event: self.on_canvas_click(event))
-            # self.scatterplot.plot_widget.scene().sigMousePressEvent.emit(0)
-            # self.scatterplot.plot_widget.scene().mousePressEvent=self.scatterplot.mousePressEvent
         else:
             print('only redraw scatterplot')
             self.scatterplot.points = self.data_dict[current_metric_type.lower()]["projection"]
             self.scatterplot.indices_to_keep = self.indices_to_keep
-            if self.scatterplot.dots_plot:
-                self.scatterplot.draw_scatterplot_dots()
-            else:
+            if len(self.scatterplot.selected_indices)<100:
+                self.scatterplot.dots_plot=False
                 self.scatterplot.draw_scatterplot()
+            else:
+                self.scatterplot.dots_plot=True
+                self.scatterplot.draw_scatterplot_dots()
 
 
     def recalc_similarity(self):
@@ -949,7 +942,7 @@ class MainWindow(QMainWindow):
             if len(filenames) > 0:
                 # current_filepath = self.image_paths[self.key_to_idx[img_hash]]
                 # we take only one file/ first file
-                current_filepath=filenames[0]
+                current_filepath=[filenames[0]]
                 print('current_filepath', current_filepath)
                 
                 # img_hash = da.get_image_hash(current_filepath)
@@ -993,18 +986,18 @@ class MainWindow(QMainWindow):
 
             # load in timeline
             base_filename = os.path.basename(filepath)
-            # self.timeline.draw_timeline(base_filename)
-            # self.no_timeline_label.hide()
-            # self.timeline.show()
+            self.timeline.draw_timeline(base_filename)
+            self.no_timeline_label.hide()
+            self.timeline.show()
         else:
             filepath = self.image_paths[self.key_to_idx[img_hash]]
             # get feature_vectors for new image 
             self.left_img_features = self.get_point_new_img(filepath)
 
             print(f"no metadata available for image: {filepath}")
-            # self.update_image_info("unknown date", "unknown artist", "unknown style", "unknown tags")
-            # self.timeline.hide()
-            # self.no_timeline_label.show()
+            self.update_image_info("unknown date", "unknown artist", "unknown style", "unknown tags")
+            self.timeline.hide()
+            self.no_timeline_label.show()
 
 
     def get_features_from_dataset(self, img_hash):
@@ -1151,40 +1144,18 @@ class MainWindow(QMainWindow):
         self.display_photo_right(filename)
 
 
-
-    def change_scatterplot_pointtype(self):
-        """Use radio toggle to draw dots or images, triggered on toggle of the radio button.
-        """
-        # TODO: REIMPLEMENT
-        print('change_scatterplot_pointtype is called')
-        if self.ui.r_image_points.isChecked():
-            #TODO: give user reset option/button. initially its FALSE
-            self.scatterplot.dots_plot=False
-            self.scatterplot.draw_scatterplot(reset=False)
-            # self.scatterplot.remove_highlight_selected_point(self.scatterplot.selected_index)
-            # self.scatterplot.highlight_selected_point(self.scatterplot.selected_index)
-        else:
-            self.scatterplot.dots_plot=True
-            self.scatterplot.draw_scatterplot_dots(reset=False)
-            # self.scatterplot.remove_highlight_selected_point(self.scatterplot.selected_index)
-            # self.scatterplot.highlight_selected_point(self.scatterplot.selected_index)
-
     def on_canvas_click(self, ev):
         # super().mousePressEvent(ev)
-
         self.scatterplot.clear_selection()
         pos = ev.scenePos()
         print("on canvas click:", pos)
         if ev.button() == Qt.MouseButton.LeftButton:
             if self.scatterplot.dots_plot:
                 range_radius = 0.1
-                for i, index,plot_data_item in self.scatterplot.plot_data_items:
-                    item_pos = plot_data_item.mapFromScene(pos)
-                    parent_pos = plot_data_item.mapToParent(item_pos)
-                    x_data, y_data = plot_data_item.getData()
-                    # print('------x_data, y_data = plot_data_item.getData()', x_data, y_data)
-                    # print('pos:', pos, 'item_pos:', item_pos, 'parent_pos:', parent_pos)
-                    # if plot_data_item.contains(item_pos):
+                for i, index,dot_item in self.scatterplot.dot_items:
+                    item_pos = dot_item.mapFromScene(pos)
+                    x_data, y_data = dot_item.getData()
+                    # print('pos:', pos, 'item_pos:', item_pos)
                     for x, y in zip(x_data, y_data):
                         if abs(x - item_pos.x()) <= range_radius and abs(y - item_pos.y()) <= range_radius:
                             self.scatterplot.selected_point = item_pos.x(), item_pos.y()
@@ -1194,11 +1165,9 @@ class MainWindow(QMainWindow):
                             self.scatterplot.highlight_selected_point(index)
                             self.clicked_on_point()
                             break
-
             else:
-                # print("self.image_items", self.image_items)
+                # TODO: rmv i after merge and its still not used
                 for i, index, item in self.scatterplot.image_items:
-                    # print("item.mapFromScene(pos)", item, item.mapFromScene(pos))
                     item_pos=item.mapFromScene(pos)
                     if item.contains(item_pos):
                         print('selected_index==plot_index?',index==i)
@@ -1206,33 +1175,24 @@ class MainWindow(QMainWindow):
                         self.scatterplot.remove_highlight_selected_point(self.scatterplot.selected_index)
                         self.scatterplot.selected_index = index
                         self.scatterplot.highlight_selected_point(index)
-                        # self.scatterplot.plot_index = idx
-                        # TODO: rmv after all check, partial select ect
                         self.clicked_on_point()
                         break
                 
-        # QGraphicsScene.mousePressEvent(self.scatterplot.plot_widget.scene(), ev)
-        # super(self.scatterplot, self).mousePressEvent(ev)
 
-
-    # TODO: maybe change loc of this fn, or split its a little in between scatterplot and main
     def clicked_on_point(self):
         print("point/ image clicked, load on the left")
         self.left_img_filename = self.image_paths[self.scatterplot.selected_index]
         self.left_img_key = self.image_keys[self.scatterplot.selected_index]
-        # set features for left 
         self.left_img_features = self.get_features_from_dataset(self.left_img_key)
-        # display the image
         self.display_photo_left(self.left_img_filename)
         self.update_leftimg_data(self.left_img_key)
-
         self.recalc_similarity()
 
-
+ 
+    # TODO: put in barplot_widget.py?
     def get_selected_points_stats(self, int):
         print('get_selected_points_stats')
         print(len(self.scatterplot.selected_indices), len(self.scatterplot.indices))
-        # for selection_ids in self.scatterplot.selected_indices:
         img_hashes = [self.image_keys[index] for index in self.scatterplot.selected_indices]
         self.metadata= da.read_metadata_batch(self.datafile_path, img_hashes)
         # if len(img_hashes)>0:
@@ -1255,20 +1215,68 @@ class MainWindow(QMainWindow):
         unique_media, media_counts = np.unique([self.metadata[hash_]['media'] for hash_ in img_hashes], return_counts=True)
         unique_styles, style_counts = np.unique([self.metadata[hash_]['style'] for hash_ in img_hashes], return_counts=True)
 
-        count_selection = [sel_date_counts[np.where(sel_unique_dates == date)[0].tolist()[0]] if np.isin(date , sel_unique_dates) else 0 for date in unique_dates]
+        sel_date_bins, sel_date_bin_counts,date_bins, date_bin_counts=self.make_date_bins(sel_unique_dates,sel_date_counts,unique_dates,date_counts)
         tag_count_selection = [sel_tag_counts[np.where(sel_unique_tags == tag)[0].tolist()[0]] if np.isin(tag , sel_unique_tags) else 0 for tag in unique_tags]
         artist_count_selection = [sel_artist_name_counts[np.where(sel_unique_artist_names == artist_name)[0].tolist()[0]] if np.isin(artist_name, sel_unique_artist_names) else 0 for artist_name in unique_artist_names]
         nationalities_count_selection = [sel_nationalities_counts[np.where(sel_unique_nationalities == nationalities)[0].tolist()[0]] if np.isin(nationalities, sel_unique_nationalities) else 0 for nationalities in unique_nationalities]
         media_count_selection = [sel_media_counts[np.where(sel_unique_media == media)[0].tolist()[0]] if np.isin(media, sel_unique_media) else 0 for media in unique_media]
         style_count_selection = [sel_style_counts[np.where(sel_unique_styles == style)[0].tolist()[0]] if np.isin(style, sel_unique_styles) else 0 for style in unique_styles]
        
-        self.bp.fill_in_barplot(unique_artist_names,artist_name_counts,artist_count_selection)
-        self.bp2.fill_in_barplot(unique_nationalities,nationalities_counts,nationalities_count_selection)
-        self.bp3.fill_in_barplot(unique_styles,style_counts,style_count_selection)
-        self.bp4.fill_in_barplot(unique_dates,date_counts,count_selection)
-        # self.bp5.fill_in_barplot(unique_media,media_counts,media_count_selection)
-        # self.bp6.fill_in_barplot(unique_tags,tag_counts,tag_count_selection)
+        self.bp.fill_in_barplot(unique_styles,style_counts,style_count_selection)
+        self.bp2.fill_in_barplot(date_bins,date_bin_counts,sel_date_bin_counts)
+        self.bp3.fill_in_barplot(unique_nationalities,nationalities_counts,nationalities_count_selection)
         
+        
+    def make_date_bins(self,sel_unique_dates,sel_date_counts,unique_dates,date_counts):
+        bin_size = 20  
+        # print('unique_dates',unique_dates)
+        # start_year = unique_dates.min()
+        # end_year = unique_dates.max()
+        #round to the nearest tens
+        start_year = np.floor(unique_dates.min() / 10) * 10
+        end_year = np.ceil(unique_dates.max() / 10) * 10
+        print(start_year, end_year)
+
+        date_count_selection = [sel_date_counts[np.where(sel_unique_dates == date)[0].tolist()[0]] if np.isin(date , sel_unique_dates) else 0 for date in unique_dates]
+
+        num_bins = int((end_year - start_year) / bin_size) + 1
+        print('num_bins', num_bins)
+
+        # Create an array of bin edges
+        bin_edges = np.arange(start_year, end_year + bin_size, bin_size)
+        # print('bin_edges', bin_edges)
+
+        # Assign each date to a bin using digitize
+        bin_indices = np.digitize(unique_dates, bin_edges)- 1
+        # print(len(bin_indices))
+        # print(bin_indices)
+
+        # Initialize an array to store the counts for each bin
+        sel_bin_counts = np.zeros(num_bins)
+        bin_counts = np.zeros(num_bins)
+
+        # Count dates within each bin
+        for i in range(num_bins):
+            indices = np.where(bin_indices == i)[0].astype(int)
+            # print('indices',indices, type(indices))
+            # print('date_count_selection', type(date_count_selection))
+            date_count_selection = np.array(date_count_selection)
+            date_counts = np.array(date_counts)
+            if len(indices) > 0:
+                sel_bin_counts[i] = np.sum(date_count_selection[indices])
+                bin_counts[i] = np.sum(date_counts[indices])
+        # print(sel_bin_counts)
+        # print(bin_counts)
+
+        # Print the bins and their corresponding counts
+        for i in range(num_bins):
+            bin_start = bin_edges[i]
+            bin_end = bin_edges[i + 1] - 1 if i < num_bins - 1 else end_year
+            bin_count = bin_counts[i]
+            # print(f"Bin {i+1}: {bin_start}-{bin_end} - Count: {bin_count}")
+
+        return bin_edges,sel_bin_counts,bin_edges ,bin_counts
+
 
 def start_dashboard(key_dict, dataset_filepath, images_filepath):
     app = QApplication(sys.argv)
