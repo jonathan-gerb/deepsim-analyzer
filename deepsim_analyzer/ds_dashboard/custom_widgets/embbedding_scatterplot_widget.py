@@ -236,8 +236,8 @@ class ScatterplotWidget(QWidget):
             self.get_Selected_stats.emit(0) 
 
 
-    # def update_selected_points_values(self):
-    #     self.selected_points = self.points[self.selected_indices].copy()
+    def update_selected_points_values(self):
+        self.selected_points = self.points[self.selected_indices].copy()
 
     def draw_scatterplot(self):
         print('draw_scatterplot')
