@@ -48,7 +48,7 @@ from .ui_form import Ui_MainWindow
 
 class MainWindow(QMainWindow):
 
-    def __init__(self, key_dict, datafile_path, image_directory):
+    def __init__(self, key_dict, datafile_path, image_directory, features_to_use):
         super().__init__()
 
         self.ui = Ui_MainWindow()
@@ -77,7 +77,7 @@ class MainWindow(QMainWindow):
         self.image_paths = [str(Path(image_directory) / self.image_key_dict[key]) for key in self.image_keys]
 
         # load umap reducers
-        self.available_features = ["dino", "semantic", "dummy", "texture", "emotion", "clip"]
+        self.available_features = features_to_use
 
         self.reducer_basepath = Path(__file__).parents[2] / "data" / "processed" / "reducers"
         reducer_paths = [path for path in self.reducer_basepath.glob("*.umap")]
@@ -85,6 +85,7 @@ class MainWindow(QMainWindow):
         for r_path in reducer_paths:
             reducer_name = r_path.name.split(".")[0]
             self.reducers[reducer_name] = joblib.load(str(r_path))
+        self.any_reprojection_applied = False
 
         # metric option defaults
         self.dino_distance_measure = "euclidian"
@@ -106,7 +107,7 @@ class MainWindow(QMainWindow):
         
         # set tab ui color
         self.set_color_element(self.ui.box_metric_tabs, [143, 143, 143])
-        self.set_color_element(self.ui.dummy_tab, [143, 143, 143])
+        # self.set_color_element(self.ui.dummy_tab, [143, 143, 143])
         self.set_color_element(self.ui.dino_tab, [143, 143, 143])
         self.set_color_element(self.ui.texture_tab, [143, 143, 143])
         self.set_color_element(self.ui.emotion_tab, [143, 143, 143])
@@ -163,7 +164,7 @@ class MainWindow(QMainWindow):
         # ================ SETUP MIDDLE COLUMN ================
         
         print("------setting up scatterplot")
-        self.ui.box_metric_tabs.setCurrentIndex(0)
+        self.ui.box_metric_tabs.setCurrentIndex(4)
         # setup scatterplot
         # TODO: setup feature projection plot with combined and individual plots!
         self.ui.box_metric_tabs.currentChanged.connect(self.setup_scatterplot)
@@ -264,6 +265,9 @@ class MainWindow(QMainWindow):
         # option for showing crossattention map
         self.ui.dino_opt_showcamap.toggled.connect(self.dino_show_camap)
 
+        # ================ SETUP COMBINED PROJECTION ================
+        self.calc_combined_projection()
+
         # ================ SETUP RIGHT COLUMN ================
         print("------setting up right column, calculating nearest neighbours")
         self.recalc_similarity()
@@ -296,7 +300,8 @@ class MainWindow(QMainWindow):
 
         self.ui.statistics_tabs.currentChanged.connect(self.show_animation_on_tab_switch)
         self.bar_plots = [self.bp, self.bp2, self.bp3]
-      # ========================
+
+
     def load_metric_data(self):
         # init datadict
         self.data_dict = {}
@@ -350,13 +355,39 @@ class MainWindow(QMainWindow):
 
     
     def calc_combined_projection(self):
+        print("calculating combined projection")
+        self.data_dict["combined"] = {}
+
         # first concatenate all the vectors into one big mega vector
+        if "full" not in self.data_dict["combined"]:
+            self.data_dict["combined"]["full"] = np.concatenate([self.data_dict[feature_name]['full'] for feature_name in self.available_features], axis=1)
+
+        # construct reweighting matrix
+        feature_weight_dict = self.get_metric_combo_weights()
+        combined_feature_weight = []
         for feature_name in self.available_features:
-            self.data_dict[feature_name]['full']
+            feature_size = self.data_dict[feature_name]['full'].shape[1]
+            weights = np.zeros(feature_size) + feature_weight_dict[feature_name]
+            combined_feature_weight.append(weights)
+
+        combined_feature_weight = np.concatenate(combined_feature_weight, axis=0)
+        
+        # normalize the weight matrix
+        combined_feature_weight = combined_feature_weight / np.linalg.norm(combined_feature_weight)
+        
+        # make it a diagonal matrix
+        combined_feature_weight = np.diag(combined_feature_weight)
+
+        # apply the weighting
+        all_features_combined = self.data_dict["combined"]["full"] @ combined_feature_weight
+
         # then calculate the umap
-
+        print("calculating Umap projection model")
+        self.combined_reducer = UMAP(n_neighbors=6, n_components=2, metric='cosine', verbose=True).fit(all_features_combined)
+        self.data_dict["combined"]["projection"] = self.combined_reducer.transform(all_features_combined)
         # then plot that combined umap
-
+        self.recalc_similarity()
+        self.setup_scatterplot()
 
     def show_animation_on_tab_switch(self,index):
         if 0 <= index < len(self.bar_plots):
@@ -457,28 +488,36 @@ class MainWindow(QMainWindow):
         """reset filters and reload dataset. Also refresh scatterplot and similarity scores."""
         self.reset_data_filters()
         self.load_metric_data()
+        if self.any_reprojection_applied:
+            self.calc_combined_projection()
+            self.any_reprojection_applied = False
+
         self.recalc_similarity()
         self.setup_scatterplot()
 
     def setup_scatterplot(self, clear_selection=True):
-        current_metric_type = self.ui.box_metric_tabs.tabText(self.ui.box_metric_tabs.currentIndex())
+        current_metric_type = self.ui.box_metric_tabs.tabText(self.ui.box_metric_tabs.currentIndex()).lower()
+        if current_metric_type not in self.available_features:
+            print("ignoring tab change!, featuer: ")
+            return
+        
         print("changing 2d scatterplot to: ", current_metric_type)
 
         if not hasattr(self, 'scatterplot'):
-            print(f'a new scatterplot is created for {current_metric_type.lower()}, passing points data of shape: {self.data_dict[current_metric_type.lower()]["projection"].shape}')
+            print(f'a new scatterplot is created for {current_metric_type}, passing points data of shape: {self.data_dict[current_metric_type]["projection"].shape}')
             self.scatterplot = ScatterplotWidget(
-                self.data_dict[current_metric_type.lower()]["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame, self.non_filtered_indices
+                self.data_dict[current_metric_type]["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame, self.non_filtered_indices
             )
             self.scatterplot.plot_widget.scene().mousePressEvent=self.on_canvas_click
         else:
-            print(f'redraw scatterplot for {current_metric_type.lower()}, passing points data of shape: {self.data_dict[current_metric_type.lower()]["projection"].shape}')
-            self.scatterplot.points = self.data_dict[current_metric_type.lower()]["projection"]
+            print(f'redraw scatterplot for {current_metric_type}, passing points data of shape: {self.data_dict[current_metric_type]["projection"].shape}')
+            self.scatterplot.points = self.data_dict[current_metric_type]["projection"]
             self.scatterplot.update_selected_points_values()
             self.scatterplot.indices_to_keep = self.non_filtered_indices
             if clear_selection:
                 self.scatterplot.clear_selection()
 
-            if len(self.scatterplot.selected_indices)<100:
+            if 0 < len(self.scatterplot.selected_indices)<100:
                 self.scatterplot.dots_plot=False
                 self.scatterplot.draw_scatterplot()
             else:
@@ -819,7 +858,7 @@ class MainWindow(QMainWindow):
             ui_element.setAlignment(Qt.AlignmentFlag.AlignCenter)
             
     def get_metric_combo_weights(self):
-        dummy = self.ui.combo_dummy_slider.value()
+        # dummy = self.ui.combo_dummy_slider.value()
         dino = self.ui.combo_dino_slider.value()
         texture = self.ui.combo_texture_slider.value()
         emotion = self.ui.combo_emotion_slider.value()
@@ -827,7 +866,7 @@ class MainWindow(QMainWindow):
         clip = self.ui.combo_clip_slider.value()
         # TODO: add sliders for the other metrics
         feature_weight_dict = {
-            "dummy": dummy / 100,
+            # "dummy": dummy / 100,
             "dino": dino / 100,
             "texture": texture / 100,
             "emotion": emotion / 100,
@@ -1008,9 +1047,9 @@ class MainWindow(QMainWindow):
 
                 dataset_filepath = str( Path(f"{__file__}").parents[1] / "data" / "processed" / "dataset.h5")
                 for feature in self.available_features:
-                    if feature == "dummy":
-                        da.dummy.calc_and_save_features(current_filepath, dataset_filepath)
-                    elif feature == "dino":
+                    # if feature == "dummy":
+                    #     da.dummy.calc_and_save_features(current_filepath, dataset_filepath)
+                    if feature == "dino":
                         da.dino.calc_and_save_features(current_filepath, dataset_filepath)
                     elif feature == "texture":
                         da.texture.calc_and_save_features(current_filepath, dataset_filepath)
@@ -1249,9 +1288,6 @@ class MainWindow(QMainWindow):
         print('get_selected_points_stats')
         print(len(self.scatterplot.selected_indices), len(self.scatterplot.indices))
         img_hashes = [self.image_keys[index] for index in self.scatterplot.selected_indices]
-        self.metadata= da.read_metadata_batch(self.datafile_path, img_hashes)
-        # if len(img_hashes)>0:
-        #     print(self.metadata[img_hashes[0]])
 
         sel_unique_dates, sel_date_counts = np.unique([self.metadata[hash_]['date'] for hash_ in img_hashes], return_counts=True)
         sel_unique_tags, sel_tag_counts = np.unique([self.metadata[hash_]['tags'] for hash_ in img_hashes], return_counts=True) # could have more than one
@@ -1261,7 +1297,6 @@ class MainWindow(QMainWindow):
         sel_unique_styles, sel_style_counts = np.unique([self.metadata[hash_]['style'] for hash_ in img_hashes], return_counts=True)
 
         img_hashes = [self.image_keys[index] for index in self.scatterplot.indices]
-        self.metadata = da.read_metadata_batch(self.datafile_path, img_hashes)
 
         unique_dates, date_counts = np.unique([self.metadata[hash_]['date'] for hash_ in img_hashes], return_counts=True)
         unique_tags, tag_counts = np.unique([self.metadata[hash_]['tags'] for hash_ in img_hashes], return_counts=True)
@@ -1270,7 +1305,7 @@ class MainWindow(QMainWindow):
         unique_media, media_counts = np.unique([self.metadata[hash_]['media'] for hash_ in img_hashes], return_counts=True)
         unique_styles, style_counts = np.unique([self.metadata[hash_]['style'] for hash_ in img_hashes], return_counts=True)
 
-        sel_date_bins, sel_date_bin_counts,date_bins, date_bin_counts=self.make_date_bins(sel_unique_dates,sel_date_counts,unique_dates,date_counts)
+        sel_date_bins, sel_date_bin_counts,date_bins, date_bin_counts = self.make_date_bins(sel_unique_dates,sel_date_counts,unique_dates,date_counts)
         tag_count_selection = [sel_tag_counts[np.where(sel_unique_tags == tag)[0].tolist()[0]] if np.isin(tag , sel_unique_tags) else 0 for tag in unique_tags]
         artist_count_selection = [sel_artist_name_counts[np.where(sel_unique_artist_names == artist_name)[0].tolist()[0]] if np.isin(artist_name, sel_unique_artist_names) else 0 for artist_name in unique_artist_names]
         nationalities_count_selection = [sel_nationalities_counts[np.where(sel_unique_nationalities == nationalities)[0].tolist()[0]] if np.isin(nationalities, sel_unique_nationalities) else 0 for nationalities in unique_nationalities]
@@ -1284,9 +1319,6 @@ class MainWindow(QMainWindow):
         
     def make_date_bins(self,sel_unique_dates,sel_date_counts,unique_dates,date_counts):
         bin_size = 20  
-        # print('unique_dates',unique_dates)
-        # start_year = unique_dates.min()
-        # end_year = unique_dates.max()
         #round to the nearest tens
         start_year = np.floor(unique_dates.min() / 10) * 10
         end_year = np.ceil(unique_dates.max() / 10) * 10
@@ -1333,14 +1365,14 @@ class MainWindow(QMainWindow):
         return bin_edges,sel_bin_counts,bin_edges ,bin_counts
 
 
-def start_dashboard(key_dict, dataset_filepath, images_filepath):
+def start_dashboard(key_dict, dataset_filepath, images_filepath, features_to_use):
     app = QApplication(sys.argv)
     basepath = Path(__file__)
     css_filepath = str(basepath.parent / "theme1.css")
     with open(css_filepath, "r") as file:
         app.setStyleSheet(file.read())
 
-    widget = MainWindow(key_dict, dataset_filepath, images_filepath)
+    widget = MainWindow(key_dict, dataset_filepath, images_filepath, features_to_use)
     widget.show()
     sys.exit(app.exec())
 

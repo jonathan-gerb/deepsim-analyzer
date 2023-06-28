@@ -107,8 +107,8 @@ class ScatterplotWidget(QWidget):
         if event.button() == Qt.MouseButton.LeftButton and self.start_point is not None and self.end_point is not None:
             self.get_selection_in_rectangle()
             if self.selected_indices!=[]:
-                print('len(self.selected_indices)',len(self.selected_indices))
-                if len(self.selected_indices)<100:
+                print('len(self.selected_indices)', len(self.selected_indices))
+                if 0 < len(self.selected_indices) < 100:
                     self.dots_plot=False
                     self.draw_scatterplot()
                     # self.draw_scatterplot(reset=False)
@@ -258,7 +258,7 @@ class ScatterplotWidget(QWidget):
         self.image_items = []
         new_pos=[]
         print('num of points in plot', len(points))
-        for i, point in enumerate(points):
+        for i, point in tqdm(enumerate(points), desc="adding points to canvas", total=len(points)):
             x,y = point
             ith_idx= indices[i]
             if ith_idx not in self.indices_to_keep:
@@ -304,7 +304,7 @@ class ScatterplotWidget(QWidget):
 
         print('num of points in plot', len(points))
         self.dot_items = []
-        for i, point in enumerate(points):
+        for i, point in tqdm(enumerate(points), desc="adding points to canvas", total=len(points)):
             ith_idx= indices[i]
             dot_item= self.plot_widget.plot([point[0]], [point[1]], pen=None, symbolBrush=self.selection_color, symbolSize=self.selection_points_size, hover=True)
             self.dot_items.append((i, ith_idx, dot_item))

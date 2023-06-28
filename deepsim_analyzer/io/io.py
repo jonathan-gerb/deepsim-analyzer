@@ -10,7 +10,7 @@ from PIL import Image
 from tqdm import tqdm
 from random import shuffle
 
-from ..similarity_methods import dino, dummy, texture, emotion, semantic, clip
+from ..similarity_methods import dino, dummy, texture, semantic, clip
 
 
 def save_feature(dataset_filepath, img_hash, img_feature, feature_name, is_projection=False, overwrite=False):
@@ -25,12 +25,12 @@ def save_feature(dataset_filepath, img_hash, img_feature, feature_name, is_proje
             if key in f:
                 if overwrite:
                     del f[key]
-                    f.create_dataset(f"{img_hash}/features/{feature_name}/projection", data=img_feature, compression="lzf")
+                    f.create_dataset(f"{img_hash}/features/{feature_name}/projection", data=img_feature, compression="gzip", compression_opts=9)
                 else:
                     # dont overwrite existing feature
                     pass
             else:
-                f.create_dataset(f"{img_hash}/features/{feature_name}/projection", data=img_feature, compression="lzf")
+                f.create_dataset(f"{img_hash}/features/{feature_name}/projection", data=img_feature, compression="gzip", compression_opts=9)
 
     else:
         with h5py.File(dataset_filepath, "r+") as f:
@@ -38,12 +38,12 @@ def save_feature(dataset_filepath, img_hash, img_feature, feature_name, is_proje
             if key in f:
                 if overwrite:
                     del f[key]
-                    f.create_dataset(f"{img_hash}/features/{feature_name}/full", data=img_feature, compression="lzf")
+                    f.create_dataset(f"{img_hash}/features/{feature_name}/full", data=img_feature, compression="gzip", compression_opts=9)
                 else:
                     # dont overwrite existing feature
                     pass
             else:    
-                f.create_dataset(f"{img_hash}/features/{feature_name}/full", data=img_feature, compression="lzf")
+                f.create_dataset(f"{img_hash}/features/{feature_name}/full", data=img_feature, compression="gzip", compression_opts=9)
 
 def key_in_dataset(dataset_filepath, img_hash):
     with h5py.File(dataset_filepath, "r") as f:
@@ -128,7 +128,11 @@ def calculate_features(image_folder, dataset_filepath, target_features=["dummy"]
         if feature == "texture":
             texture.calc_and_save_features(image_paths, dataset_filepath)
         if feature == "emotion":
+            os.environ["CUDA_VISIBLE_DEVICES"] = ""
+            # import here to avoid cuda problems, we want to import this without cuda
+            from ..similarity_methods import emotion
             emotion.calc_and_save_features(image_paths, dataset_filepath)
+            os.environ["CUDA_VISIBLE_DEVICES"] = "0"
         if feature == "semantic":
             semantic.calc_and_save_features(image_paths, dataset_filepath)
         if feature == "clip":
