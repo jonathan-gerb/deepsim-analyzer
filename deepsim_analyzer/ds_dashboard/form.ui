@@ -74,7 +74,7 @@
       <rect>
        <x>10</x>
        <y>10</y>
-       <width>441</width>
+       <width>463</width>
        <height>141</height>
       </rect>
      </property>
@@ -98,7 +98,7 @@
         <item>
          <widget class="QLabel" name="label_8">
           <property name="text">
-           <string>media type</string>
+           <string>material type</string>
           </property>
          </widget>
         </item>
@@ -143,14 +143,14 @@
         <item>
          <widget class="QPushButton" name="reset_dataset_filters">
           <property name="text">
-           <string>reset filter</string>
+           <string>Reset filter</string>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QPushButton" name="reload_everything">
           <property name="text">
-           <string>reload data</string>
+           <string>Reload data</string>
           </property>
          </widget>
         </item>
@@ -198,7 +198,7 @@
       <bool>true</bool>
      </property>
      <property name="currentIndex">
-      <number>2</number>
+      <number>0</number>
      </property>
      <property name="usesScrollButtons">
       <bool>false</bool>
@@ -361,6 +361,13 @@
        </property>
       </widget>
      </item>
+     <item>
+      <widget class="QRadioButton" name="r_image_points">
+       <property name="text">
+        <string>points as images</string>
+       </property>
+      </widget>
+     </item>
     </layout>
    </widget>
    <widget class="PlotWidget" name="scatterplot_frame">
@@ -386,7 +393,7 @@
      <bool>true</bool>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>6</number>
     </property>
     <widget class="QWidget" name="dino_tab">
      <attribute name="title">
@@ -1173,9 +1180,9 @@
      <widget class="QWidget" name="formLayoutWidget">
       <property name="geometry">
        <rect>
-        <x>20</x>
+        <x>50</x>
         <y>50</y>
-        <width>271</width>
+        <width>441</width>
         <height>182</height>
        </rect>
       </property>
@@ -1293,34 +1300,10 @@
        </item>
       </layout>
      </widget>
-     <widget class="QGroupBox" name="box_recom_img_stats">
-      <property name="geometry">
-       <rect>
-        <x>300</x>
-        <y>20</y>
-        <width>231</width>
-        <height>231</height>
-       </rect>
-      </property>
-      <property name="title">
-       <string>Similarity aspects stats</string>
-      </property>
-      <widget class="QWidget" name="verticalLayoutWidget_2">
-       <property name="geometry">
-        <rect>
-         <x>-1</x>
-         <y>9</y>
-         <width>231</width>
-         <height>221</height>
-        </rect>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout"/>
-      </widget>
-     </widget>
      <widget class="QLabel" name="title">
       <property name="geometry">
        <rect>
-        <x>20</x>
+        <x>140</x>
         <y>20</y>
         <width>269</width>
         <height>21</height>
@@ -1336,7 +1319,7 @@
      <widget class="QPushButton" name="recalc_similarity">
       <property name="geometry">
        <rect>
-        <x>20</x>
+        <x>140</x>
         <y>220</y>
         <width>269</width>
         <height>31</height>

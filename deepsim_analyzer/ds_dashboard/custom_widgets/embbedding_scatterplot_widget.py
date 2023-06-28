@@ -74,9 +74,7 @@ class ScatterplotWidget(QWidget):
         self.dot_items = []
         self.selected_index=0
         self.selected_point=self.points[0]
-        self.plot_inex=None
         self.selected_indices = []
-        self.outside_points_visible = False
         self.dots_plot=True
 
 
@@ -107,7 +105,7 @@ class ScatterplotWidget(QWidget):
             self.get_selection_in_rectangle()
             if self.selected_indices!=[]:
                 print('len(self.selected_indices)',len(self.selected_indices))
-                if 0<len(self.selected_indices)<100:
+                if self.dots_plot or 0<len(self.selected_indices)<100:
                     self.dots_plot=False
                     self.draw_scatterplot()
                 else:
@@ -151,7 +149,7 @@ class ScatterplotWidget(QWidget):
                 image = plt.imread(image_path)
                 w, h, _ = image.shape
                 self.hover_img.setImage(image)
-                scale = 1.5
+                scale = 5
                 rotation = -90
                 self.hover_img.setScale(scale / np.sqrt(w**2 + h**2))
                 self.hover_img.setPos(x, y)
@@ -230,7 +228,8 @@ class ScatterplotWidget(QWidget):
         # check is all point are in rect
         # for i, p in enumerate(self.points):
         #     print( xmin , p[0], xmax,  ymin , p[1] ,ymax)
-        self.selected_indices = np.array([i for i, p in enumerate(self.points) if xmin <= p[0] <= xmax and ymin <= p[1] <= ymax])
+        # self.selected_indices = np.array([i for i, p in enumerate(self.points) if xmin <= p[0] <= xmax and ymin <= p[1] <= ymax])
+        self.selected_indices = [i for i, p in enumerate(self.points) if xmin <= p[0] <= xmax and ymin <= p[1] <= ymax]
 
         if self.selected_indices!=[]:
             self.get_Selected_stats.emit(0) 
@@ -239,7 +238,7 @@ class ScatterplotWidget(QWidget):
     # def update_selected_points_values(self):
     #     self.selected_points = self.points[self.selected_indices].copy()
 
-    def draw_scatterplot(self):
+    def draw_scatterplot(self, reset=True):
         print('draw_scatterplot')
         self.plot_widget.clear()
 
@@ -278,12 +277,13 @@ class ScatterplotWidget(QWidget):
             self.plot_widget.addItem(image_item)
             self.image_items.append((i, ith_idx, image_item)) 
 
-        self.reset_scatterplot(np.array(new_pos))
+        if reset:
+            self.reset_scatterplot(np.array(new_pos))
         self.highlight_selected_point(self.selected_index)
         self.plot_widget.update()
 
     # TODO: this could be better, remove those out of scene instead of redraw selection
-    def draw_scatterplot_dots(self):
+    def draw_scatterplot_dots(self,reset=True):
         print('draw_scatterplot_dots')
         self.plot_widget.clear()
         # self.plot_widget.scene().clear()
@@ -304,7 +304,8 @@ class ScatterplotWidget(QWidget):
             dot_item= self.plot_widget.plot([point[0]], [point[1]], pen=None, symbolBrush=self.selection_color, symbolSize=self.selection_points_size, hover=True)
             self.dot_items.append((i, ith_idx, dot_item))
 
-        self.reset_scatterplot(points)
+        if reset:
+            self.reset_scatterplot(points)
         self.highlight_selected_point(self.selected_index)
         self.plot_widget.update()
 

@@ -35,7 +35,7 @@ class BarChart(QWidget):
         categories = [str(style) for style in unique_styles]
         self.axisX.clear()
         self.axisX.append(categories)
-        # self.axisX.setLabelsAngle(-45)  
+        self.axisX.setLabelsAngle(-90)  
         font = QFont()
         font.setPointSize(8)
         self.axisX.setLabelsFont(font)
