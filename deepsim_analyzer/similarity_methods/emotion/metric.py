@@ -1,6 +1,5 @@
 import numpy as np
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = ""
 import tensorflow as tf
 from tensorflow import keras
 from tqdm import tqdm

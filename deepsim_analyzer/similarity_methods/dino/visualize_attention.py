@@ -189,7 +189,7 @@ def calc_and_save_features(
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     model = load_model(arch, pretrained_model_path, patch_size)
     model = model.to(device)
-    
+
 
     transform = pth_transforms.Compose(
         [

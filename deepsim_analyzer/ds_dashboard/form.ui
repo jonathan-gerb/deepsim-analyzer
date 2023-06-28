@@ -74,7 +74,7 @@
       <rect>
        <x>10</x>
        <y>10</y>
-       <width>463</width>
+       <width>441</width>
        <height>141</height>
       </rect>
      </property>
@@ -348,13 +348,6 @@
     </property>
     <layout class="QHBoxLayout" name="scatterplot_options">
      <item>
-      <widget class="QPushButton" name="combined_projection_btn">
-       <property name="text">
-        <string>Calc combined projection</string>
-       </property>
-      </widget>
-     </item>
-     <item>
       <widget class="QPushButton" name="subset_projection_btn">
        <property name="text">
         <string>Reproject current</string>
@@ -393,7 +386,7 @@
      <bool>true</bool>
     </property>
     <property name="currentIndex">
-     <number>6</number>
+     <number>5</number>
     </property>
     <widget class="QWidget" name="dino_tab">
      <attribute name="title">
@@ -1168,11 +1161,6 @@
       </widget>
      </widget>
     </widget>
-    <widget class="QWidget" name="dummy_tab">
-     <attribute name="title">
-      <string>Dummy</string>
-     </attribute>
-    </widget>
     <widget class="QWidget" name="combined_tab">
      <attribute name="title">
       <string>Combined</string>
@@ -1182,8 +1170,8 @@
        <rect>
         <x>50</x>
         <y>50</y>
-        <width>441</width>
-        <height>182</height>
+        <width>241</width>
+        <height>151</height>
        </rect>
       </property>
       <layout class="QFormLayout" name="formLayout">
@@ -1226,6 +1214,9 @@
          <property name="maximum">
           <number>100</number>
          </property>
+         <property name="value">
+          <number>100</number>
+         </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
@@ -1241,6 +1232,9 @@
        <item row="3" column="1">
         <widget class="QSlider" name="combo_clip_slider">
          <property name="maximum">
+          <number>100</number>
+         </property>
+         <property name="value">
           <number>100</number>
          </property>
          <property name="orientation">
@@ -1260,21 +1254,7 @@
          <property name="maximum">
           <number>100</number>
          </property>
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-        </widget>
-       </item>
-       <item row="5" column="0">
-        <widget class="QLabel" name="label_dummy_4">
-         <property name="text">
-          <string>Dummy</string>
-         </property>
-        </widget>
-       </item>
-       <item row="5" column="1">
-        <widget class="QSlider" name="combo_dummy_slider">
-         <property name="maximum">
+         <property name="value">
           <number>100</number>
          </property>
          <property name="orientation">
@@ -1293,6 +1273,9 @@
          <property name="singleStep">
           <number>1</number>
          </property>
+         <property name="value">
+          <number>100</number>
+         </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
@@ -1303,7 +1286,7 @@
      <widget class="QLabel" name="title">
       <property name="geometry">
        <rect>
-        <x>140</x>
+        <x>30</x>
         <y>20</y>
         <width>269</width>
         <height>21</height>
@@ -1319,14 +1302,27 @@
      <widget class="QPushButton" name="recalc_similarity">
       <property name="geometry">
        <rect>
-        <x>140</x>
-        <y>220</y>
-        <width>269</width>
+        <x>320</x>
+        <y>120</y>
+        <width>231</width>
         <height>31</height>
        </rect>
       </property>
       <property name="text">
        <string>Recalculate similarity</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="combined_projection_btn">
+      <property name="geometry">
+       <rect>
+        <x>320</x>
+        <y>80</y>
+        <width>231</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Calc combined projection</string>
       </property>
      </widget>
     </widget>

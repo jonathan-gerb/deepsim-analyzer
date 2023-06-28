@@ -48,7 +48,7 @@ from .ui_form import Ui_MainWindow
 
 class MainWindow(QMainWindow):
 
-    def __init__(self, key_dict, datafile_path, image_directory):
+    def __init__(self, key_dict, datafile_path, image_directory, features_to_use, render_scatterplot):
         super().__init__()
 
         self.ui = Ui_MainWindow()
@@ -65,6 +65,7 @@ class MainWindow(QMainWindow):
         config_filepath = str(basepath / "config.ini")
         self.config.read(config_filepath)
         self.datafile_path = datafile_path
+        self.render_scatterplot = render_scatterplot
 
         # set image max allocation pretty high
         os.environ['QT_IMAGEIO_MAXALLOC'] = "512"
@@ -79,7 +80,7 @@ class MainWindow(QMainWindow):
         self.image_paths = [str(Path(image_directory) / self.image_key_dict[key]) for key in self.image_keys]
 
         # load umap reducers
-        self.available_features = ["dino", "semantic", "dummy", "texture", "emotion", "clip"]
+        self.available_features = features_to_use
 
 
         self.reducer_basepath = Path(__file__).parents[2] / "data" / "processed" / "reducers"
@@ -88,6 +89,7 @@ class MainWindow(QMainWindow):
         for r_path in reducer_paths:
             reducer_name = r_path.name.split(".")[0]
             self.reducers[reducer_name] = joblib.load(str(r_path))
+        self.any_reprojection_applied = False
 
         # metric option defaults
         self.dino_distance_measure = "euclidian"
@@ -109,7 +111,7 @@ class MainWindow(QMainWindow):
         
         # set tab ui color
         self.set_color_element(self.ui.box_metric_tabs, [143, 143, 143])
-        self.set_color_element(self.ui.dummy_tab, [143, 143, 143])
+        # self.set_color_element(self.ui.dummy_tab, [143, 143, 143])
         self.set_color_element(self.ui.dino_tab, [143, 143, 143])
         self.set_color_element(self.ui.texture_tab, [143, 143, 143])
         self.set_color_element(self.ui.emotion_tab, [143, 143, 143])
@@ -143,11 +145,12 @@ class MainWindow(QMainWindow):
         default_image_path_absolute = str(Path(image_directory) / default_image_path)
         
         self.left_img_key = default_image_key
+        self.left_img_features = self.get_features_from_dataset(self.left_img_key)
         self.left_img_filename = default_image_path_absolute
 
         print('default_image_path',default_image_path)
         # load in timeline
-        self.timeline= TimelineWindow(default_image_path)
+        self.timeline= TimelineWindow(default_image_key, self.metadata)
         self.ui.box_timeline_layout.addWidget(self.timeline)
         self.no_timeline_label = QLabel('No data for timeline of new uploaded image')
         self.ui.box_timeline_layout.addWidget(self.no_timeline_label)
@@ -155,7 +158,7 @@ class MainWindow(QMainWindow):
         # display the base image
         self.display_photo_left(default_image_path_absolute)
         # data for left img feature, can come  from dataset or be calculated on the fly
-        self.update_leftimg_data(self.left_img_key)
+        self.update_leftimg_metadata(self.left_img_key)
         # add additional data in box_left_low
 
         self.setup_filters()
@@ -167,7 +170,7 @@ class MainWindow(QMainWindow):
         # ================ SETUP MIDDLE COLUMN ================
         
         print("------setting up scatterplot")
-        self.ui.box_metric_tabs.setCurrentIndex(0)
+        self.ui.box_metric_tabs.setCurrentIndex(4)
         # setup scatterplot
         # TODO: setup feature projection plot with combined and individual plots!
         self.ui.box_metric_tabs.currentChanged.connect(self.setup_scatterplot)
@@ -175,7 +178,7 @@ class MainWindow(QMainWindow):
         self.setup_scatterplot()
 
         # toggle the the dots to images radio button
-        # self.ui.r_image_points.toggle()
+        self.ui.r_image_points.toggle()
         self.ui.r_image_points.toggled.connect(self.change_scatterplot_pointtype)
     
         # functionality to recalculate projections
@@ -272,6 +275,9 @@ class MainWindow(QMainWindow):
         # option for showing crossattention map
         self.ui.dino_opt_showcamap.toggled.connect(self.dino_show_camap)
 
+        # ================ SETUP COMBINED PROJECTION ================
+        self.calc_combined_projection()
+
         # ================ SETUP RIGHT COLUMN ================
         print("------setting up right column, calculating nearest neighbours")
         self.recalc_similarity()
@@ -284,8 +290,14 @@ class MainWindow(QMainWindow):
         self.bp = BarChart(self)
         self.bp2 = BarChart(self)
         self.bp3 = BarChart(self)
-        self.scatterplot.get_Selected_stats.connect(self.get_selected_points_stats)
-        self.scatterplot.get_Selected_stats.emit(0) # once for initialization, after in scatterplot.get_selection
+        try:
+            self.scatterplot.get_Selected_stats.connect(self.get_selected_points_stats)
+            self.scatterplot.get_Selected_stats.emit(0) # once for initialization, after in scatterplot.get_selection
+        except AttributeError:
+            if not render_scatterplot:
+                print(f"scatterplot not found, this is correct as render_scatterplot is set to False")
+            else:
+                print(f"WARNING scatterplot not found, this is incorrect as render_scatterplot is set to True")
 
         img_stats_container = self.ui.style_stats_layout
         img_stats_container.layout().addWidget(self.bp)
@@ -304,7 +316,7 @@ class MainWindow(QMainWindow):
 
         self.ui.statistics_tabs.currentChanged.connect(self.show_animation_on_tab_switch)
         self.bar_plots = [self.bp, self.bp2, self.bp3]
-      # ========================
+
 
     def load_metric_data(self):
         # init datadict
@@ -359,13 +371,39 @@ class MainWindow(QMainWindow):
 
     
     def calc_combined_projection(self):
+        print("calculating combined projection")
+        self.data_dict["combined"] = {}
+
         # first concatenate all the vectors into one big mega vector
+        if "full" not in self.data_dict["combined"]:
+            self.data_dict["combined"]["full"] = np.concatenate([self.data_dict[feature_name]['full'] for feature_name in self.available_features], axis=1)
+
+        # construct reweighting matrix
+        feature_weight_dict = self.get_metric_combo_weights()
+        combined_feature_weight = []
         for feature_name in self.available_features:
-            self.data_dict[feature_name]['full']
+            feature_size = self.data_dict[feature_name]['full'].shape[1]
+            weights = np.zeros(feature_size) + feature_weight_dict[feature_name]
+            combined_feature_weight.append(weights)
+
+        combined_feature_weight = np.concatenate(combined_feature_weight, axis=0)
+        
+        # normalize the weight matrix
+        combined_feature_weight = combined_feature_weight / np.linalg.norm(combined_feature_weight)
+        
+        # make it a diagonal matrix
+        combined_feature_weight = np.diag(combined_feature_weight)
+
+        # apply the weighting
+        all_features_combined = self.data_dict["combined"]["full"] @ combined_feature_weight
+
         # then calculate the umap
-
+        print("calculating Umap projection model")
+        self.combined_reducer = UMAP(n_neighbors=6, n_components=2, metric='cosine', verbose=True).fit(all_features_combined)
+        self.data_dict["combined"]["projection"] = self.combined_reducer.transform(all_features_combined)
         # then plot that combined umap
-
+        self.recalc_similarity()
+        self.setup_scatterplot()
 
     def show_animation_on_tab_switch(self,index):
         if 0 <= index < len(self.bar_plots):
@@ -465,23 +503,33 @@ class MainWindow(QMainWindow):
         """reset filters and reload dataset. Also refresh scatterplot and similarity scores."""
         self.reset_data_filters()
         self.load_metric_data()
+        if self.any_reprojection_applied:
+            self.calc_combined_projection()
+            self.any_reprojection_applied = False
+
         self.recalc_similarity()
         self.setup_scatterplot()
 
     def setup_scatterplot(self, clear_selection=True):
-        current_metric_type = self.ui.box_metric_tabs.tabText(self.ui.box_metric_tabs.currentIndex())
+        if not self.render_scatterplot:
+            return
+        
+        current_metric_type = self.ui.box_metric_tabs.tabText(self.ui.box_metric_tabs.currentIndex()).lower()
+        if current_metric_type not in self.available_features:
+            print("ignoring tab change!, featuer: ")
+            return
+        
         print("changing 2d scatterplot to: ", current_metric_type)
 
         if not hasattr(self, 'scatterplot'):
-            print(f'a new scatterplot is created for {current_metric_type.lower()}, passing points data of shape: {self.data_dict[current_metric_type.lower()]["projection"].shape}')
+            print(f'a new scatterplot is created for {current_metric_type}, passing points data of shape: {self.data_dict[current_metric_type]["projection"].shape}')
             self.scatterplot = ScatterplotWidget(
-                self.data_dict[current_metric_type.lower()]["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame, self.non_filtered_indices
+                self.data_dict[current_metric_type]["projection"], self.image_indices, self.image_paths, self.config, self.ui.scatterplot_frame, self.non_filtered_indices
             )
             self.scatterplot.plot_widget.scene().mousePressEvent=self.on_canvas_click
         else:
-            print(f'redraw scatterplot for {current_metric_type.lower()}, passing points data of shape: {self.data_dict[current_metric_type.lower()]["projection"].shape}')
-            self.scatterplot.points = self.data_dict[current_metric_type.lower()]["projection"]
-            # self.scatterplot.update_selected_points_values()
+            print(f'redraw scatterplot for {current_metric_type}, passing points data of shape: {self.data_dict[current_metric_type]["projection"].shape}')
+            self.scatterplot.points = self.data_dict[current_metric_type]["projection"]
             self.scatterplot.indices_to_keep = self.non_filtered_indices
             if clear_selection:
                 self.scatterplot.clear_selection()
@@ -490,12 +538,12 @@ class MainWindow(QMainWindow):
             # better to see filter as also selecting idx, or use to keep instead of selection_idx everywhere
             self.scatterplot.selected_indices=self.scatterplot.indices_to_keep
 
-            print('len(self.scatterplot.selected_indices)', len(self.scatterplot.selected_indices))
-            if self.scatterplot.dots_plot or 0<len(self.scatterplot.selected_indices)<100:
-                self.scatterplot.dots_plot=False
+            print('draw dots or imgs check', len(self.scatterplot.selected_indices), self.scatterplot.dots_plot)
+            if self.scatterplot.dots_plot or 0 < len(self.scatterplot.selected_indices) < 100:
+                self.scatterplot.dots_plot = False
                 self.scatterplot.draw_scatterplot()
             else:
-                self.scatterplot.dots_plot=True
+                self.scatterplot.dots_plot = True
                 self.scatterplot.draw_scatterplot_dots()
 
 
@@ -832,7 +880,7 @@ class MainWindow(QMainWindow):
             ui_element.setAlignment(Qt.AlignmentFlag.AlignCenter)
             
     def get_metric_combo_weights(self):
-        dummy = self.ui.combo_dummy_slider.value()
+        # dummy = self.ui.combo_dummy_slider.value()
         dino = self.ui.combo_dino_slider.value()
         texture = self.ui.combo_texture_slider.value()
         emotion = self.ui.combo_emotion_slider.value()
@@ -840,7 +888,7 @@ class MainWindow(QMainWindow):
         clip = self.ui.combo_clip_slider.value()
         # TODO: add sliders for the other metrics
         feature_weight_dict = {
-            "dummy": dummy / 100,
+            # "dummy": dummy / 100,
             "dino": dino / 100,
             "texture": texture / 100,
             "emotion": emotion / 100,
@@ -870,11 +918,6 @@ class MainWindow(QMainWindow):
 
         # apply filter mask
         indices = indices[self.non_filtered_indices]
-
-        # TODO: change back!
-        # target_features=["dino", "dummy", "texture"]
-        # for feature_name in target_features:
-
         for feature_name in self.available_features:
             
             # weither to use full vector for similarity, only a specific part or the 2d reprojection
@@ -977,6 +1020,7 @@ class MainWindow(QMainWindow):
             topk_results[feature_name]['distances'] = sorted_distances
             topk_results[feature_name]['ranking'] = ranking_feature
             
+        # print('distances_dict', distances_dict)
         all_distances = np.stack(list(distances_dict.values()), axis=-1)
 
         if feature_weight_dict is not None:
@@ -1001,62 +1045,50 @@ class MainWindow(QMainWindow):
         topk_results["combined"] = {}
         topk_results["combined"]['ranking'] = combined_ranking
         topk_results["combined"]['distances'] = combined_distances
-
+        
+        print('topk_dict', topk_results)
         return topk_results
+    
 
     def upload_image_left(self):
-        from deepsim_analyzer.io import get_image_hash
         file_dialog = QFileDialog()
         file_dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
         file_dialog.setNameFilter("Images (*.png *.xpm *.jpg *.jpeg)")
 
         if file_dialog.exec() == QFileDialog.DialogCode.Accepted:
-            filenames = file_dialog.selectedFiles()
-            if len(filenames) > 0:
+            current_filepath = file_dialog.selectedFiles()
+            if len(current_filepath) > 0:
+                # current_filepath = self.image_paths[self.key_to_idx[img_hash]]
                 # we take only one file/ first file
+                current_filepath = current_filepath[0]
+                print('current_filepath', current_filepath)
+                img_hash = da.get_image_hash(current_filepath)
 
-                print('-----------------------------------------------')
-                current_filepath=filenames[0]
-                self.uploaded_img_file=current_filepath
-
-                img_hash = get_image_hash(current_filepath)
-                self.left_img_key =img_hash
-                
-                feature = self.ui.box_metric_tabs.tabText(self.ui.box_metric_tabs.currentIndex()).lower()
-                # no plotting
-                self.left_img_feature =self.get_features_new_img(current_filepath, feature)
+                # print(f"hash: {img_hash}")
+                # print('does this hash already exist?', img_hash in self.image_keys)
+                if img_hash in self.metadata.keys():
+                    self.left_img_features =self.get_features_from_dataset(img_hash)
+                    self.left_img_key = img_hash
+                else:
+                    # if no plotting just similar images
+                    # self.left_img_features = self.get_features_new_img(current_filepath)
+                    self.left_img_key = img_hash
+                    # for plotting
+                    self.add_new_img_to_plot(current_filepath)
 
                 # display the photo on the left
                 self.display_photo_left(current_filepath)
-                self.update_leftimg_data(self.left_img_key)
+                self.update_leftimg_metadata(self.left_img_key)
                 self.recalc_similarity()
 
                 
-    def add_new_img_to_plot(self):
-        # for plotting
-        current_filepath= self.uploaded_img_file
-        feature = self.ui.box_metric_tabs.tabText(self.ui.box_metric_tabs.currentIndex()).lower()
+    def add_new_img_to_plot(self, current_filepath):
+        # for plotting, added once not saved in the dataset!! cant reload with dataset
+        self.add_metric_data(current_filepath)
+        self.setup_scatterplot()
 
-        self.add_metric_data(current_filepath,feature)
-        if 0<len(self.scatterplot.selected_indices)<100:
-            self.scatterplot.dots_plot=False
-            self.scatterplot.draw_scatterplot()
-        else:
-            self.scatterplot.dots_plot=True
-            self.scatterplot.draw_scatterplot_dots()
-
-        # display the photo on the left
-        self.display_photo_left(current_filepath)
-        self.update_leftimg_data(self.left_img_key)
-        self.recalc_similarity()
-
-
-    def add_metric_data(self,current_filepath, current_feature):
-        
-        current_metric_type = self.ui.box_metric_tabs.tabText(self.ui.box_metric_tabs.currentIndex()).lower()
-        feature= current_metric_type
-        self.left_img_feature =self.get_features_new_img(current_filepath, feature)
-        
+    def add_metric_data(self,current_filepath): 
+        self.left_img_features =self.get_features_new_img(current_filepath)
         self.load_metric_data()
 
         self.image_paths.append(current_filepath)
@@ -1076,21 +1108,13 @@ class MainWindow(QMainWindow):
         self.non_filtered_indices.append(img_idx)
         self.scatterplot.img_paths= self.image_paths
 
-        print( self.data_dict[current_feature]["projection"].shape)
-        feature_dict_key = self.left_img_feature
-        # print('feature_dict_key', feature_dict_key)
+        feature_dict_key = self.left_img_features
         for feature_name, value in feature_dict_key.items():
             self.data_dict[feature_name]["projection"] = np.concatenate((self.data_dict[feature_name]["projection"], value['projection']))
             self.data_dict[feature_name]["full"] = np.concatenate((self.data_dict[feature_name]["full"], value['full']))
         
-        print( self.data_dict[current_feature]["projection"].shape)
 
-        # self.scatterplot.points.append(value['projection'])
-        # TODO: how do i do also change it for the other features, does that happen somewhere else?
-        # self.scatterplot.points = self.data_dict[current_feature]["projection"]
-
-
-    def update_leftimg_data(self, img_hash):
+    def update_leftimg_metadata(self, img_hash):
         # update image metdata if available
         if img_hash in self.metadata:
             filepath = self.image_paths[self.key_to_idx[img_hash]]
@@ -1101,24 +1125,9 @@ class MainWindow(QMainWindow):
                 self.metadata[img_hash]['style'],
                 self.metadata[img_hash]['tags'],
             )
-            self.left_img_features = self.get_features_from_dataset(img_hash)
-            # print('self.left_img_features',self.left_img_features)
 
-            # load in timeline
-            base_filename = os.path.basename(filepath)
-            self.timeline.draw_timeline(base_filename)
-            self.no_timeline_label.hide()
-            self.timeline.show()
-        else:
-            if img_hash in self.key_to_idx:
-                filepath = self.image_paths[self.key_to_idx[img_hash]]
-                print(f"no metadata available for image: {filepath}")
-                
+        else:   
             self.update_image_info(0, "unknown artist", "unknown style", "unknown tags")
-
-            # TODO: check if something other than new img comes here
-                # self.left_img_features = self.get_features_from_dataset(img_hash)
-
             self.timeline.hide()
             self.no_timeline_label.show()
 
@@ -1141,17 +1150,14 @@ class MainWindow(QMainWindow):
                 }
         return feature_dict
     
-    def get_features_new_img(self, filename, feature):
+    def get_features_new_img(self, filename):
         print(f"given filename: {filename}, ignoring file for now and returning feature_vector")
 
-        print('feature_name', feature)
         current_filepath =filename
         # dataset_filepath = str( Path(f"{__file__}").parents[2] / "data" / "processed" / "test_dataset_resized.h5")
         dataset_filepath=self.datafile_path
 
         feature_dict = {}
-        # target_features=["dino", "dummy", "texture"]
-        # for feature in target_features:
         for feature in self.available_features:
             if feature == "dummy":
                 full_vector=da.dummy.calc_features(current_filepath, dataset_filepath)
@@ -1161,12 +1167,13 @@ class MainWindow(QMainWindow):
                 full_vector=da.texture.calc_features(current_filepath, dataset_filepath)
             elif feature == "emotion":
                 full_vector=da.emotion.calc_features(current_filepath, dataset_filepath)
+            elif feature == "clip":
+                full_vector=da.clip.calc_features(current_filepath, dataset_filepath)
             elif feature == "semantic":
                 full_vector=da.semantic.calc_features(current_filepath, dataset_filepath)
+            else:
+                raise NotImplementedError(f"no feature implemented: {feature}")
 
-
-            # print('example full feature', self.data_dict[feature]['full'])
-            # print('full_vector', full_vector)
             full_vector=full_vector.reshape(1, -1)
             reducer =self.reducers[feature]
             upload_img_vector_2d = reducer.transform(full_vector)
@@ -1243,12 +1250,12 @@ class MainWindow(QMainWindow):
             distance_3 = 0
 
         indices_nn_preview = [idx_1, idx_2, idx_3]
-        # print(f"{indices_nn_preview=}")
-        # print(f"{distance_1=}")
-        # print(f"{distance_2=}")
-        # print(f"{distance_3=}")
+        print(f"{indices_nn_preview=}")
+        print(f"{distance_1=}")
+        print(f"{distance_2=}")
+        print(f"{distance_3=}")
         fp_nn_preview = [self.image_paths[int(index)] for index in indices_nn_preview]
-        # print(f"{fp_nn_preview=}")
+        print(f"{fp_nn_preview=}")
 
         self.display_preview_nns(fp_nn_preview)
         
@@ -1259,12 +1266,12 @@ class MainWindow(QMainWindow):
             filenames=filenames[:3]
 
         for i, filename in enumerate(filenames):
-            id= idx[i]
-            filename= filenames[i]
+            id = idx[i]
+            filename = filenames[i]
             ui_element = getattr(self.ui, f"n{id+1}")
             ui_element.setMouseTracking(True)
-            # ui_element.mousePressEvent=self.switch_top_and_preview(i, filename)
-            ui_element.mousePressEvent = lambda event, id=id, filename=filename: self.switch_top_and_preview(id, filename)
+            # ui_element.mousePressEvent = self.switch_top_and_preview(i, filename)
+            ui_element.mousePressEvent = lambda event, id = id, filename = filename: self.switch_top_and_preview(id, filename)
             # print('id',id+1,'filename', os.path.basename(filename))
 
             ui_element.setAutoFillBackground(True)
@@ -1281,7 +1288,7 @@ class MainWindow(QMainWindow):
     def switch_top_and_preview(self, i, filename):
         print('switch_top_and_preview')
         print('self.top_filename', os.path.basename(self.top_filename))
-        self.display_preview_nns([self.top_filename], idx=[i])
+        self.display_preview_nns([self.top_filename], idx = [i])
         self.display_photo_right(filename)
 
     def change_scatterplot_pointtype(self):
@@ -1290,11 +1297,11 @@ class MainWindow(QMainWindow):
         # TODO: REIMPLEMENT
         print('change_scatterplot_pointtype is called')
         if self.ui.r_image_points.isChecked():
-            self.scatterplot.dots_plot=False
-            self.scatterplot.draw_scatterplot(reset=False)
+            self.scatterplot.dots_plot = False
+            self.scatterplot.draw_scatterplot(reset = False)
         else:
-            self.scatterplot.dots_plot=True
-            self.scatterplot.draw_scatterplot_dots(reset=False)
+            self.scatterplot.dots_plot = True
+            self.scatterplot.draw_scatterplot_dots(reset = False)
 
 
     def on_canvas_click(self, ev):
@@ -1338,7 +1345,9 @@ class MainWindow(QMainWindow):
         self.left_img_key = self.image_keys[self.scatterplot.selected_index]
         self.left_img_features = self.get_features_from_dataset(self.left_img_key)
         self.display_photo_left(self.left_img_filename)
-        self.update_leftimg_data(self.left_img_key)
+        self.update_leftimg_metadata(self.left_img_key)
+        self.timeline.draw_timeline(self.left_img_key)
+
         self.recalc_similarity()
 
  
@@ -1347,9 +1356,6 @@ class MainWindow(QMainWindow):
         print('get_selected_points_stats')
         print(len(self.scatterplot.selected_indices), len(self.scatterplot.indices))
         img_hashes = [self.image_keys[index] for index in self.scatterplot.selected_indices]
-        self.metadata= da.read_metadata_batch(self.datafile_path, img_hashes)
-        # if len(img_hashes)>0:
-        #     print(self.metadata[img_hashes[0]])
 
         sel_unique_dates, sel_date_counts = np.unique([self.metadata[hash_]['date'] for hash_ in img_hashes], return_counts=True)
         sel_unique_tags, sel_tag_counts = np.unique([self.metadata[hash_]['tags'] for hash_ in img_hashes], return_counts=True) # could have more than one
@@ -1359,7 +1365,6 @@ class MainWindow(QMainWindow):
         sel_unique_styles, sel_style_counts = np.unique([self.metadata[hash_]['style'] for hash_ in img_hashes], return_counts=True)
 
         img_hashes = [self.image_keys[index] for index in self.scatterplot.indices]
-        self.metadata = da.read_metadata_batch(self.datafile_path, img_hashes)
 
         unique_dates, date_counts = np.unique([self.metadata[hash_]['date'] for hash_ in img_hashes], return_counts=True)
         unique_tags, tag_counts = np.unique([self.metadata[hash_]['tags'] for hash_ in img_hashes], return_counts=True)
@@ -1368,7 +1373,7 @@ class MainWindow(QMainWindow):
         unique_media, media_counts = np.unique([self.metadata[hash_]['media'] for hash_ in img_hashes], return_counts=True)
         unique_styles, style_counts = np.unique([self.metadata[hash_]['style'] for hash_ in img_hashes], return_counts=True)
 
-        sel_date_bins, sel_date_bin_counts,date_bins, date_bin_counts=self.make_date_bins(sel_unique_dates,sel_date_counts,unique_dates,date_counts)
+        sel_date_bins, sel_date_bin_counts,date_bins, date_bin_counts = self.make_date_bins(sel_unique_dates,sel_date_counts,unique_dates,date_counts)
         tag_count_selection = [sel_tag_counts[np.where(sel_unique_tags == tag)[0].tolist()[0]] if np.isin(tag , sel_unique_tags) else 0 for tag in unique_tags]
         artist_count_selection = [sel_artist_name_counts[np.where(sel_unique_artist_names == artist_name)[0].tolist()[0]] if np.isin(artist_name, sel_unique_artist_names) else 0 for artist_name in unique_artist_names]
         nationalities_count_selection = [sel_nationalities_counts[np.where(sel_unique_nationalities == nationalities)[0].tolist()[0]] if np.isin(nationalities, sel_unique_nationalities) else 0 for nationalities in unique_nationalities]
@@ -1382,9 +1387,6 @@ class MainWindow(QMainWindow):
         
     def make_date_bins(self,sel_unique_dates,sel_date_counts,unique_dates,date_counts):
         bin_size = 20  
-        # print('unique_dates',unique_dates)
-        # start_year = unique_dates.min()
-        # end_year = unique_dates.max()
         #round to the nearest tens
         start_year = np.floor(unique_dates.min() / 10) * 10
         end_year = np.ceil(unique_dates.max() / 10) * 10
@@ -1408,8 +1410,6 @@ class MainWindow(QMainWindow):
         # Count dates within each bin
         for i in range(num_bins):
             indices = np.where(bin_indices == i)[0].astype(int)
-            # print('indices',indices, type(indices))
-            # print('date_count_selection', type(date_count_selection))
             date_count_selection = np.array(date_count_selection)
             date_counts = np.array(date_counts)
             if len(indices) > 0:
@@ -1426,14 +1426,14 @@ class MainWindow(QMainWindow):
         return bin_edges,sel_bin_counts,bin_edges ,bin_counts
 
 
-def start_dashboard(key_dict, dataset_filepath, images_filepath):
+def start_dashboard(key_dict, dataset_filepath, images_filepath, features_to_use, render_scatterplot):
     app = QApplication(sys.argv)
     basepath = Path(__file__)
     css_filepath = str(basepath.parent / "theme1.css")
     with open(css_filepath, "r") as file:
         app.setStyleSheet(file.read())
 
-    widget = MainWindow(key_dict, dataset_filepath, images_filepath)
+    widget = MainWindow(key_dict, dataset_filepath, images_filepath, features_to_use, render_scatterplot)
     widget.show()
     sys.exit(app.exec())
 

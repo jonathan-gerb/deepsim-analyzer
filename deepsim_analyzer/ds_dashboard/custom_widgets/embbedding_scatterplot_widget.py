@@ -104,7 +104,7 @@ class ScatterplotWidget(QWidget):
         if event.button() == Qt.MouseButton.LeftButton and self.start_point is not None and self.end_point is not None:
             self.get_selection_in_rectangle()
             if self.selected_indices!=[]:
-                print('len(self.selected_indices)',len(self.selected_indices))
+                print('draw dots or imgs check', len(self.scatterplot.selected_indices), self.scatterplot.dots_plot)
                 if self.dots_plot or 0<len(self.selected_indices)<100:
                     self.dots_plot=False
                     self.draw_scatterplot()
@@ -235,9 +235,6 @@ class ScatterplotWidget(QWidget):
             self.get_Selected_stats.emit(0) 
 
 
-    # def update_selected_points_values(self):
-    #     self.selected_points = self.points[self.selected_indices].copy()
-
     def draw_scatterplot(self, reset=True):
         print('draw_scatterplot')
         self.plot_widget.clear()
@@ -252,7 +249,7 @@ class ScatterplotWidget(QWidget):
         self.image_items = []
         new_pos=[]
         print('num of points in plot', len(points))
-        for i, point in enumerate(points):
+        for i, point in tqdm(enumerate(points), desc="adding points to canvas", total=len(points)):
             x,y = point
             ith_idx= indices[i]
             if ith_idx not in self.indices_to_keep:
@@ -299,9 +296,9 @@ class ScatterplotWidget(QWidget):
 
         print('num of points in plot', len(points))
         self.dot_items = []
-        for i, point in enumerate(points):
-            ith_idx= indices[i]
-            dot_item= self.plot_widget.plot([point[0]], [point[1]], pen=None, symbolBrush=self.selection_color, symbolSize=self.selection_points_size, hover=True)
+        for i, point in tqdm(enumerate(points), desc="adding points to canvas", total=len(points)):
+            ith_idx = indices[i]
+            dot_item = self.plot_widget.plot([point[0]], [point[1]], pen=None, symbolBrush=self.selection_color, symbolSize=self.selection_points_size, hover=True)
             self.dot_items.append((i, ith_idx, dot_item))
 
         if reset:
