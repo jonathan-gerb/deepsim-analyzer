@@ -238,6 +238,7 @@ CMakeLists.txt.user*
 
 data/raw_immutable/models/*
 data/processed/*.h5
+data/local_images/*
 
 data/processed/reducers/*.umap
 

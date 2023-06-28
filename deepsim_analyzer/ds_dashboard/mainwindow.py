@@ -144,7 +144,7 @@ class MainWindow(QMainWindow):
 
         print('default_image_path',default_image_path)
         # load in timeline
-        self.timeline= TimelineWindow(default_image_path)
+        self.timeline= TimelineWindow(default_image_key, self.metadata)
         self.ui.box_timeline_layout.addWidget(self.timeline)
         self.no_timeline_label = QLabel('No data for timeline of new uploaded image')
         self.ui.box_timeline_layout.addWidget(self.no_timeline_label)
@@ -998,11 +998,10 @@ class MainWindow(QMainWindow):
         file_dialog.setNameFilter("Images (*.png *.xpm *.jpg *.jpeg)")
 
         if file_dialog.exec() == QFileDialog.DialogCode.Accepted:
-            filenames = file_dialog.selectedFiles()
-            if len(filenames) > 0:
+            current_filepath = file_dialog.selectedFiles()
+            if len(current_filepath) > 0:
                 # current_filepath = self.image_paths[self.key_to_idx[img_hash]]
                 # we take only one file/ first file
-                current_filepath=[filenames[0]]
                 print('current_filepath', current_filepath)
                 
                 # img_hash = da.get_image_hash(current_filepath)
@@ -1044,11 +1043,6 @@ class MainWindow(QMainWindow):
             )
             self.left_img_features = self.get_features_from_dataset(img_hash)
 
-            # load in timeline
-            base_filename = os.path.basename(filepath)
-            self.timeline.draw_timeline(base_filename)
-            self.no_timeline_label.hide()
-            self.timeline.show()
         else:
             filepath = self.image_paths[self.key_to_idx[img_hash]]
             # get feature_vectors for new image 
@@ -1246,6 +1240,8 @@ class MainWindow(QMainWindow):
         self.left_img_features = self.get_features_from_dataset(self.left_img_key)
         self.display_photo_left(self.left_img_filename)
         self.update_leftimg_data(self.left_img_key)
+        self.timeline.draw_timeline(self.left_img_key)
+
         self.recalc_similarity()
 
  
