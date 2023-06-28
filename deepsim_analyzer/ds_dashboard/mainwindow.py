@@ -473,12 +473,17 @@ class MainWindow(QMainWindow):
         else:
             print(f'redraw scatterplot for {current_metric_type.lower()}, passing points data of shape: {self.data_dict[current_metric_type.lower()]["projection"].shape}')
             self.scatterplot.points = self.data_dict[current_metric_type.lower()]["projection"]
-            self.scatterplot.update_selected_points_values()
+            # self.scatterplot.update_selected_points_values()
             self.scatterplot.indices_to_keep = self.non_filtered_indices
             if clear_selection:
                 self.scatterplot.clear_selection()
 
-            if len(self.scatterplot.selected_indices)<100:
+            print('self.scatterplot.indices_to_keep', len(self.scatterplot.indices_to_keep))
+            # better to see filter as also selecting idx, or use to keep instead of selection_idx everywhere
+            self.scatterplot.selected_indices=self.scatterplot.indices_to_keep
+
+            print('len(self.scatterplot.selected_indices)', len(self.scatterplot.selected_indices))
+            if 0<len(self.scatterplot.selected_indices)<100:
                 self.scatterplot.dots_plot=False
                 self.scatterplot.draw_scatterplot()
             else:

@@ -75,7 +75,6 @@ class ScatterplotWidget(QWidget):
         self.selected_index=0
         self.selected_point=self.points[0]
         self.plot_inex=None
-        self.selected_points = []
         self.selected_indices = []
         self.outside_points_visible = False
         self.dots_plot=True
@@ -108,14 +107,12 @@ class ScatterplotWidget(QWidget):
             self.get_selection_in_rectangle()
             if self.selected_indices!=[]:
                 print('len(self.selected_indices)',len(self.selected_indices))
-                if len(self.selected_indices)<100:
+                if 0<len(self.selected_indices)<100:
                     self.dots_plot=False
                     self.draw_scatterplot()
-                    # self.draw_scatterplot(reset=False)
                 else:
                     self.dots_plot=True
                     self.draw_scatterplot_dots()
-                    # self.draw_scatterplot_dots(reset=False)
 
         # self.clear_selection() # ? but will also put selected_indices = [] or
         self.start_point=None
@@ -193,8 +190,7 @@ class ScatterplotWidget(QWidget):
     def clear_selection(self):
         print('clear selection, is it a switch between tabs?')
         # for switch between tabs, to get all points again
-        # self.selected_points = [] # jonathan had this on
-        # self.selected_indices=[]
+        self.selected_indices=[]
         if self.rect is not None and self.rect in self.plot_widget.scene().items():
             self.plot_widget.scene().removeItem(self.rect)
         self.start_point=None
@@ -234,22 +230,21 @@ class ScatterplotWidget(QWidget):
         # check is all point are in rect
         # for i, p in enumerate(self.points):
         #     print( xmin , p[0], xmax,  ymin , p[1] ,ymax)
-        self.selected_points = np.array([p for p in self.points if xmin <= p[0] <= xmax and ymin <= p[1] <= ymax])
         self.selected_indices = np.array([i for i, p in enumerate(self.points) if xmin <= p[0] <= xmax and ymin <= p[1] <= ymax])
 
         if self.selected_indices!=[]:
             self.get_Selected_stats.emit(0) 
 
 
-    def update_selected_points_values(self):
-        self.selected_points = self.points[self.selected_indices].copy()
-
+    # def update_selected_points_values(self):
+    #     self.selected_points = self.points[self.selected_indices].copy()
 
     def draw_scatterplot(self):
         print('draw_scatterplot')
         self.plot_widget.clear()
-        if len(self.selected_points) != 0:
-            points = self.selected_points
+
+        if len(self.selected_indices) != 0:
+            points = self.points[self.selected_indices]
             indices = self.selected_indices
         else:
             points = self.points
@@ -290,17 +285,17 @@ class ScatterplotWidget(QWidget):
     # TODO: this could be better, remove those out of scene instead of redraw selection
     def draw_scatterplot_dots(self):
         print('draw_scatterplot_dots')
-        # self.plot_widget.clear()
+        self.plot_widget.clear()
         # self.plot_widget.scene().clear()
-        for idx, index, item in self.dot_items:
-            self.plot_widget.scene().removeItem(item)
+        # for idx, index, item in self.dot_items:
+        #     self.plot_widget.scene().removeItem(item)
 
-        if self.selected_indices!=[]:
-            points= self.selected_points
-            indices= self.selected_indices
+        if len(self.selected_indices) != 0:
+            points = self.points[self.selected_indices]
+            indices = self.selected_indices
         else:
-            points=self.points
-            indices= self.indices
+            points = self.points
+            indices = self.indices
 
         print('num of points in plot', len(points))
         self.dot_items = []
@@ -316,12 +311,12 @@ class ScatterplotWidget(QWidget):
 
     def highlight_selected_point(self, id):
         print('draw border, id:', id, 'len(self.image_items)', len(self.image_items))
-        # if current selected point not in self.selected_points, there is no border but left img stays
-        if self.points[id] in self.selected_points:
-            # print(self.points[id] ,self.selected_points)
-            print('current selected point is in self.selected_points')
+        # if current selected point not in selected_points, there is no border but left img stays
+        selected_points = self.points[self.selected_indices]
+        if self.points[id] in selected_points:
+            print('current selected point is in selected_points')
         else:
-            print('current selected point not in self.selected_points')
+            print('current selected point not in selected_points!')
 
         border_color = pg.mkPen(color='r', width=4)
         if self.dots_plot:
@@ -339,13 +334,13 @@ class ScatterplotWidget(QWidget):
     def remove_highlight_selected_point(self, id):
         print('rmv last border, id:', id)
         # TODO: check why and fix
-        # if current selected point not in self.selected_points, there is no border but left img stays
-        if self.points[id] in self.selected_points:
-            print('current selected point is in self.selected_points')
+        # if current selected point not in selected_points, there is no border but left img stays
+        selected_points = self.points[self.selected_indices]
+        if self.points[id] in selected_points:
+            print('current selected point is in selected_points')
         else:
-            print('current selected point not in self.selected_points!!!!')
+            print('current selected point not in selected_points!')
 
-        # print(self.points[id] ,self.selected_points)
         if self.dots_plot:
             for _,idx, plot_item in self.dot_items:
                 if id==idx:
