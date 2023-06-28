@@ -1,6 +1,7 @@
 # contains all methods for saving and loading image embeddings
 import hashlib
 import os
+# os.environ["CUDA_VISIBLE_DEVICES"] = ""
 import pickle
 from pathlib import Path
 
@@ -10,7 +11,7 @@ from PIL import Image
 from tqdm import tqdm
 from random import shuffle
 
-from ..similarity_methods import dino, dummy, texture, semantic, clip
+from ..similarity_methods import dino, dummy, texture, semantic, clip, emotion
 
 
 def save_feature(dataset_filepath, img_hash, img_feature, feature_name, is_projection=False, overwrite=False):
@@ -128,9 +129,7 @@ def calculate_features(image_folder, dataset_filepath, target_features=["dummy"]
         if feature == "texture":
             texture.calc_and_save_features(image_paths, dataset_filepath)
         if feature == "emotion":
-            os.environ["CUDA_VISIBLE_DEVICES"] = ""
             # import here to avoid cuda problems, we want to import this without cuda
-            from ..similarity_methods import emotion
             emotion.calc_and_save_features(image_paths, dataset_filepath)
             os.environ["CUDA_VISIBLE_DEVICES"] = "0"
         if feature == "semantic":

@@ -235,10 +235,6 @@ class ScatterplotWidget(QWidget):
         if self.selected_indices!=[]:
             self.get_Selected_stats.emit(0) 
 
-
-    def update_selected_points_values(self):
-        self.selected_points = self.points[self.selected_indices].copy()
-
     def draw_scatterplot(self):
         print('draw_scatterplot')
         self.plot_widget.clear()
@@ -300,8 +296,8 @@ class ScatterplotWidget(QWidget):
         print('num of points in plot', len(points))
         self.dot_items = []
         for i, point in tqdm(enumerate(points), desc="adding points to canvas", total=len(points)):
-            ith_idx= indices[i]
-            dot_item= self.plot_widget.plot([point[0]], [point[1]], pen=None, symbolBrush=self.selection_color, symbolSize=self.selection_points_size, hover=True)
+            ith_idx = indices[i]
+            dot_item = self.plot_widget.plot([point[0]], [point[1]], pen=None, symbolBrush=self.selection_color, symbolSize=self.selection_points_size, hover=True)
             self.dot_items.append((i, ith_idx, dot_item))
 
         self.reset_scatterplot(points)

@@ -11,7 +11,6 @@ from deepsim_analyzer.ds_dashboard.mainwindow import start_dashboard
 
 def prepare_dataset(args):
     print("preparing dataset!")
-
     if os.path.exists(args.dataset_file):
         print(f"    found dataset file at: {args.dataset_file}")
         if args.refresh:
@@ -92,8 +91,14 @@ def parse_arguments():
         "-f",
         "--target_features",
         nargs="+",
-        default=["dummy"],
+        default=["clip", "dino", "texture", "semantic", "emotion"],
         help="default features to calculate for each image",
+    )
+    parser.add_argument(
+        "-s",
+        "--no_scatterplot",
+        action="store_true",
+        help="Don't render the scatterplot, this way we can actually calculate similarity for large datasets.",
     )
     return parser.parse_args()
 
@@ -103,13 +108,15 @@ def start_gui(args):
     key_dict = read_dataset_keys(args.dataset_file)
     print(f"Found {len(key_dict)} image keys in dataset")
     print("starting DeepSim dashboard")
-    start_dashboard(key_dict, args.dataset_file, args.image_folder, args.target_features)
+    # invert option for more intuitive checks later on
+    render_scatterplot = not args.no_scatterplot
+    start_dashboard(key_dict, args.dataset_file, args.image_folder, args.target_features, render_scatterplot)
 
 
 def main():
     # Example usage:
     args = parse_arguments()
-    args.target_features =  ["clip"]
+    # args.target_features =  ["clip"]
     prepare_dataset(args)
     start_gui(args)
 

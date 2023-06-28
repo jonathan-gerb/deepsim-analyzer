@@ -48,7 +48,7 @@ from .ui_form import Ui_MainWindow
 
 class MainWindow(QMainWindow):
 
-    def __init__(self, key_dict, datafile_path, image_directory, features_to_use):
+    def __init__(self, key_dict, datafile_path, image_directory, features_to_use, render_scatterplot):
         super().__init__()
 
         self.ui = Ui_MainWindow()
@@ -63,6 +63,7 @@ class MainWindow(QMainWindow):
         config_filepath = str(basepath / "config.ini")
         self.config.read(config_filepath)
         self.datafile_path = datafile_path
+        self.render_scatterplot = render_scatterplot
 
         # set image max allocation pretty high
         os.environ['QT_IMAGEIO_MAXALLOC'] = "512"
@@ -280,8 +281,14 @@ class MainWindow(QMainWindow):
         self.bp = BarChart(self)
         self.bp2 = BarChart(self)
         self.bp3 = BarChart(self)
-        self.scatterplot.get_Selected_stats.connect(self.get_selected_points_stats)
-        self.scatterplot.get_Selected_stats.emit(0) # once for initialization, after in scatterplot.get_selection
+        try:
+            self.scatterplot.get_Selected_stats.connect(self.get_selected_points_stats)
+            self.scatterplot.get_Selected_stats.emit(0) # once for initialization, after in scatterplot.get_selection
+        except AttributeError:
+            if not render_scatterplot:
+                print(f"scatterplot not found, this is correct as render_scatterplot is set to False")
+            else:
+                print(f"WARNING scatterplot not found, this is incorrect as render_scatterplot is set to True")
 
         img_stats_container = self.ui.style_stats_layout
         img_stats_container.layout().addWidget(self.bp)
@@ -496,6 +503,9 @@ class MainWindow(QMainWindow):
         self.setup_scatterplot()
 
     def setup_scatterplot(self, clear_selection=True):
+        if not self.render_scatterplot:
+            return
+        
         current_metric_type = self.ui.box_metric_tabs.tabText(self.ui.box_metric_tabs.currentIndex()).lower()
         if current_metric_type not in self.available_features:
             print("ignoring tab change!, featuer: ")
@@ -512,7 +522,6 @@ class MainWindow(QMainWindow):
         else:
             print(f'redraw scatterplot for {current_metric_type}, passing points data of shape: {self.data_dict[current_metric_type]["projection"].shape}')
             self.scatterplot.points = self.data_dict[current_metric_type]["projection"]
-            self.scatterplot.update_selected_points_values()
             self.scatterplot.indices_to_keep = self.non_filtered_indices
             if clear_selection:
                 self.scatterplot.clear_selection()
@@ -1041,26 +1050,28 @@ class MainWindow(QMainWindow):
             if len(current_filepath) > 0:
                 # current_filepath = self.image_paths[self.key_to_idx[img_hash]]
                 # we take only one file/ first file
+                current_filepath = current_filepath[0]
                 print('current_filepath', current_filepath)
                 
-                # img_hash = da.get_image_hash(current_filepath)
+                img_hash = da.get_image_hash(current_filepath)
+                
                 # print(f"hash: {img_hash}")
                 # print('does this hash already exist?', img_hash in self.image_keys)
-                # self.left_img_key = img_hash
-                # self.left_img_filename = current_filepath
-
-                dataset_filepath = str( Path(f"{__file__}").parents[1] / "data" / "processed" / "dataset.h5")
-                for feature in self.available_features:
-                    # if feature == "dummy":
-                    #     da.dummy.calc_and_save_features(current_filepath, dataset_filepath)
-                    if feature == "dino":
-                        da.dino.calc_and_save_features(current_filepath, dataset_filepath)
-                    elif feature == "texture":
-                        da.texture.calc_and_save_features(current_filepath, dataset_filepath)
-                    elif feature == "emotion":
-                        da.emotion.calc_and_save_features(current_filepath, dataset_filepath)
-                    elif feature == "semantic":
-                        da.semantic.calc_and_save_features(current_filepath, dataset_filepath)
+                if img_hash in self.metadata.keys():
+                    self.get_features_from_dataset(img_hash)
+                    self.left_img_key = img_hash
+                else:
+                    for feature in self.available_features:
+                        # if feature == "dummy":
+                        #     da.dummy.calc_and_save_features(current_filepath, self.datafile_path)
+                        if feature == "dino":
+                            da.dino.calc_and_save_features(current_filepath, self.datafile_path)
+                        elif feature == "texture":
+                            da.texture.calc_and_save_features(current_filepath, self.datafile_path)
+                        elif feature == "emotion":
+                            da.emotion.calc_and_save_features(current_filepath, self.datafile_path)
+                        elif feature == "semantic":
+                            da.semantic.calc_and_save_features(current_filepath, self.datafile_path)
 
                 # display the photo on the left
                 self.display_photo_left(current_filepath)
@@ -1366,14 +1377,14 @@ class MainWindow(QMainWindow):
         return bin_edges,sel_bin_counts,bin_edges ,bin_counts
 
 
-def start_dashboard(key_dict, dataset_filepath, images_filepath, features_to_use):
+def start_dashboard(key_dict, dataset_filepath, images_filepath, features_to_use, render_scatterplot):
     app = QApplication(sys.argv)
     basepath = Path(__file__)
     css_filepath = str(basepath.parent / "theme1.css")
     with open(css_filepath, "r") as file:
         app.setStyleSheet(file.read())
 
-    widget = MainWindow(key_dict, dataset_filepath, images_filepath, features_to_use)
+    widget = MainWindow(key_dict, dataset_filepath, images_filepath, features_to_use, render_scatterplot)
     widget.show()
     sys.exit(app.exec())
 
