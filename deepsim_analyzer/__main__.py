@@ -5,7 +5,6 @@ from pathlib import Path
 from deepsim_analyzer import create_dataset, read_dataset_keys, calculate_features
 from deepsim_analyzer import calculate_projection, project_feature
 
-# from deepsim_analyzer.deepsim_dashboard.home import start_dashboard
 from deepsim_analyzer.ds_dashboard.mainwindow import start_dashboard
 
 
@@ -58,10 +57,12 @@ def prepare_dataset(args):
 
 def parse_arguments():
     dataset_default_location = str(
-        Path(f"{__file__}").parents[1] / "data" / "processed" / "dataset.h5"
+        # Path(f"{__file__}").parents[1] / "data" / "processed" / "dataset.h5"
+        Path(f"{__file__}").parents[1] / "data" / "processed" / "test_dataset_resized.h5"
     )
     images_default_location = str(
-        Path(f"{__file__}").parents[1] / "data" / "raw_immutable" / "test_images"
+        # Path(f"{__file__}").parents[1] / "data" / "raw_immutable" / "test_images"
+        Path(f"{__file__}").parents[1] / "data" / "raw_immutable" / "test_images_resized"
     )
 
     parser = argparse.ArgumentParser(description="Dataset Refresh Script")

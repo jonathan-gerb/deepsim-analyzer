@@ -226,6 +226,59 @@ def calc_and_save_features(
 
             save_feature(dataset_filepath, hash, representation, 'semantic')
 
+# this version you can give a path
+def calc_features(
+    image_path, 
+    dataset_filepath,
+    patch_size=8,
+    arch="vit_base",
+    image_size=(480, 480),
+    pretrained_model_path="",
+    resize=True
+    ):
+    print("calculating semantic features")
+    
+    # local import inside function to avoid circular import problem
+    from deepsim_analyzer.io import get_image_hash, load_image, save_feature
+
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    with torch.no_grad():
+        model = load_model(arch, pretrained_model_path, patch_size)
+        model = model.to(device)
+        
+
+        transform = pth_transforms.Compose(
+            [
+                pth_transforms.Resize(image_size),
+                pth_transforms.ToTensor(),
+                pth_transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+            ]
+        )
+
+        image_path = str(image_path)
+        image = load_image(image_path, return_np=False)
+
+        if resize:
+            resize = image.size
+
+        image = transform(image)
+
+        # make the image divisible by the patch size
+        w, h = (
+            image.shape[1] - image.shape[1] % patch_size,
+            image.shape[2] - image.shape[2] % patch_size,
+        )
+        image = image[:, :w, :h].unsqueeze(0)
+
+        # w_featmap = image.shape[-2] // patch_size
+        # h_featmap = image.shape[-1] // patch_size
+
+        # move model and image to gpu (if available)
+        image = image.to(device)
+    
+        representation = model(image).squeeze().cpu().detach().numpy()
+        return representation
+
 
 
 def get_features(
