@@ -288,9 +288,9 @@ class MainWindow(QMainWindow):
         print("dashboard setup complete!")
 
         print('--------setting up barplots')
-        self.bp = BarChart(self)
-        self.bp2 = BarChart(self)
-        self.bp3 = BarChart(self)
+        self.bp = BarChart(category="Style", parent=self)
+        self.bp2 = BarChart(category="Date", parent=self)
+        self.bp3 = BarChart(category="Country", parent=self)
         try:
             self.scatterplot.get_Selected_stats.connect(self.get_selected_points_stats)
             self.scatterplot.get_Selected_stats.emit(0) # once for initialization, after in scatterplot.get_selection
@@ -1378,9 +1378,9 @@ class MainWindow(QMainWindow):
         nationalities_count_selection = [sel_nationalities_counts[np.where(sel_unique_nationalities == nationalities)[0].tolist()[0]] if np.isin(nationalities, sel_unique_nationalities) else 0 for nationalities in unique_nationalities]
         style_count_selection = [sel_style_counts[np.where(sel_unique_styles == style)[0].tolist()[0]] if np.isin(style, sel_unique_styles) else 0 for style in unique_styles]
        
-        self.bp.fill_in_barplot(unique_styles,style_counts,style_count_selection)
-        self.bp2.fill_in_barplot(date_bins,date_bin_counts,sel_date_bin_counts)
-        self.bp3.fill_in_barplot(unique_nationalities,nationalities_counts,nationalities_count_selection)
+        self.bp.fill_in_barplot(unique_styles, style_counts, style_count_selection)
+        self.bp2.fill_in_barplot(date_bins, date_bin_counts, sel_date_bin_counts)
+        self.bp3.fill_in_barplot(unique_nationalities, nationalities_counts, nationalities_count_selection)
         
         
     def make_date_bins(self,sel_unique_dates,sel_date_counts,unique_dates,date_counts):
