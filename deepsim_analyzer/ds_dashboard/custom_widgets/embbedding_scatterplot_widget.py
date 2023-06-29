@@ -302,6 +302,9 @@ class ScatterplotWidget(QWidget):
         self.dot_items = []
         for i, point in tqdm(enumerate(points), desc="adding points to canvas", total=len(points)):
             ith_idx = indices[i]
+            if ith_idx not in self.indices_to_keep:
+                continue
+            
             dot_item = self.plot_widget.plot([point[0]], [point[1]], pen=None, symbolBrush=self.selection_color, symbolSize=self.selection_points_size, hover=True)
             self.dot_items.append((i, ith_idx, dot_item))
 
