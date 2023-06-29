@@ -667,9 +667,11 @@ class Ui_MainWindow(object):
                                 All Tooltips text
         ----------------------------------------------------------------------
         """
-        # General UI tooltips
+        distance_metric = "Choose how the nearest neighbour points are calculated."
         reprojection_similarity_full = "Use vector from original multidimensional featurespace."
         reprojection_similarity_2d = "Use projected feature vectors to find similarities."
+        
+        # General UI tooltips
         self.subset_projection_btn.setToolTip("Placeholder0") # Reproject current
         self.b_upload.setToolTip("Find similarity of your own image. This may take a few minutes.") # Upload button
         self.reset_dataset_filters.setToolTip("Set all filters to default.") # Reset filter
@@ -678,12 +680,13 @@ class Ui_MainWindow(object):
 
         # Dino tab tooltips
         self.dino_opt_showcamap.setToolTip("Overlay image with a heatmap indicating the sections the model is focussing on.") # Show crossattention map
-        self.label.setToolTip("Choose how the nearest neighbour points are calculated.") # Distance metric
+        self.label.setToolTip(distance_metric) # Distance metric
         self.dino_opt_fullsim.setToolTip(reprojection_similarity_full) # Full feature vector similarity
         self.dino_opt_2dsim.setToolTip(reprojection_similarity_2d) # 2d reprojection similarity
         self.dino_opt_headsim.setToolTip("Select ") # Similarity from specific head
 
         # Texture tab tooltips
+        self.label_6.setToolTip(distance_metric) # Distance metric
         self.texture_opt_show_fm.setToolTip("Placeholder5") # Show feature map
         self.texture_label1.setToolTip("Placeholder6") # Filter index
         self.texture_opt_fullsim.setToolTip(reprojection_similarity_full) # Full feature vector similarity
