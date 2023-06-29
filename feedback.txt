@@ -1,7 +1,0 @@
-feedback points:
-- focus on the main novelty of the dashboard, which is the combination of metrics. Make sure that works well and interestingly. Dont make other functionality of the dashboard super intricate if it doesn't help that main idea. 
-- add recalculate projection button so you can manually trigger the reprojection if you change combination parameters, when you filter points, the resulting projection changes so you should be able to trigger this reprojection. It's okay if this takes a while.
-- add option to recalculate umap after filtering the dataset (with the basic filters)
-- highlight the differences between sets instead of just statistics on a set -> you should be able to select a set of points in the projection window and get statistics/metrics on that selection. Even better would ben when can see the difference between either two selected sets or the selected and unselected set. (what values would we see specifically?) as differences are usually more informative that stats on their own.
-- maybe add animation to the scatterplot, he said it is possible and not super hard to do with Qt (I'm not so sure about that one). 
-- umaps can be combined (as in a previous umap can be used in the creation of a new one or something like that. so find a way to use that maybe?
