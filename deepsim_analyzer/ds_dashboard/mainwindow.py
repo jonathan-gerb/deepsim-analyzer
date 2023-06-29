@@ -148,7 +148,7 @@ class MainWindow(QMainWindow):
         self.left_img_features = self.get_features_from_dataset(self.left_img_key)
         self.left_img_filename = default_image_path_absolute
 
-        print('default_image_path',default_image_path)
+        # print('default_image_path', default_image_path)
         # load in timeline
         self.timeline= TimelineWindow(default_image_key, self.metadata)
         self.ui.box_timeline_layout.addWidget(self.timeline)
@@ -347,10 +347,10 @@ class MainWindow(QMainWindow):
 
         if len(self.scatterplot.selected_indices) > 0:
             indices_to_keep_scatterplot = [idx for idx in self.scatterplot.selected_indices if idx in self.non_filtered_indices]
-            print('selected points:')
-            print(indices_to_keep_scatterplot, len(indices_to_keep_scatterplot))
-            print("indices to keep: ")
-            print(self.non_filtered_indices, len(self.non_filtered_indices))
+            # print('selected points:')
+            # print(indices_to_keep_scatterplot, len(indices_to_keep_scatterplot))
+            # print("indices to keep: ")
+            # print(self.non_filtered_indices, len(self.non_filtered_indices))
             indices_to_project = indices_to_keep_scatterplot
         else:
             indices_to_project = self.non_filtered_indices
@@ -359,9 +359,9 @@ class MainWindow(QMainWindow):
 
         # only use the selected indices to calculate the umap, after that use it to project all the data
         # (even if it's not actually visible) so that we don't mix projected and reprojected data.
-        print(f"projecting data with shape: {data_to_reproject.shape}")
+        # print(f"projecting data with shape: {data_to_reproject.shape}")
         reducer = UMAP(n_neighbors=6, n_components=2, metric='cosine').fit(data_to_reproject)
-        print(f"overwriting reprojected data for metric: {current_metric_type}")
+        # print(f"overwriting reprojected data for metric: {current_metric_type}")
         reprojected_data = reducer.transform(self.data_dict[current_metric_type]['full'])
         print(reprojected_data.shape)
         self.data_dict[current_metric_type]['projection'] = reprojected_data
@@ -371,7 +371,7 @@ class MainWindow(QMainWindow):
         self.setup_scatterplot(clear_selection=False)
 
     
-    def calc_combined_projection(self):
+    def calc_combined_projection(self, refresh_plot=True):
         print("calculating combined projection")
         self.data_dict["combined"] = {}
 
@@ -404,7 +404,8 @@ class MainWindow(QMainWindow):
         self.data_dict["combined"]["projection"] = self.combined_reducer.transform(all_features_combined)
         # then plot that combined umap
         self.recalc_similarity()
-        self.setup_scatterplot()
+        if refresh_plot:
+            self.setup_scatterplot()
 
     def show_animation_on_tab_switch(self,index):
         if 0 <= index < len(self.bar_plots):
@@ -840,7 +841,8 @@ class MainWindow(QMainWindow):
             top_img_path = self.left_img_filename
 
         self.display_photo_right(top_img_path)
-        print(topk['combined']['distances'].shape)
+        print("shape of combined distances: ", topk['combined']['distances'].shape)
+        print("combined distances: ", topk['combined']['distances'])
         # if we cannot find nearest neighbours, we just display the original image again, edgecase handling
         try:
             distance_1, idx_1 = topk['combined']['distances'][1], int(topk['combined']["ranking"][1])
@@ -1015,8 +1017,13 @@ class MainWindow(QMainWindow):
             # remove images with distance (almost) 0 as those are just the original image
             # but only do so if we know the current image is in the dataset
             if self.left_img_key in self.image_keys:
+                print(sorted_distances.shape)
+                print(sorted_distances)
+                # forgive me for this horrible hack, somewhere in the program multiple duplicates
+                # get added that affect the sorted_distances but not the ranking
                 sorted_distances = sorted_distances[1:]
-                ranking_feature = ranking_feature[1:]
+                sorted_distances = ranking_feature[1:]
+                # ranking_feature = ranking_feature[sorted_distances != 0.0]
 
 
             topk_results[feature_name] = {}
@@ -1054,6 +1061,7 @@ class MainWindow(QMainWindow):
     
 
     def upload_image_left(self):
+        print("calling upload image")
         file_dialog = QFileDialog()
         file_dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
         file_dialog.setNameFilter("Images (*.png *.xpm *.jpg *.jpeg)")
@@ -1064,18 +1072,18 @@ class MainWindow(QMainWindow):
                 # current_filepath = self.image_paths[self.key_to_idx[img_hash]]
                 # we take only one file/ first file
                 current_filepath = current_filepath[0]
-                print('current_filepath', current_filepath)
+                print('image to be uploaded: ', current_filepath)
                 img_hash = da.get_image_hash(current_filepath)
 
                 # print(f"hash: {img_hash}")
                 # print('does this hash already exist?', img_hash in self.image_keys)
                 if img_hash in self.metadata.keys():
-                    self.left_img_features =self.get_features_from_dataset(img_hash)
+                    self.left_img_features = self.get_features_from_dataset(img_hash)
                     self.left_img_key = img_hash
                 else:
                     self.left_img_key = img_hash
 
-                    plot_in_scatterplot= False
+                    plot_in_scatterplot = True
                     if plot_in_scatterplot:
                         # if no plotting just similar images
                         self.left_img_features = self.get_features_new_img(current_filepath)
@@ -1092,25 +1100,26 @@ class MainWindow(QMainWindow):
     def add_new_img_to_plot(self, current_filepath):
         # for plotting, added once not saved in the dataset!! cant reload with dataset
         self.add_metric_data(current_filepath)
-        self.setup_scatterplot()
+        self.calc_combined_projection(refresh_plot=False)
+        self.setup_scatterplot(clear_selection=True)
 
     def add_metric_data(self,current_filepath): 
-        self.left_img_features =self.get_features_new_img(current_filepath)
-        self.load_metric_data()
+        self.left_img_features = self.get_features_new_img(current_filepath)
+        # self.load_metric_data()
 
         self.image_paths.append(current_filepath)
         self.image_keys.append(self.left_img_key)
         print('len self.image_indices and last', len(self.image_indices) , self.image_indices[-1])
 
-        img_idx= len(self.image_indices)
+        img_idx = len(self.image_indices)
         self.key_to_idx[self.left_img_key] = img_idx
         self.image_indices.append(img_idx)
         self.non_filtered_indices.append(img_idx)
-        self.scatterplot.selected_index=img_idx
+
+        self.scatterplot.selected_index = img_idx
         self.scatterplot.selected_indices.append(img_idx)
         self.scatterplot.indices_to_keep.append(img_idx)
-        self.non_filtered_indices.append(img_idx)
-        self.scatterplot.img_paths= self.image_paths
+        self.scatterplot.img_paths = self.image_paths
 
         feature_dict_key = self.left_img_features
         for feature_name, value in feature_dict_key.items():
@@ -1141,7 +1150,6 @@ class MainWindow(QMainWindow):
         feature_dict = {}
         for feature_name in self.available_features:
             # get feature for default image
-            print(f"reading feature: {feature_name}")
             test_feature = da.io.read_feature(
                 self.datafile_path, img_hash, feature_name, read_projection=False
             )
@@ -1222,48 +1230,6 @@ class MainWindow(QMainWindow):
         self.top_filename= filename
         self.ui.box_right_img.setPixmap(self.top_pixmap.scaled(w,h,Qt.AspectRatioMode.KeepAspectRatio))
         self.ui.box_right_img.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-    def display_nearest_neighbours(self, topk):
-        # save for potential use in other parts of the program
-        self.topk = topk
-        try:
-            distance, idx = topk['combined']["distances"][0], int(topk['combined']['ranking'][0])
-                
-            top_img_path = self.image_paths[idx]
-            self.right_img_key = self.image_keys[idx]
-            self.right_img_filename = self.image_paths[idx]
-        # in case there is only 1 image and so no nearest neighbour
-        except IndexError:
-            top_img_path = self.left_img_filename
-
-        self.display_photo_right(top_img_path)
-        print(topk['combined']['distances'].shape)
-        # if we cannot find nearest neighbours, we just display the original image again, edgecase handling
-        try:
-            distance_1, idx_1 = topk['combined']['distances'][1], int(topk['combined']["ranking"][1])
-        except IndexError:
-            idx_1 = self.key_to_idx[self.left_img_key]
-            distance_1 = 0
-        try:
-            distance_2, idx_2 = topk['combined']['distances'][2], int(topk['combined']["ranking"][2])
-        except IndexError:
-            idx_2 = self.key_to_idx[self.left_img_key]
-            distance_2 = 0
-        try:
-            distance_3, idx_3 = topk['combined']['distances'][3], int(topk['combined']["ranking"][3])
-        except IndexError:
-            idx_3 = self.key_to_idx[self.left_img_key]
-            distance_3 = 0
-
-        indices_nn_preview = [idx_1, idx_2, idx_3]
-        print(f"{indices_nn_preview=}")
-        print(f"{distance_1=}")
-        print(f"{distance_2=}")
-        print(f"{distance_3=}")
-        fp_nn_preview = [self.image_paths[int(index)] for index in indices_nn_preview]
-        print(f"{fp_nn_preview=}")
-
-        self.display_preview_nns(fp_nn_preview)
         
 
     def display_preview_nns(self, filenames,idx=[0,1,2]):
@@ -1326,7 +1292,7 @@ class MainWindow(QMainWindow):
                     for x, y in zip(x_data, y_data):
                         if abs(x - item_pos.x()) <= range_radius and abs(y - item_pos.y()) <= range_radius:
                             self.scatterplot.selected_point = item_pos.x(), item_pos.y()
-                            print('self.scatterplot.selected_point',self.scatterplot.selected_point)
+                            # print('self.scatterplot.selected_point',self.scatterplot.selected_point)
                             self.scatterplot.remove_highlight_selected_point(self.scatterplot.selected_index)
                             self.scatterplot.selected_index = index
                             self.scatterplot.highlight_selected_point(index)
@@ -1337,7 +1303,7 @@ class MainWindow(QMainWindow):
                 for i, index, item in self.scatterplot.image_items:
                     item_pos=item.mapFromScene(pos)
                     if item.contains(item_pos):
-                        print('selected_index==plot_index?',index==i)
+                        # print('selected_index==plot_index?',index==i)
                         self.scatterplot.selected_point = item_pos.x(), item_pos.y()
                         self.scatterplot.remove_highlight_selected_point(self.scatterplot.selected_index)
                         self.scatterplot.selected_index = index
@@ -1347,7 +1313,7 @@ class MainWindow(QMainWindow):
                 
 
     def clicked_on_point(self):
-        print("point/ image clicked, load on the left")
+        # print("point/ image clicked, load on the left")
         self.left_img_filename = self.image_paths[self.scatterplot.selected_index]
         self.left_img_key = self.image_keys[self.scatterplot.selected_index]
         self.left_img_features = self.get_features_from_dataset(self.left_img_key)
@@ -1360,8 +1326,8 @@ class MainWindow(QMainWindow):
  
     # TODO: put in barplot_widget.py?
     def get_selected_points_stats(self, int_):
-        print('get_selected_points_stats')
-        print(len(self.scatterplot.selected_indices), len(self.scatterplot.indices))
+        # print('get_selected_points_stats')
+        # print(len(self.scatterplot.selected_indices), len(self.scatterplot.indices))
         img_hashes = [self.image_keys[index] for index in self.scatterplot.selected_indices]
 
         sel_unique_dates, sel_date_counts = np.unique([self.metadata[hash_]['date'] for hash_ in img_hashes], return_counts=True)
@@ -1390,12 +1356,12 @@ class MainWindow(QMainWindow):
         #round to the nearest tens
         start_year = np.floor(unique_dates.min() / 10) * 10
         end_year = np.ceil(unique_dates.max() / 10) * 10
-        print(start_year, end_year)
+        # print(start_year, end_year)
 
         date_count_selection = [sel_date_counts[np.where(sel_unique_dates == date)[0].tolist()[0]] if np.isin(date , sel_unique_dates) else 0 for date in unique_dates]
 
         num_bins = int((end_year - start_year) / bin_size) + 1
-        print('num_bins', num_bins)
+        # print('num_bins', num_bins)
 
         # Create an array of bin edges
         bin_edges = np.arange(start_year, end_year + bin_size, bin_size)

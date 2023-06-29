@@ -289,6 +289,7 @@ class ScatterplotWidget(QWidget):
         # self.plot_widget.scene().clear()
         # for idx, index, item in self.dot_items:
         #     self.plot_widget.scene().removeItem(item)
+        print("selected_indices", self.selected_indices)
 
         if len(self.selected_indices) != 0:
             points = self.points[self.selected_indices]
