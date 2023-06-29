@@ -243,3 +243,4 @@ data/local_images/*
 data/processed/reducers/*.umap
 
 deepsim-dashboard/images/*
+data/raw_immutable/images/*

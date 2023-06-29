@@ -310,10 +310,10 @@
     <widget class="QLabel" name="t_tags">
      <property name="geometry">
       <rect>
-       <x>250</x>
+       <x>240</x>
        <y>10</y>
-       <width>231</width>
-       <height>17</height>
+       <width>241</width>
+       <height>21</height>
       </rect>
      </property>
      <property name="text">
@@ -382,11 +382,16 @@
       <height>301</height>
      </rect>
     </property>
+    <property name="font">
+     <font>
+      <underline>false</underline>
+     </font>
+    </property>
     <property name="autoFillBackground">
      <bool>true</bool>
     </property>
     <property name="currentIndex">
-     <number>5</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="dino_tab">
      <attribute name="title">
@@ -397,7 +402,7 @@
        <rect>
         <x>10</x>
         <y>60</y>
-        <width>501</width>
+        <width>531</width>
         <height>20</height>
        </rect>
       </property>
@@ -410,7 +415,7 @@
        <rect>
         <x>10</x>
         <y>120</y>
-        <width>501</width>
+        <width>531</width>
         <height>16</height>
        </rect>
       </property>
@@ -423,7 +428,7 @@
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>501</width>
+        <width>531</width>
         <height>51</height>
        </rect>
       </property>
@@ -495,7 +500,7 @@
        <rect>
         <x>10</x>
         <y>80</y>
-        <width>501</width>
+        <width>531</width>
         <height>41</height>
        </rect>
       </property>
@@ -505,7 +510,7 @@
       <widget class="QRadioButton" name="dino_opt_eucdist">
        <property name="geometry">
         <rect>
-         <x>290</x>
+         <x>310</x>
          <y>10</y>
          <width>161</width>
          <height>31</height>
@@ -518,7 +523,7 @@
       <widget class="QRadioButton" name="dino_opt_cosdist">
        <property name="geometry">
         <rect>
-         <x>150</x>
+         <x>170</x>
          <y>10</y>
          <width>131</width>
          <height>31</height>
@@ -549,8 +554,8 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>130</y>
-        <width>501</width>
+        <y>140</y>
+        <width>531</width>
         <height>121</height>
        </rect>
       </property>
@@ -653,7 +658,7 @@
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>501</width>
+        <width>531</width>
         <height>51</height>
        </rect>
       </property>
@@ -702,7 +707,7 @@
        <rect>
         <x>10</x>
         <y>80</y>
-        <width>501</width>
+        <width>531</width>
         <height>41</height>
        </rect>
       </property>
@@ -712,7 +717,7 @@
       <widget class="QRadioButton" name="texture_opt_eucdist">
        <property name="geometry">
         <rect>
-         <x>290</x>
+         <x>310</x>
          <y>10</y>
          <width>161</width>
          <height>31</height>
@@ -725,7 +730,7 @@
       <widget class="QRadioButton" name="texture_opt_cosdist">
        <property name="geometry">
         <rect>
-         <x>150</x>
+         <x>170</x>
          <y>10</y>
          <width>131</width>
          <height>31</height>
@@ -757,7 +762,7 @@
        <rect>
         <x>10</x>
         <y>60</y>
-        <width>501</width>
+        <width>531</width>
         <height>20</height>
        </rect>
       </property>
@@ -769,8 +774,8 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>150</y>
-        <width>501</width>
+        <y>140</y>
+        <width>531</width>
         <height>71</height>
        </rect>
       </property>
@@ -804,6 +809,19 @@
        </property>
       </widget>
      </widget>
+     <widget class="Line" name="line_7">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>120</y>
+        <width>531</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="emotion_tab">
      <attribute name="title">
@@ -814,7 +832,7 @@
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>501</width>
+        <width>531</width>
         <height>51</height>
        </rect>
       </property>
@@ -840,7 +858,7 @@
        <rect>
         <x>10</x>
         <y>80</y>
-        <width>501</width>
+        <width>531</width>
         <height>41</height>
        </rect>
       </property>
@@ -866,7 +884,7 @@
       <widget class="QRadioButton" name="emotion_opt_cosdist">
        <property name="geometry">
         <rect>
-         <x>150</x>
+         <x>170</x>
          <y>10</y>
          <width>131</width>
          <height>31</height>
@@ -879,7 +897,7 @@
       <widget class="QRadioButton" name="emotion_opt_eucdist">
        <property name="geometry">
         <rect>
-         <x>300</x>
+         <x>310</x>
          <y>10</y>
          <width>161</width>
          <height>31</height>
@@ -894,8 +912,8 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>150</y>
-        <width>501</width>
+        <y>140</y>
+        <width>531</width>
         <height>71</height>
        </rect>
       </property>
@@ -934,7 +952,20 @@
        <rect>
         <x>10</x>
         <y>60</y>
-        <width>501</width>
+        <width>531</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+     <widget class="Line" name="line_8">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>120</y>
+        <width>531</width>
         <height>20</height>
        </rect>
       </property>
@@ -952,7 +983,7 @@
        <rect>
         <x>10</x>
         <y>80</y>
-        <width>501</width>
+        <width>531</width>
         <height>41</height>
        </rect>
       </property>
@@ -968,6 +999,12 @@
          <height>31</height>
         </rect>
        </property>
+       <property name="font">
+        <font>
+         <bold>false</bold>
+         <underline>false</underline>
+        </font>
+       </property>
        <property name="text">
         <string>distance metric:</string>
        </property>
@@ -978,7 +1015,7 @@
       <widget class="QRadioButton" name="semantic_opt_cosdist">
        <property name="geometry">
         <rect>
-         <x>150</x>
+         <x>170</x>
          <y>10</y>
          <width>131</width>
          <height>31</height>
@@ -991,7 +1028,7 @@
       <widget class="QRadioButton" name="semantic_opt_eucdist">
        <property name="geometry">
         <rect>
-         <x>300</x>
+         <x>310</x>
          <y>10</y>
          <width>161</width>
          <height>31</height>
@@ -1007,7 +1044,7 @@
        <rect>
         <x>10</x>
         <y>60</y>
-        <width>501</width>
+        <width>531</width>
         <height>20</height>
        </rect>
       </property>
@@ -1019,8 +1056,8 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>150</y>
-        <width>501</width>
+        <y>140</y>
+        <width>531</width>
         <height>71</height>
        </rect>
       </property>
@@ -1054,6 +1091,19 @@
        </property>
       </widget>
      </widget>
+     <widget class="Line" name="line_9">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>120</y>
+        <width>531</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="clip_tab">
      <attribute name="title">
@@ -1064,7 +1114,7 @@
        <rect>
         <x>20</x>
         <y>80</y>
-        <width>501</width>
+        <width>521</width>
         <height>111</height>
        </rect>
       </property>
@@ -1088,45 +1138,12 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="horizontalLayoutWidget_2">
-      <property name="geometry">
-       <rect>
-        <x>20</x>
-        <y>20</y>
-        <width>501</width>
-        <height>51</height>
-       </rect>
-      </property>
-      <layout class="QHBoxLayout" name="horizontalLayout_5">
-       <item>
-        <widget class="QRadioButton" name="clip_radio_combsim">
-         <property name="text">
-          <string>combined sim</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QRadioButton" name="clip_radio_imgsim">
-         <property name="text">
-          <string>image embedding sim</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QRadioButton" name="clip_radio_textsim">
-         <property name="text">
-          <string>text sim</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
      <widget class="QGroupBox" name="groupBox_4">
       <property name="geometry">
        <rect>
         <x>20</x>
         <y>200</y>
-        <width>501</width>
+        <width>521</width>
         <height>51</height>
        </rect>
       </property>
@@ -1160,8 +1177,66 @@
        </property>
       </widget>
      </widget>
+     <widget class="QGroupBox" name="groupBox_6">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>20</y>
+        <width>521</width>
+        <height>51</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string/>
+      </property>
+      <widget class="QRadioButton" name="clip_radio_combsim">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>20</y>
+         <width>141</width>
+         <height>24</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>combined sim</string>
+       </property>
+      </widget>
+      <widget class="QRadioButton" name="clip_radio_imgsim">
+       <property name="geometry">
+        <rect>
+         <x>140</x>
+         <y>20</y>
+         <width>246</width>
+         <height>24</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>image embedding sim</string>
+       </property>
+      </widget>
+      <widget class="QRadioButton" name="clip_radio_textsim">
+       <property name="geometry">
+        <rect>
+         <x>330</x>
+         <y>20</y>
+         <width>155</width>
+         <height>24</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>text sim</string>
+       </property>
+      </widget>
+     </widget>
     </widget>
     <widget class="QWidget" name="combined_tab">
+     <attribute name="icon">
+      <iconset theme="emblem-default"/>
+     </attribute>
      <attribute name="title">
       <string>Combined</string>
      </attribute>
@@ -1169,7 +1244,7 @@
       <property name="geometry">
        <rect>
         <x>50</x>
-        <y>50</y>
+        <y>80</y>
         <width>241</width>
         <height>151</height>
        </rect>
@@ -1287,10 +1362,17 @@
       <property name="geometry">
        <rect>
         <x>30</x>
-        <y>20</y>
+        <y>30</y>
         <width>269</width>
-        <height>21</height>
+        <height>31</height>
        </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+        <bold>true</bold>
+        <underline>false</underline>
+       </font>
       </property>
       <property name="text">
        <string>Metric weights</string>
@@ -1303,7 +1385,7 @@
       <property name="geometry">
        <rect>
         <x>320</x>
-        <y>120</y>
+        <y>150</y>
         <width>231</width>
         <height>31</height>
        </rect>
@@ -1316,7 +1398,7 @@
       <property name="geometry">
        <rect>
         <x>320</x>
-        <y>80</y>
+        <y>110</y>
         <width>231</width>
         <height>31</height>
        </rect>

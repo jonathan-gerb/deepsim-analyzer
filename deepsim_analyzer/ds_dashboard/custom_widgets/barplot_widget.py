@@ -60,19 +60,19 @@ class BarChart(QWidget):
         Collect categories and add to barplot.
         """
         self.series.clear()
-        self.categories = [str(style) for style in unique_styles]
+        self.categories = [str(style).replace("_", " ") for style in unique_styles]
         self.axisX.clear()
         self.axisX.append(self.categories)
         font = QFont()
-        font.setPointSize(8)
+        font.setPointSize(6)
         self.axisX.setLabelsFont(font)
 
-        bar_set = QtCharts.QBarSet("Bar")
+        bar_set = QtCharts.QBarSet("Images")
         for count in style_counts:
             bar_set.append(count)
         self.series.append(bar_set)
 
-        selected_bar_set = QtCharts.QBarSet("Selected Bar")
+        selected_bar_set = QtCharts.QBarSet("Selected Images")
         for count in style_count_selection:
             selected_bar_set.append(count)
         self.series.append(selected_bar_set)
@@ -84,5 +84,6 @@ class BarChart(QWidget):
 
 
     def fill_in_barplot(self, unique_styles, style_counts, style_count_selection):
+        print('fill_in_barplot')
         self.setBarData(unique_styles, style_counts, style_count_selection)
         self.repaint()

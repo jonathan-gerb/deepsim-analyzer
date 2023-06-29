@@ -178,7 +178,7 @@ class MainWindow(QMainWindow):
         self.setup_scatterplot()
 
         # toggle the the dots to images radio button
-        self.ui.r_image_points.toggle()
+        # self.ui.r_image_points.toggle()
         self.ui.r_image_points.toggled.connect(self.change_scatterplot_pointtype)
     
         # functionality to recalculate projections
@@ -213,9 +213,10 @@ class MainWindow(QMainWindow):
         self.device = (torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"))
 
         print("loading clip model")
+        self.ui.clip_radio_imgsim.toggle()
         self.clip_model, self.clip_preprocess = clip.load("ViT-B/32", device=self.device)
         self.clip_model = self.clip_model.to(self.device)
-        self.ui.clip_radio_imgsim.toggle()
+        
 
         self.ui.clip_opt_fullsim.toggle()
         self.ui.clip_opt_2dsim.toggled.connect(self.clip_opt_simtype)
@@ -408,8 +409,8 @@ class MainWindow(QMainWindow):
     def show_animation_on_tab_switch(self,index):
         if 0 <= index < len(self.bar_plots):
             print('show_animation_on_tab_switch')
-            # self.bar_plots[index].repaint()
-            self.bar_plots[index].chartView.update()
+            self.bar_plots[index].repaint()
+            # self.bar_plots[index].chartView.update()
 
 
     def setup_filters(self):
@@ -536,13 +537,15 @@ class MainWindow(QMainWindow):
 
             print('self.scatterplot.indices_to_keep', len(self.scatterplot.indices_to_keep))
             # better to see filter as also selecting idx, or use to keep instead of selection_idx everywhere
-            self.scatterplot.selected_indices=self.scatterplot.indices_to_keep
+            # self.scatterplot.selected_indices=self.scatterplot.indices_to_keep
 
             print('draw dots or imgs check', len(self.scatterplot.selected_indices), self.scatterplot.dots_plot)
-            if self.scatterplot.dots_plot or 0 < len(self.scatterplot.selected_indices) < 100:
+            if self.scatterplot.dots_btn_toggled or 0 < len(self.scatterplot.selected_indices) < 100 or len(self.scatterplot.indices_to_keep)<100:
+                # print('self.dots_plot', self.scatterplot.dots_plot ,'->', False)
                 self.scatterplot.dots_plot = False
                 self.scatterplot.draw_scatterplot()
             else:
+                # print('self.dots_plot', self.scatterplot.dots_plot ,'->', True)
                 self.scatterplot.dots_plot = True
                 self.scatterplot.draw_scatterplot_dots()
 
@@ -1046,7 +1049,7 @@ class MainWindow(QMainWindow):
         topk_results["combined"]['ranking'] = combined_ranking
         topk_results["combined"]['distances'] = combined_distances
         
-        print('topk_dict', topk_results)
+        # print('topk_dict', topk_results)
         return topk_results
     
 
@@ -1070,11 +1073,15 @@ class MainWindow(QMainWindow):
                     self.left_img_features =self.get_features_from_dataset(img_hash)
                     self.left_img_key = img_hash
                 else:
-                    # if no plotting just similar images
-                    # self.left_img_features = self.get_features_new_img(current_filepath)
                     self.left_img_key = img_hash
-                    # for plotting
-                    self.add_new_img_to_plot(current_filepath)
+
+                    plot_in_scatterplot= False
+                    if plot_in_scatterplot:
+                        # if no plotting just similar images
+                        self.left_img_features = self.get_features_new_img(current_filepath)
+                    else:
+                        # for plotting
+                        self.add_new_img_to_plot(current_filepath)
 
                 # display the photo on the left
                 self.display_photo_left(current_filepath)
@@ -1100,11 +1107,8 @@ class MainWindow(QMainWindow):
         self.image_indices.append(img_idx)
         self.non_filtered_indices.append(img_idx)
         self.scatterplot.selected_index=img_idx
-        print('selected_indices',type(self.scatterplot.selected_indices))
         self.scatterplot.selected_indices.append(img_idx)
-        print('indices_to_keep', type(self.scatterplot.indices_to_keep))
         self.scatterplot.indices_to_keep.append(img_idx)
-        print('indices_to_keep', type(self.non_filtered_indices))
         self.non_filtered_indices.append(img_idx)
         self.scatterplot.img_paths= self.image_paths
 
@@ -1125,11 +1129,12 @@ class MainWindow(QMainWindow):
                 self.metadata[img_hash]['style'],
                 self.metadata[img_hash]['tags'],
             )
-
+            self.timeline.setVisible(True)
+            self.no_timeline_label.setVisible(False)
         else:   
             self.update_image_info(0, "unknown artist", "unknown style", "unknown tags")
-            self.timeline.hide()
-            self.no_timeline_label.show()
+            self.timeline.setVisible(False)
+            self.no_timeline_label.setVisible(True)
 
 
     def get_features_from_dataset(self, img_hash):
@@ -1298,10 +1303,10 @@ class MainWindow(QMainWindow):
         # TODO: REIMPLEMENT
         print('change_scatterplot_pointtype is called')
         if self.ui.r_image_points.isChecked():
-            self.scatterplot.dots_plot = False
+            self.scatterplot.dots_btn_toggled = True
             self.scatterplot.draw_scatterplot(reset = False)
         else:
-            self.scatterplot.dots_plot = True
+            self.scatterplot.dots_btn_toggled = False
             self.scatterplot.draw_scatterplot_dots(reset = False)
 
 
@@ -1353,32 +1358,25 @@ class MainWindow(QMainWindow):
 
  
     # TODO: put in barplot_widget.py?
-    def get_selected_points_stats(self, int):
+    def get_selected_points_stats(self, int_):
         print('get_selected_points_stats')
         print(len(self.scatterplot.selected_indices), len(self.scatterplot.indices))
         img_hashes = [self.image_keys[index] for index in self.scatterplot.selected_indices]
 
         sel_unique_dates, sel_date_counts = np.unique([self.metadata[hash_]['date'] for hash_ in img_hashes], return_counts=True)
-        # sel_unique_tags, sel_tag_counts = np.unique([self.metadata[hash_]['tags'] for hash_ in img_hashes], return_counts=True) # could have more than one
-        # sel_unique_artist_names, sel_artist_name_counts = np.unique([self.metadata[hash_]['artist_name'] for hash_ in img_hashes], return_counts=True)
         sel_unique_nationalities, sel_nationalities_counts = np.unique([self.metadata[hash_]['artist_nationality'] for hash_ in img_hashes], return_counts=True)
-        # sel_unique_media, sel_media_counts = np.unique([self.metadata[hash_]['media'] for hash_ in img_hashes], return_counts=True) # could have more than one
         sel_unique_styles, sel_style_counts = np.unique([self.metadata[hash_]['style'] for hash_ in img_hashes], return_counts=True)
 
         img_hashes = [self.image_keys[index] for index in self.scatterplot.indices]
 
         unique_dates, date_counts = np.unique([self.metadata[hash_]['date'] for hash_ in img_hashes], return_counts=True)
-        # unique_tags, tag_counts = np.unique([self.metadata[hash_]['tags'] for hash_ in img_hashes], return_counts=True)
-        # unique_artist_names, artist_name_counts = np.unique([self.metadata[hash_]['artist_name'] for hash_ in img_hashes], return_counts=True)
         unique_nationalities, nationalities_counts = np.unique([self.metadata[hash_]['artist_nationality'] for hash_ in img_hashes], return_counts=True)
-        # unique_media, media_counts = np.unique([self.metadata[hash_]['media'] for hash_ in img_hashes], return_counts=True)
         unique_styles, style_counts = np.unique([self.metadata[hash_]['style'] for hash_ in img_hashes], return_counts=True)
 
+        unique_dates = np.array([int(d) for d in unique_dates])
+        sel_unique_dates = np.array([int(d) for d in sel_unique_dates])
         sel_date_bins, sel_date_bin_counts,date_bins, date_bin_counts = self.make_date_bins(sel_unique_dates,sel_date_counts,unique_dates,date_counts)
-        # tag_count_selection = [sel_tag_counts[np.where(sel_unique_tags == tag)[0].tolist()[0]] if np.isin(tag , sel_unique_tags) else 0 for tag in unique_tags]
-        # artist_count_selection = [sel_artist_name_counts[np.where(sel_unique_artist_names == artist_name)[0].tolist()[0]] if np.isin(artist_name, sel_unique_artist_names) else 0 for artist_name in unique_artist_names]
         nationalities_count_selection = [sel_nationalities_counts[np.where(sel_unique_nationalities == nationalities)[0].tolist()[0]] if np.isin(nationalities, sel_unique_nationalities) else 0 for nationalities in unique_nationalities]
-        # media_count_selection = [sel_media_counts[np.where(sel_unique_media == media)[0].tolist()[0]] if np.isin(media, sel_unique_media) else 0 for media in unique_media]
         style_count_selection = [sel_style_counts[np.where(sel_unique_styles == style)[0].tolist()[0]] if np.isin(style, sel_unique_styles) else 0 for style in unique_styles]
        
         self.bp.fill_in_barplot(unique_styles, style_counts, style_count_selection)
@@ -1455,4 +1453,6 @@ if __name__ == "__main__":
     widget = MainWindow(key_dict, datafile_path, images_filepath)
     widget.show()
     sys.exit(app.exec())
+
+
 
