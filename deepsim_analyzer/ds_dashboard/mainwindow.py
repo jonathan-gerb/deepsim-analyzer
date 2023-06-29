@@ -287,9 +287,9 @@ class MainWindow(QMainWindow):
         print("dashboard setup complete!")
 
         print('--------setting up barplots')
-        self.bp = BarChart(self)
-        self.bp2 = BarChart(self)
-        self.bp3 = BarChart(self)
+        self.bp = BarChart(category="Style", parent=self)
+        self.bp2 = BarChart(category="Date", parent=self)
+        self.bp3 = BarChart(category="Country", parent=self)
         try:
             self.scatterplot.get_Selected_stats.connect(self.get_selected_points_stats)
             self.scatterplot.get_Selected_stats.emit(0) # once for initialization, after in scatterplot.get_selection
@@ -1358,31 +1358,31 @@ class MainWindow(QMainWindow):
         img_hashes = [self.image_keys[index] for index in self.scatterplot.selected_indices]
 
         sel_unique_dates, sel_date_counts = np.unique([self.metadata[hash_]['date'] for hash_ in img_hashes], return_counts=True)
-        sel_unique_tags, sel_tag_counts = np.unique([self.metadata[hash_]['tags'] for hash_ in img_hashes], return_counts=True) # could have more than one
-        sel_unique_artist_names, sel_artist_name_counts = np.unique([self.metadata[hash_]['artist_name'] for hash_ in img_hashes], return_counts=True)
+        # sel_unique_tags, sel_tag_counts = np.unique([self.metadata[hash_]['tags'] for hash_ in img_hashes], return_counts=True) # could have more than one
+        # sel_unique_artist_names, sel_artist_name_counts = np.unique([self.metadata[hash_]['artist_name'] for hash_ in img_hashes], return_counts=True)
         sel_unique_nationalities, sel_nationalities_counts = np.unique([self.metadata[hash_]['artist_nationality'] for hash_ in img_hashes], return_counts=True)
-        sel_unique_media, sel_media_counts = np.unique([self.metadata[hash_]['media'] for hash_ in img_hashes], return_counts=True) # could have more than one
+        # sel_unique_media, sel_media_counts = np.unique([self.metadata[hash_]['media'] for hash_ in img_hashes], return_counts=True) # could have more than one
         sel_unique_styles, sel_style_counts = np.unique([self.metadata[hash_]['style'] for hash_ in img_hashes], return_counts=True)
 
         img_hashes = [self.image_keys[index] for index in self.scatterplot.indices]
 
         unique_dates, date_counts = np.unique([self.metadata[hash_]['date'] for hash_ in img_hashes], return_counts=True)
-        unique_tags, tag_counts = np.unique([self.metadata[hash_]['tags'] for hash_ in img_hashes], return_counts=True)
-        unique_artist_names, artist_name_counts = np.unique([self.metadata[hash_]['artist_name'] for hash_ in img_hashes], return_counts=True)
+        # unique_tags, tag_counts = np.unique([self.metadata[hash_]['tags'] for hash_ in img_hashes], return_counts=True)
+        # unique_artist_names, artist_name_counts = np.unique([self.metadata[hash_]['artist_name'] for hash_ in img_hashes], return_counts=True)
         unique_nationalities, nationalities_counts = np.unique([self.metadata[hash_]['artist_nationality'] for hash_ in img_hashes], return_counts=True)
-        unique_media, media_counts = np.unique([self.metadata[hash_]['media'] for hash_ in img_hashes], return_counts=True)
+        # unique_media, media_counts = np.unique([self.metadata[hash_]['media'] for hash_ in img_hashes], return_counts=True)
         unique_styles, style_counts = np.unique([self.metadata[hash_]['style'] for hash_ in img_hashes], return_counts=True)
 
         sel_date_bins, sel_date_bin_counts,date_bins, date_bin_counts = self.make_date_bins(sel_unique_dates,sel_date_counts,unique_dates,date_counts)
-        tag_count_selection = [sel_tag_counts[np.where(sel_unique_tags == tag)[0].tolist()[0]] if np.isin(tag , sel_unique_tags) else 0 for tag in unique_tags]
-        artist_count_selection = [sel_artist_name_counts[np.where(sel_unique_artist_names == artist_name)[0].tolist()[0]] if np.isin(artist_name, sel_unique_artist_names) else 0 for artist_name in unique_artist_names]
+        # tag_count_selection = [sel_tag_counts[np.where(sel_unique_tags == tag)[0].tolist()[0]] if np.isin(tag , sel_unique_tags) else 0 for tag in unique_tags]
+        # artist_count_selection = [sel_artist_name_counts[np.where(sel_unique_artist_names == artist_name)[0].tolist()[0]] if np.isin(artist_name, sel_unique_artist_names) else 0 for artist_name in unique_artist_names]
         nationalities_count_selection = [sel_nationalities_counts[np.where(sel_unique_nationalities == nationalities)[0].tolist()[0]] if np.isin(nationalities, sel_unique_nationalities) else 0 for nationalities in unique_nationalities]
-        media_count_selection = [sel_media_counts[np.where(sel_unique_media == media)[0].tolist()[0]] if np.isin(media, sel_unique_media) else 0 for media in unique_media]
+        # media_count_selection = [sel_media_counts[np.where(sel_unique_media == media)[0].tolist()[0]] if np.isin(media, sel_unique_media) else 0 for media in unique_media]
         style_count_selection = [sel_style_counts[np.where(sel_unique_styles == style)[0].tolist()[0]] if np.isin(style, sel_unique_styles) else 0 for style in unique_styles]
        
-        self.bp.fill_in_barplot(unique_styles,style_counts,style_count_selection)
-        self.bp2.fill_in_barplot(date_bins,date_bin_counts,sel_date_bin_counts)
-        self.bp3.fill_in_barplot(unique_nationalities,nationalities_counts,nationalities_count_selection)
+        self.bp.fill_in_barplot(unique_styles, style_counts, style_count_selection)
+        self.bp2.fill_in_barplot(date_bins, date_bin_counts, sel_date_bin_counts)
+        self.bp3.fill_in_barplot(unique_nationalities, nationalities_counts, nationalities_count_selection)
         
         
     def make_date_bins(self,sel_unique_dates,sel_date_counts,unique_dates,date_counts):

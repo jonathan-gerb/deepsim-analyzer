@@ -662,3 +662,51 @@ class Ui_MainWindow(object):
         self.n1.setText("")
     # retranslateUi
 
+        """
+        ----------------------------------------------------------------------
+                                All Tooltips text
+        ----------------------------------------------------------------------
+        """
+        # General UI tooltips
+        reprojection_similarity_full = "Use vector from original multidimensional featurespace."
+        reprojection_similarity_2d = "Use projected feature vectors to find similarities."
+        self.subset_projection_btn.setToolTip("Placeholder0") # Reproject current
+        self.b_upload.setToolTip("Find similarity of your own image. This may take a few minutes.") # Upload button
+        self.reset_dataset_filters.setToolTip("Set all filters to default.") # Reset filter
+        self.reload_everything.setToolTip("Deletes all images that are uploaded.") # Reload Data
+        self.l_timeline.setToolTip("Get related works based on the Artistic Visual Story dataset.") # Timeline for above image
+
+        # Dino tab tooltips
+        self.dino_opt_showcamap.setToolTip("Overlay image with a heatmap indicating the sections the model is focussing on.") # Show crossattention map
+        self.label.setToolTip("Choose how the nearest neighbour points are calculated.") # Distance metric
+        self.dino_opt_fullsim.setToolTip(reprojection_similarity_full) # Full feature vector similarity
+        self.dino_opt_2dsim.setToolTip(reprojection_similarity_2d) # 2d reprojection similarity
+        self.dino_opt_headsim.setToolTip("Select ") # Similarity from specific head
+
+        # Texture tab tooltips
+        self.texture_opt_show_fm.setToolTip("Placeholder5") # Show feature map
+        self.texture_label1.setToolTip("Placeholder6") # Filter index
+        self.texture_opt_fullsim.setToolTip(reprojection_similarity_full) # Full feature vector similarity
+        self.texture_opt_2dsim.setToolTip(reprojection_similarity_2d) # 2d reprojection similarity
+
+        # Emotion tab tooltips
+        self.emotion_opts_showfm.setToolTip("Placeholder9") # Show feature map
+        self.emotion_opt_fullsim.setToolTip(reprojection_similarity_full) # Full feature vector similarity
+        self.emotion_opt_2dsim.setToolTip(reprojection_similarity_2d) # 2d reprojection similarity
+
+        # Semantic tab tooltips
+        self.semantic_opt_fullsim.setToolTip(reprojection_similarity_full) # Full feature vector similarity
+        self.semantic_opt_2dsim.setToolTip(reprojection_similarity_2d) # 2d reprojection similarity
+
+        # CLIP tab tooltips
+        self.clip_radio_combsim.setToolTip("Placeholder14") # Combined sim
+        self.clip_radio_imgsim.setToolTip("Placholder15") # Image embedding sim
+        self.clip_radio_textsim.setToolTip("Placeholder16") # Text sim
+        self.label_2.setToolTip("Write down your own features of interest. These will be incorpororated when calculating the similarity.") # Describe similarity aspect to a Clip model
+        self.clip_opt_fullsim.setToolTip(reprojection_similarity_full) # Full feature vector similarity
+        self.clip_opt_2dsim.setToolTip(reprojection_similarity_2d) # 2d reprojection similarity
+
+        # Combined tab tooltips
+        self.combined_projection_btn.setToolTip("Placeholder19") # Calc combined projection
+        self.recalc_similarity.setToolTip("Placeholder20") # Recalculate similarity
+        self.title.setToolTip("Adjust the weight of individual metrics. The feature embeddings will be scaled accordingly.") # Metric weights
