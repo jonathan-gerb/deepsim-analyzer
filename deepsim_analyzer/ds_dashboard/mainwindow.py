@@ -1300,13 +1300,14 @@ class MainWindow(QMainWindow):
     def change_scatterplot_pointtype(self):
         """Use radio toggle to draw dots or images, triggered on toggle of the radio button.
         """
-        # TODO: REIMPLEMENT
         print('change_scatterplot_pointtype is called')
         if self.ui.r_image_points.isChecked():
             self.scatterplot.dots_btn_toggled = True
+            self.scatterplot.dots_plot = False
             self.scatterplot.draw_scatterplot(reset = False)
         else:
             self.scatterplot.dots_btn_toggled = False
+            self.scatterplot.dots_plot = True
             self.scatterplot.draw_scatterplot_dots(reset = False)
 
 
