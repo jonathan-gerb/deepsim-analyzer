@@ -1108,6 +1108,7 @@ class MainWindow(QMainWindow):
         feature_dict = {}
         for feature_name in self.available_features:
             # get feature for default image
+            print(f"reading feature: {feature_name}")
             test_feature = da.io.read_feature(
                 self.datafile_path, img_hash, feature_name, read_projection=False
             )
