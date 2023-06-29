@@ -113,3 +113,14 @@ def calc_and_save_features(images, datafile_path, save_feature_maps=True):
 
     del DeepFace.model_obj
     os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
+
+def calc_features(image_path, datafile_path, save_feature_maps=True):
+
+    image_path = str(image_path)  # in case image_path is a pathlib path
+    feature_vector = np.array(DeepFace.represent(img_path = image_path, enforce_detection=False)[0]['embedding'])
+
+    
+    del DeepFace.model_obj
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    return feature_vector

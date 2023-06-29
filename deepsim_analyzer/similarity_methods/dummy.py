@@ -54,3 +54,21 @@ def calc_and_save_features(images, datafile_path):
         hash = get_image_hash(image_path)
         feature_vector = calculate_feature_vector(image)
         save_feature(datafile_path, hash, feature_vector, 'dummy')
+
+
+def calc_features(image_path, datafile_path):
+    """Process list of images. For dummy this doesnt make any difference but with other features you would not 
+    want to reload a model for each image processing step, therefore a batch processing function for each feature
+    is very necessary. This is an exaple of how to set this up for other features.
+
+    Args:
+        images : path to image 
+        datafile_path (str): path to the dataset file to save the outputs to
+    """
+    # local import inside function to avoid circular import problem
+    from deepsim_analyzer.io import save_feature, load_image, get_image_hash
+
+    image_path = str(image_path)
+    image = load_image(image_path)
+    feature_vector = calculate_feature_vector(image)
+    return feature_vector

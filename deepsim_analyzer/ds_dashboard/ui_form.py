@@ -209,6 +209,11 @@ class Ui_MainWindow(object):
 
         self.scatterplot_options.addWidget(self.subset_projection_btn)
 
+        self.r_image_points = QRadioButton(self.horizontalLayoutWidget)
+        self.r_image_points.setObjectName(u"r_image_points")
+
+        self.scatterplot_options.addWidget(self.r_image_points)
+
         self.scatterplot_frame = PlotWidget(self.centralwidget)
         self.scatterplot_frame.setObjectName(u"scatterplot_frame")
         self.scatterplot_frame.setGeometry(QRect(480, 10, 571, 401))
@@ -446,7 +451,7 @@ class Ui_MainWindow(object):
         self.combined_tab.setObjectName(u"combined_tab")
         self.formLayoutWidget = QWidget(self.combined_tab)
         self.formLayoutWidget.setObjectName(u"formLayoutWidget")
-        self.formLayoutWidget.setGeometry(QRect(20, 50, 271, 161))
+        self.formLayoutWidget.setGeometry(QRect(50, 50, 241, 151))
         self.formLayout = QFormLayout(self.formLayoutWidget)
         self.formLayout.setObjectName(u"formLayout")
         self.formLayout.setContentsMargins(0, 0, 0, 0)
@@ -516,25 +521,16 @@ class Ui_MainWindow(object):
 
         self.formLayout.setWidget(0, QFormLayout.ItemRole.FieldRole, self.combo_dino_slider)
 
-        self.box_recom_img_stats = QGroupBox(self.combined_tab)
-        self.box_recom_img_stats.setObjectName(u"box_recom_img_stats")
-        self.box_recom_img_stats.setGeometry(QRect(300, 20, 231, 191))
-        self.verticalLayoutWidget_2 = QWidget(self.box_recom_img_stats)
-        self.verticalLayoutWidget_2.setObjectName(u"verticalLayoutWidget_2")
-        self.verticalLayoutWidget_2.setGeometry(QRect(-1, 9, 231, 181))
-        self.verticalLayout = QVBoxLayout(self.verticalLayoutWidget_2)
-        self.verticalLayout.setObjectName(u"verticalLayout")
-        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
         self.title = QLabel(self.combined_tab)
         self.title.setObjectName(u"title")
-        self.title.setGeometry(QRect(20, 20, 269, 21))
+        self.title.setGeometry(QRect(30, 20, 269, 21))
         self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.recalc_similarity = QPushButton(self.combined_tab)
         self.recalc_similarity.setObjectName(u"recalc_similarity")
-        self.recalc_similarity.setGeometry(QRect(20, 220, 269, 31))
+        self.recalc_similarity.setGeometry(QRect(320, 120, 231, 31))
         self.combined_projection_btn = QPushButton(self.combined_tab)
         self.combined_projection_btn.setObjectName(u"combined_projection_btn")
-        self.combined_projection_btn.setGeometry(QRect(300, 220, 231, 31))
+        self.combined_projection_btn.setGeometry(QRect(320, 80, 231, 31))
         self.box_metric_tabs.addTab(self.combined_tab, "")
         self.groupBox = QGroupBox(self.centralwidget)
         self.groupBox.setObjectName(u"groupBox")
@@ -561,7 +557,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
 
-        self.statistics_tabs.setCurrentIndex(1)
+        self.statistics_tabs.setCurrentIndex(0)
         self.box_metric_tabs.setCurrentIndex(5)
 
 
@@ -576,12 +572,12 @@ class Ui_MainWindow(object):
         self.b_upload.setText(QCoreApplication.translate("MainWindow", u"Upload Image", None))
         self.l_timeline.setText(QCoreApplication.translate("MainWindow", u"Timeline for above image", None))
         self.label_5.setText(QCoreApplication.translate("MainWindow", u"nationality", None))
-        self.label_8.setText(QCoreApplication.translate("MainWindow", u"material", None))
+        self.label_8.setText(QCoreApplication.translate("MainWindow", u"material type", None))
         self.label_3.setText(QCoreApplication.translate("MainWindow", u"date range", None))
         self.label_4.setText(QCoreApplication.translate("MainWindow", u"to", None))
         self.apply_filters.setText(QCoreApplication.translate("MainWindow", u"Apply", None))
-        self.reset_dataset_filters.setText(QCoreApplication.translate("MainWindow", u"reset filter", None))
-        self.reload_everything.setText(QCoreApplication.translate("MainWindow", u"reload data", None))
+        self.reset_dataset_filters.setText(QCoreApplication.translate("MainWindow", u"Reset filter", None))
+        self.reload_everything.setText(QCoreApplication.translate("MainWindow", u"Reload data", None))
         self.label_10.setText(QCoreApplication.translate("MainWindow", u"filtered datset size: ", None))
         self.filtered_dataset_size.setText(QCoreApplication.translate("MainWindow", u"INT", None))
         self.statistics_tabs.setTabText(self.statistics_tabs.indexOf(self.style_stats), QCoreApplication.translate("MainWindow", u"Style statistics", None))
@@ -593,6 +589,7 @@ class Ui_MainWindow(object):
         self.t_tags.setText(QCoreApplication.translate("MainWindow", u"Tags:", None))
         self.box_left_img.setText("")
         self.subset_projection_btn.setText(QCoreApplication.translate("MainWindow", u"Reproject current", None))
+        self.r_image_points.setText(QCoreApplication.translate("MainWindow", u"points as images", None))
         self.dino_opts1.setTitle("")
         self.dinolabl2.setText(QCoreApplication.translate("MainWindow", u"head:", None))
         self.dinolabel.setText(QCoreApplication.translate("MainWindow", u"layer:", None))
@@ -654,7 +651,6 @@ class Ui_MainWindow(object):
 #if QT_CONFIG(tooltip)
         self.combo_dino_slider.setToolTip("")
 #endif // QT_CONFIG(tooltip)
-        self.box_recom_img_stats.setTitle(QCoreApplication.translate("MainWindow", u"Similarity aspects stats", None))
         self.title.setText(QCoreApplication.translate("MainWindow", u"Metric weights", None))
         self.recalc_similarity.setText(QCoreApplication.translate("MainWindow", u"Recalculate similarity", None))
         self.combined_projection_btn.setText(QCoreApplication.translate("MainWindow", u"Calc combined projection", None))
@@ -666,3 +662,54 @@ class Ui_MainWindow(object):
         self.n1.setText("")
     # retranslateUi
 
+        """
+        ----------------------------------------------------------------------
+                                All Tooltips text
+        ----------------------------------------------------------------------
+        """
+        distance_metric = "Choose how the nearest neighbour points are calculated."
+        reprojection_similarity_full = "Use vector from original multidimensional featurespace."
+        reprojection_similarity_2d = "Use projected feature vectors to find similarities."
+        
+        # General UI tooltips
+        self.subset_projection_btn.setToolTip("Placeholder0") # Reproject current
+        self.b_upload.setToolTip("Find similarity of your own image. This may take a few minutes.") # Upload button
+        self.reset_dataset_filters.setToolTip("Set all filters to default.") # Reset filter
+        self.reload_everything.setToolTip("Deletes all images that are uploaded.") # Reload Data
+        self.l_timeline.setToolTip("Get related works based on the Artistic Visual Story dataset.") # Timeline for above image
+
+        # Dino tab tooltips
+        self.dino_opt_showcamap.setToolTip("Overlay image with a heatmap indicating the sections the model is focussing on.") # Show crossattention map
+        self.label.setToolTip(distance_metric) # Distance metric
+        self.dino_opt_fullsim.setToolTip(reprojection_similarity_full) # Full feature vector similarity
+        self.dino_opt_2dsim.setToolTip(reprojection_similarity_2d) # 2d reprojection similarity
+        self.dino_opt_headsim.setToolTip("Select ") # Similarity from specific head
+
+        # Texture tab tooltips
+        self.label_6.setToolTip(distance_metric) # Distance metric
+        self.texture_opt_show_fm.setToolTip("Placeholder5") # Show feature map
+        self.texture_label1.setToolTip("Placeholder6") # Filter index
+        self.texture_opt_fullsim.setToolTip(reprojection_similarity_full) # Full feature vector similarity
+        self.texture_opt_2dsim.setToolTip(reprojection_similarity_2d) # 2d reprojection similarity
+
+        # Emotion tab tooltips
+        self.emotion_opts_showfm.setToolTip("Placeholder9") # Show feature map
+        self.emotion_opt_fullsim.setToolTip(reprojection_similarity_full) # Full feature vector similarity
+        self.emotion_opt_2dsim.setToolTip(reprojection_similarity_2d) # 2d reprojection similarity
+
+        # Semantic tab tooltips
+        self.semantic_opt_fullsim.setToolTip(reprojection_similarity_full) # Full feature vector similarity
+        self.semantic_opt_2dsim.setToolTip(reprojection_similarity_2d) # 2d reprojection similarity
+
+        # CLIP tab tooltips
+        self.clip_radio_combsim.setToolTip("Placeholder14") # Combined sim
+        self.clip_radio_imgsim.setToolTip("Placholder15") # Image embedding sim
+        self.clip_radio_textsim.setToolTip("Placeholder16") # Text sim
+        self.label_2.setToolTip("Write down your own features of interest. These will be incorpororated when calculating the similarity.") # Describe similarity aspect to a Clip model
+        self.clip_opt_fullsim.setToolTip(reprojection_similarity_full) # Full feature vector similarity
+        self.clip_opt_2dsim.setToolTip(reprojection_similarity_2d) # 2d reprojection similarity
+
+        # Combined tab tooltips
+        self.combined_projection_btn.setToolTip("Placeholder19") # Calc combined projection
+        self.recalc_similarity.setToolTip("Placeholder20") # Recalculate similarity
+        self.title.setToolTip("Adjust the weight of individual metrics. The feature embeddings will be scaled accordingly.") # Metric weights

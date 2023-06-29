@@ -1,1 +1,1 @@
-from .metric import calc_and_save_features
+from .metric import calc_and_save_features, calc_features
