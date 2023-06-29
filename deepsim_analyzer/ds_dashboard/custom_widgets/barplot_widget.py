@@ -60,10 +60,6 @@ class BarChart(QWidget):
         Collect categories and add to barplot.
         """
         self.series.clear()
-        for style in unique_styles:
-            print(type(style))
-            print(style)
-            print()
         self.categories = [str(style) for style in unique_styles]
         self.axisX.clear()
         self.axisX.append(self.categories)
