@@ -2,21 +2,22 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-
-def calc_and_save_features(images, dataset_filepath, save_feature_maps=True):
+def calc_and_save_features(images, dataset_filepath, save_feature_maps=True, overwrite=True):
     """Process list of images.
     Args:
         images (list): list of filepaths to the images
         datafile_path (str): path to the dataset file to save the outputs to
     """
     # local import inside function to avoid circular import problem
-    from deepsim_analyzer.io import get_image_hash, load_image, save_feature
+    from deepsim_analyzer.io import get_image_hash, load_image, save_feature, key_in_dataset
     device = (
         torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     )
 
     model = torch.hub.load("pytorch/vision:v0.10.0", "googlenet", pretrained=True)
     model = model.to(device)
+    skipped = 0
+    calculated = 0
 
     for image_path in tqdm(
         images, desc=f"calculating texture features", total=len(images)
@@ -25,6 +26,12 @@ def calc_and_save_features(images, dataset_filepath, save_feature_maps=True):
 
 
         hash = get_image_hash(image_path)
+
+        if key_in_dataset(dataset_filepath, f"{hash}/features/texture/full") and not overwrite:
+            skipped += 1
+            continue
+        calculated += 1
+
         img = load_image(image_path, return_np=False)
 
         # resize all images to the same size to get consistent magnitudes when summing 
@@ -62,6 +69,8 @@ def calc_and_save_features(images, dataset_filepath, save_feature_maps=True):
             save_feature(dataset_filepath, hash, out_3b.numpy(), "texture_fm_3b")
 
         save_feature(dataset_filepath, hash, feature_vector, "texture")
+    
+    print(f"skipped: {skipped}, caluclated: {calculated}")
 
 
 def calc_features(image_path, dataset_filepath, save_feature_maps=True):

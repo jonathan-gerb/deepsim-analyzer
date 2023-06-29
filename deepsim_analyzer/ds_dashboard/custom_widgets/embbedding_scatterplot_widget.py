@@ -104,12 +104,12 @@ class ScatterplotWidget(QWidget):
         if event.button() == Qt.MouseButton.LeftButton and self.start_point is not None and self.end_point is not None:
             self.get_selection_in_rectangle()
             if self.selected_indices!=[]:
-                print('draw dots or imgs check', len(self.scatterplot.selected_indices), self.scatterplot.dots_plot)
-                if self.dots_plot or 0<len(self.selected_indices)<100:
-                    self.dots_plot=False
+                print('draw dots or imgs check', len(self.selected_indices), self.dots_plot)
+                if self.dots_plot or 0 < len(self.selected_indices)<100:
+                    self.dots_plot = False
                     self.draw_scatterplot()
                 else:
-                    self.dots_plot=True
+                    self.dots_plot = True
                     self.draw_scatterplot_dots()
 
         # self.clear_selection() # ? but will also put selected_indices = [] or

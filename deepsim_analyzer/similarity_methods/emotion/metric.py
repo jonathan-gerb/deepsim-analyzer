@@ -89,9 +89,11 @@ def save_and_display_gradcam(img_path, heatmap, cam_path='Testdata/', alpha=0.2)
 
 
 
-def calc_and_save_features(images, datafile_path, save_feature_maps=True):
-    from deepsim_analyzer.io import get_image_hash, load_image, save_feature
+def calc_and_save_features(images, datafile_path, save_feature_maps=True, overwrite=True):
+    from deepsim_analyzer.io import get_image_hash, load_image, save_feature, key_in_dataset
     # force to use cpu as something does not work with gpu
+    skipped = 0
+    calculated = 0
 
     # Make model
     model = VGGFace.loadModel()
@@ -100,6 +102,12 @@ def calc_and_save_features(images, datafile_path, save_feature_maps=True):
     ):
         image_path = str(image_path)  # in case image_path is a pathlib path
         img_hash = get_image_hash(image_path)
+
+        if key_in_dataset(datafile_path, f"{img_hash}/features/emotion/full") and not overwrite:
+            skipped += 1
+            continue
+        calculated += 1
+        
         feature_vector = np.array(DeepFace.represent(img_path = image_path, enforce_detection=False)[0]['embedding'])
         save_feature(datafile_path, img_hash, feature_vector, 'emotion')
 
@@ -110,9 +118,12 @@ def calc_and_save_features(images, datafile_path, save_feature_maps=True):
             heatmap = make_gradcam_heatmap(img_array, model, model.layers[-8].name)
             save_feature(datafile_path, img_hash, heatmap, "emotion_fm")
 
-
-    del DeepFace.model_obj
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    # if no calcuations were done, no need to delete model file
+    try:
+        del DeepFace.model_obj
+    except AttributeError:
+        pass
+    print(f"skipped: {skipped}, caluclated: {calculated}")
 
 
 def calc_features(image_path, datafile_path, save_feature_maps=True):

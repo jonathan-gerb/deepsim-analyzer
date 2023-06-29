@@ -515,8 +515,8 @@ class MainWindow(QMainWindow):
             return
         
         current_metric_type = self.ui.box_metric_tabs.tabText(self.ui.box_metric_tabs.currentIndex()).lower()
-        if current_metric_type not in self.available_features:
-            print("ignoring tab change!, featuer: ")
+        if current_metric_type not in self.available_features and current_metric_type != "combined":
+            print(f"ignoring tab change!, feature: {current_metric_type} not known")
             return
         
         print("changing 2d scatterplot to: ", current_metric_type)

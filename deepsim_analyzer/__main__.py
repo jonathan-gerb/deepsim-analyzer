@@ -1,5 +1,7 @@
 # main python file to run UI
 import os
+# os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+# os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 import argparse
 from pathlib import Path
 from deepsim_analyzer import create_dataset, read_dataset_keys, calculate_features
@@ -32,6 +34,11 @@ def prepare_dataset(args):
             # CHANGE THIS HERE TO ADD NEW FEAUTRES TO THE LIST OF FEATURES TO CALCULATE
             calculate_features(
                 args.image_folder, args.dataset_file, target_features=args.target_features
+            )
+        else:
+            print("going through dataset and checking if all features exist")
+            calculate_features(
+                args.image_folder, args.dataset_file, target_features=args.target_features, overwrite=False
             )
     else:
         print(f"    creating new dataset from images in {args.image_folder}")

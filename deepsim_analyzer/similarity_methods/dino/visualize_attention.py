@@ -180,11 +180,12 @@ def calc_and_save_features(
     threshold=None,
     pretrained_model_path="",
     save_feature_maps=True,
-    resize=True
+    resize=True,
+    overwrite=True
     ):
     
     # local import inside function to avoid circular import problem
-    from deepsim_analyzer.io import get_image_hash, load_image, save_feature
+    from deepsim_analyzer.io import get_image_hash, load_image, save_feature, key_in_dataset
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     model = load_model(arch, pretrained_model_path, patch_size)
@@ -198,10 +199,18 @@ def calc_and_save_features(
             pth_transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
         ]
     )
+    skipped = 0
+    calculated = 0
 
     for image_path in tqdm(image_paths, desc=f"calculating dino features", total=len(image_paths)):
         image_path = str(image_path)
         hash = get_image_hash(image_path)
+
+        if key_in_dataset(dataset_filepath, f"{hash}/features/dino/full") and not overwrite:
+            skipped += 1
+            continue
+        calculated += 1
+
         image = load_image(image_path, return_np=False)
 
         if resize:
@@ -273,6 +282,8 @@ def calc_and_save_features(
             save_feature(dataset_filepath, hash, all_maps_array, 'dino_fm')
 
         save_feature(dataset_filepath, hash, feature_vector, 'dino')
+    
+    print(f"skipped: {skipped}, caluclated: {calculated}")
 
 # this one can be given img_path
 def calc_features(

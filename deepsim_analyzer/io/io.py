@@ -113,7 +113,7 @@ def read_metadata_batch(dataset_filepath, img_hashes):
     return metadata_dict
 
 
-def calculate_features(image_folder, dataset_filepath, target_features=["dummy"]):
+def calculate_features(image_folder, dataset_filepath, target_features=["dummy"], overwrite=True):
     image_dir = Path(image_folder)
     # check folder for all possible extenstions of images, we don't want to accidentally glob other files
     image_paths_png = list(image_dir.glob("*.png"))
@@ -123,19 +123,17 @@ def calculate_features(image_folder, dataset_filepath, target_features=["dummy"]
 
     for feature in target_features:
         if feature == "dummy":
-            dummy.calc_and_save_features(image_paths, dataset_filepath)
+            dummy.calc_and_save_features(image_paths, dataset_filepath, overwrite=overwrite)
         if feature == "dino":
-            dino.calc_and_save_features(image_paths, dataset_filepath)
+            dino.calc_and_save_features(image_paths, dataset_filepath, overwrite=overwrite)
         if feature == "texture":
-            texture.calc_and_save_features(image_paths, dataset_filepath)
+            texture.calc_and_save_features(image_paths, dataset_filepath, overwrite=overwrite)
         if feature == "emotion":
-            # import here to avoid cuda problems, we want to import this without cuda
-            emotion.calc_and_save_features(image_paths, dataset_filepath)
-            os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+            emotion.calc_and_save_features(image_paths, dataset_filepath, overwrite=overwrite)
         if feature == "semantic":
-            semantic.calc_and_save_features(image_paths, dataset_filepath)
+            semantic.calc_and_save_features(image_paths, dataset_filepath, overwrite=overwrite)
         if feature == "clip":
-            clip.calc_and_save_features(image_paths, dataset_filepath)
+            clip.calc_and_save_features(image_paths, dataset_filepath, overwrite=overwrite)
 
 
 def create_dataset(image_folder, dataset_filepath="dataset.h5"):

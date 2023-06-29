@@ -35,6 +35,7 @@ import cv2
 
 from . import vision_transformer as vits
 
+
 MODEL_PATH_DICT = {
     "vit_small8": "dino_deitsmall8_pretrain_full_checkpoint.pth",
     "vit_small16": "dino_deitsmall16_pretrain_full_checkpoint.pth",
@@ -178,17 +179,21 @@ def calc_and_save_features(
     arch="vit_base",
     image_size=(480, 480),
     pretrained_model_path="",
-    resize=True
+    resize=True,
+    overwrite=True,
     ):
     print("calculating semantic features")
     
     # local import inside function to avoid circular import problem
-    from deepsim_analyzer.io import get_image_hash, load_image, save_feature
+    from deepsim_analyzer.io import get_image_hash, load_image, save_feature, key_in_dataset
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     with torch.no_grad():
         model = load_model(arch, pretrained_model_path, patch_size)
         model = model.to(device)
+
+        skipped = 0
+        calculated = 0 
         
 
         transform = pth_transforms.Compose(
@@ -202,6 +207,12 @@ def calc_and_save_features(
         for image_path in tqdm(image_paths, desc=f"calculating semantic features", total=len(image_paths)):
             image_path = str(image_path)
             hash = get_image_hash(image_path)
+
+            if key_in_dataset(dataset_filepath, f"{hash}/features/semantic/full") and not overwrite:
+                skipped += 1
+                continue
+            calculated += 1
+        
             image = load_image(image_path, return_np=False)
 
             if resize:
@@ -225,6 +236,8 @@ def calc_and_save_features(
             representation = model(image).squeeze().cpu().detach().numpy()
 
             save_feature(dataset_filepath, hash, representation, 'semantic')
+    
+    print(f"skipped: {skipped}, caluclated: {calculated}")
 
 # this version you can give a path
 def calc_features(
