@@ -12,3 +12,5 @@ git+https://github.com/openai/CLIP.git
 opencv-python==4.7.0
 tensorflow==2.12.0
 deepface==0.0.79
+pyqtgraph==0.13.3
+PyQt6-Charts==6.5.0
