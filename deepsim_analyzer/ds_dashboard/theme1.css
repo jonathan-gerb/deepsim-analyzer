@@ -85,3 +85,19 @@ QLabel#preview-photo {
     background-color: #e0e0e0;
     margin-right: 1px;
 }
+
+QTabBar::tab:selected {
+    background: rgb(226, 226, 226);
+}
+
+QTabBar::tab {
+    background: rgb(194, 195, 195);
+}
+
+/* QTabWidget::tab[name="combined_tab"] {
+    background: rgb(136, 177, 139);
+}
+
+QWidget#combined_tab {
+    background: rgb(136, 177, 139);
+} */

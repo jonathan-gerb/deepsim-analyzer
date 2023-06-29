@@ -62,20 +62,21 @@ class ScatterplotWidget(QWidget):
 
     def initialize(self, points, indices, img_paths, config, indices_to_keep):
         self.points = points
-        self.indices=indices
+        self.indices = indices
         self.indices_to_keep = indices_to_keep
-        self.config=config
-        self.img_paths=img_paths
+        self.config = config
+        self.img_paths = img_paths
         self.mean_x = np.mean(self.points[:,0])
         self.mean_y = np.mean(self.points[:,1])
         self.start_point = None
         self.end_point = None
         self.image_items = []
         self.dot_items = []
-        self.selected_index=0
-        self.selected_point=self.points[0]
+        self.selected_index = 0
+        self.selected_point = self.points[0]
         self.selected_indices = []
-        self.dots_plot=True
+        self.dots_plot = True # need a seperate var for tacking trak of current plot type
+        self.dots_btn_toggled = False # and the dot toggle (if toggled you want images)
 
 
     def reset_scatterplot(self, pos):
@@ -103,18 +104,20 @@ class ScatterplotWidget(QWidget):
         print("*mouseReleaseEvent")
         if event.button() == Qt.MouseButton.LeftButton and self.start_point is not None and self.end_point is not None:
             self.get_selection_in_rectangle()
-            if self.selected_indices!=[]:
-                print('draw dots or imgs check', len(self.scatterplot.selected_indices), self.scatterplot.dots_plot)
-                if self.dots_plot or 0<len(self.selected_indices)<100:
-                    self.dots_plot=False
+            if self.selected_indices != []:
+                print('draw dots or imgs check', len(self.selected_indices), self.dots_btn_toggled)
+                if self.dots_btn_toggled or 0<len(self.selected_indices)<100 or len(self.indices_to_keep)<100:
+                    # images
+                    self.dots_plot = False
                     self.draw_scatterplot()
                 else:
-                    self.dots_plot=True
+                    # print('self.dots_plot', self.dots_plot ,'->', True)
+                    self.dots_plot = True
                     self.draw_scatterplot_dots()
 
         # self.clear_selection() # ? but will also put selected_indices = [] or
-        self.start_point=None
-        self.end_point=None
+        self.start_point = None
+        self.end_point = None
         if self.rect is not None and self.rect in self.plot_widget.scene().items():
             self.plot_widget.scene().removeItem(self.rect)
     
@@ -144,7 +147,7 @@ class ScatterplotWidget(QWidget):
                 point = points[0]  # Assuming you want to handle the first point
                 x, y = point
 
-                i =np.where((self.points[:, 0] == x) & (self.points[:, 1] == y))[0][0]
+                i = np.where((self.points[:, 0] == x) & (self.points[:, 1] == y))[0][0]
                 image_path = self.img_paths[i]
                 image = plt.imread(image_path)
                 w, h, _ = image.shape
@@ -188,11 +191,11 @@ class ScatterplotWidget(QWidget):
     def clear_selection(self):
         print('clear selection, is it a switch between tabs?')
         # for switch between tabs, to get all points again
-        self.selected_indices=[]
+        self.selected_indices = []
         if self.rect is not None and self.rect in self.plot_widget.scene().items():
             self.plot_widget.scene().removeItem(self.rect)
-        self.start_point=None
-        self.end_point=None
+        self.start_point = None
+        self.end_point = None
 
     def draw_selection_rectangle(self):
         """Method that draws the selection rectangle on the plot"""
@@ -228,14 +231,14 @@ class ScatterplotWidget(QWidget):
         # check is all point are in rect
         # for i, p in enumerate(self.points):
         #     print( xmin , p[0], xmax,  ymin , p[1] ,ymax)
-        # self.selected_indices = np.array([i for i, p in enumerate(self.points) if xmin <= p[0] <= xmax and ymin <= p[1] <= ymax])
         self.selected_indices = [i for i, p in enumerate(self.points) if xmin <= p[0] <= xmax and ymin <= p[1] <= ymax]
 
-        if self.selected_indices!=[]:
+        if self.selected_indices != []:
             self.get_Selected_stats.emit(0) 
 
 
     def draw_scatterplot(self, reset=True):
+        # from deepsim_analyzer.ds_dashboard.mainwindow import MainWindow
         print('draw_scatterplot')
         self.plot_widget.clear()
 
@@ -247,7 +250,7 @@ class ScatterplotWidget(QWidget):
             indices = self.indices
 
         self.image_items = []
-        new_pos=[]
+        new_pos = []
         print('num of points in plot', len(points))
         for i, point in tqdm(enumerate(points), desc="adding points to canvas", total=len(points)):
             x,y = point
@@ -311,7 +314,7 @@ class ScatterplotWidget(QWidget):
         print('draw border, id:', id, 'len(self.image_items)', len(self.image_items))
         # if current selected point not in selected_points, there is no border but left img stays
         selected_points = self.points[self.selected_indices]
-        if self.points[id] in selected_points:
+        if self.points[id] in selected_points and len(selected_points)!=0:
             print('current selected point is in selected_points')
         else:
             print('current selected point not in selected_points!')
@@ -334,7 +337,7 @@ class ScatterplotWidget(QWidget):
         # TODO: check why and fix
         # if current selected point not in selected_points, there is no border but left img stays
         selected_points = self.points[self.selected_indices]
-        if self.points[id] in selected_points:
+        if self.points[id] in selected_points and len(selected_points)!=0:
             print('current selected point is in selected_points')
         else:
             print('current selected point not in selected_points!')
@@ -348,6 +351,4 @@ class ScatterplotWidget(QWidget):
                 if id==idx:
                     image_item.setBorder(None)
 
-        
-        
-
+  

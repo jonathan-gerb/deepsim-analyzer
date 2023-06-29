@@ -130,8 +130,11 @@ class TimelineWindow(QWidget):
         """
         Plot image onto timeline.
         """
+        print('create_timeline_item')
         basepath = Path(__file__)
-        imgs_filepath = basepath.parent.parent.parent.parent / 'data/local_images/images'
+        print('basepath.parents[3]',basepath.parents[3])
+        imgs_filepath = basepath.parents[3] / 'data/raw_immutable/image'
+        # imgs_filepath = basepath.parents[6] / 'data/local_images/images'
         pixmap=QPixmap(str(imgs_filepath/ image_path)).scaled(self.image_scale, self.image_scale)
         item = QGraphicsPixmapItem(pixmap)
         item.setFlag(QGraphicsPixmapItem.GraphicsItemFlag.ItemIsMovable)
