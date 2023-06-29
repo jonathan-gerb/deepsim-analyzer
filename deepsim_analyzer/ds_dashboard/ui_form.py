@@ -691,46 +691,49 @@ class Ui_MainWindow(object):
         distance_metric = "Choose how the nearest neighbour points are calculated."
         reprojection_similarity_full = "Use vector from original multidimensional featurespace."
         reprojection_similarity_2d = "Use projected feature vectors to find similarities."
+        show_feature_map = "Calculate projections with current settings. Used to quickly see effects of changes in current tab settings."
         
         # General UI tooltips
-        self.subset_projection_btn.setToolTip("Placeholder0") # Reproject current
+        self.subset_projection_btn.setToolTip(show_feature_map) # Reproject current
         self.b_upload.setToolTip("Find similarity of your own image. This may take a few minutes.") # Upload button
         self.reset_dataset_filters.setToolTip("Set all filters to default.") # Reset filter
         self.reload_everything.setToolTip("Deletes all images that are uploaded.") # Reload Data
         self.l_timeline.setToolTip("Get related works based on the Artistic Visual Story dataset.") # Timeline for above image
 
         # Dino tab tooltips
-        self.dino_opt_showcamap.setToolTip("Overlay image with a heatmap indicating the sections the model is focussing on.") # Show crossattention map
+        self.dino_opt_showcamap.setToolTip(show_feature_map) # Show crossattention map
         self.label.setToolTip(distance_metric) # Distance metric
         self.dino_opt_fullsim.setToolTip(reprojection_similarity_full) # Full feature vector similarity
         self.dino_opt_2dsim.setToolTip(reprojection_similarity_2d) # 2d reprojection similarity
-        self.dino_opt_headsim.setToolTip("Select ") # Similarity from specific head
+        self.dino_opt_headsim.setToolTip("Heads have different points of image. Select the head and layer that captures your features of interest best.") # Similarity from specific head
 
         # Texture tab tooltips
+        self.texture_opt_show_fm.setToolTip(show_feature_map) # Show feature map
         self.label_6.setToolTip(distance_metric) # Distance metric
-        self.texture_opt_show_fm.setToolTip("Placeholder5") # Show feature map
-        self.texture_label1.setToolTip("Placeholder6") # Filter index
+        self.texture_label1.setToolTip("The index of the convolution filter to show the output from, either from layer 3a or 3b from the inception_v1_model.") # Filter index
         self.texture_opt_fullsim.setToolTip(reprojection_similarity_full) # Full feature vector similarity
         self.texture_opt_2dsim.setToolTip(reprojection_similarity_2d) # 2d reprojection similarity
 
         # Emotion tab tooltips
-        self.emotion_opts_showfm.setToolTip("Placeholder9") # Show feature map
+        self.emotion_opts_showfm.setToolTip(show_feature_map) # Show feature map
+        self.label_7.setToolTip(distance_metric) # Distance metric
         self.emotion_opt_fullsim.setToolTip(reprojection_similarity_full) # Full feature vector similarity
         self.emotion_opt_2dsim.setToolTip(reprojection_similarity_2d) # 2d reprojection similarity
 
         # Semantic tab tooltips
+        self.label_9.setToolTip(distance_metric) # Distance metric
         self.semantic_opt_fullsim.setToolTip(reprojection_similarity_full) # Full feature vector similarity
         self.semantic_opt_2dsim.setToolTip(reprojection_similarity_2d) # 2d reprojection similarity
 
         # CLIP tab tooltips
-        self.clip_radio_combsim.setToolTip("Placeholder14") # Combined sim
-        self.clip_radio_imgsim.setToolTip("Placholder15") # Image embedding sim
-        self.clip_radio_textsim.setToolTip("Placeholder16") # Text sim
-        self.label_2.setToolTip("Write down your own features of interest. These will be incorpororated when calculating the similarity.") # Describe similarity aspect to a Clip model
+        self.clip_radio_combsim.setToolTip("Use CLIP text and image features.") # Combined sim
+        self.clip_radio_imgsim.setToolTip("Find CLIP similarity based on image features.") # Image embedding sim
+        self.clip_radio_textsim.setToolTip("Find CLIP similarity based on text entered below.") # Text sim
+        self.label_2.setToolTip("Write down your own features of interest. These will be incorpororated when calculating the similarity in the 'combined' tab.") # Describe similarity aspect to a Clip model
         self.clip_opt_fullsim.setToolTip(reprojection_similarity_full) # Full feature vector similarity
         self.clip_opt_2dsim.setToolTip(reprojection_similarity_2d) # 2d reprojection similarity
 
         # Combined tab tooltips
-        self.combined_projection_btn.setToolTip("Placeholder19") # Calc combined projection
-        self.recalc_similarity.setToolTip("Placeholder20") # Recalculate similarity
+        self.combined_projection_btn.setToolTip("Recompute scatterplot based on current weights. This might take a moment.") # Calc combined projection
+        self.recalc_similarity.setToolTip("Find similar images based on current weights. Only shown in the similar images section.") # Recalculate similarity
         self.title.setToolTip("Adjust the weight of individual metrics. The feature embeddings will be scaled accordingly.") # Metric weights
